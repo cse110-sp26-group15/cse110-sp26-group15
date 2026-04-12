@@ -1,4 +1,4 @@
-# 🚀 Team Name: Capybara
+# Team Capybara
 
 ## 🎨 Brand Identity
 - **Theme:** [e.g. AI + Gaming / Minimalist / Cyberpunk]
