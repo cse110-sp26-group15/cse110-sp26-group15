@@ -1,0 +1,28 @@
+Team 15 / League of Super Acquaintances
+
+Purpose of Meeting:
+Group Branding, creation of team page, recording the video, and making the group contract.
+
+Members Present: Michael Sun, Thomas Arreola, Laksh Goyal, Erick Garcia Dealba, Unnati Goyal, Sasha, Pablo Wells, Yizhen, Mikey Nguyen, Harvir Ghuman, Dylan Williams
+
+Members Missings: None
+
+Meeting Location and time: 
+Wong Avery 123 at 2:00 pm
+
+Agenda:
+    Make a list of things to do.
+    Setup Group Branding.
+    Work on the Team Page and Team Video. Split up to boost efficiency.
+    Make the team contract.
+
+
+Group Branding: 
+    Potential mascots: Stingray, Capybaras, Dolphins, Penguin, Cow, Cuttlefish, Whale
+    Actual Team Mascot: Capybara
+    Team Name: Leauge of Super Acquaintances 
+    Team colors: Brown and  a darker blue
+    Custom Font/Powerpoint Style: Georgia
+
+Meeting ended: 
+
