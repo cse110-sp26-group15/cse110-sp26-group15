@@ -5,6 +5,7 @@
 - **Colors:** Brown, Blue
 - **Logo:**\
 <img src="branding/logo.png" alt="Team Logo" width="250"/>
+
 - **Mascot:** Capybara
 
 ---
