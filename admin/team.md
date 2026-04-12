@@ -1,4 +1,4 @@
-# Team The League Of Super Acquaintances
+# The League Of Super Acquaintances
 
 ## 🎨 Brand Identity
 - **Theme:** Superheroes
@@ -80,7 +80,6 @@
 ## 📂 Resources
 - 📁 Branding: `/admin/branding`
 - 🎥 Team Video: `/admin/videos/teamintro.mp4`
-- 📄 README: [link back to repo root]
 
 ---
 
