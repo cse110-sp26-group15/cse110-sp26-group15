@@ -34,7 +34,7 @@ Wong Avery 123 at 2:00 pm
 ## Decisions:
 - We chose Claude as our LLM of choice.
 - We have will have people who don't have a pro subscrition split between 2. Those who have the subscription can proceed as normal. 
-- We will use Opus 4.6 in its medium configuation. 
+- We will use CLI version of Opus 4.6 in its medium configuation. 
 - Run your iterations before meeting Monday at 5pm. 
 
 
