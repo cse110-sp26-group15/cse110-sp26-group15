@@ -1,12 +1,11 @@
 # Team The League Of Super Acquaintances
 
 ## 🎨 Brand Identity
-- **Theme:** [e.g. AI + Gaming / Minimalist / Cyberpunk]
-- **Colors:** [e.g. #000000, #00FFAA]
-- **Logo:**  
-![Team Logo](./branding/logo.png)
+- **Theme:** Superheroes
+- **Colors:** Brown #600000e3, Dark Blue #001069
+- **Logo:** ![Team Logo](./branding/logo.png)
 
-- **Mascot (optional):** [e.g. Robot Cat 🤖🐱]
+- **Mascot:** Capybara
 - **Tagline:** *"[Your slogan here]"*
 
 ---
@@ -27,39 +26,64 @@
 
 ---
 
+## 🧑‍💻 Team Leads
+
+### 👤 Unnati Goyal
+- **Major:** Computer Science
+- **GitHub:** https://github.com/06unnati
+- **About:** I love dancing and was on the bollywood team here at UCSD. I also love trying new activities, currently I have taken up surfing.
+
+### 👤 Laksh Goyal
+- **Major:** Computer Science
+- **GitHub:** https://github.com/lakshgoyal06-eng
+- **About:** Apart from pursuing to build problem solving software, I am an outdoor enthusiast!
+
 ## 🧑‍💻 Team Members
 
-### 👤 [Name 1]
-- **Major:** Computer Science  
-- **Role:** [e.g. Frontend Developer]  
-- **GitHub:** https://github.com/[username]  
-- **About:** Short intro (1–2 sentences)
+### 👤 Michael Sun
+- **Major:** Computer Science and Applied Math
+- **GitHub:** https://github.com/mwsun2165
+- **About:** Avid listener of Porter Robinson.
 
----
+### 👤 Thomas Arreola
+- **Major:** Computer Science
+- **GitHub:** https://github.com/thomasarreola
+- **About:** I love to read and go hiking.
 
-### 👤 [Name 2]
-- **Major:**  
-- **Role:**  
-- **GitHub:**  
-- **About:**  
+### 👤 Erik Garcia Dealba
+- **Major:** Computer Science
+- **GitHub:** https://github.com/ErickG5
+- **About:** I try to produce music in my free time.
 
----
+### 👤 Sasha Brook
+- **Major:** Computer Science
+- **GitHub:** https://github.com/SashaBrook3
+- **About:** I like to play video games and read in my spare time.
 
-### 👤 [Name 3]
-- **Major:**  
-- **Role:**  
-- **GitHub:**  
-- **About:**  
+### 👤 Yizhen Han
+- **Major:** Computer Science
+- **GitHub:** https://github.com/yih126
+- **About:** I like playing badminton and video games.
 
----
+### 👤 Pablo Wells
+- **Major:** Computer Science
+- **GitHub:** https://pablowells.github.io/pablo-w/
+- **About:** I enjoy cuddling with my 3 cats and visiting Mexico.
 
-## 🧩 Roles & Responsibilities
-| Role | Member | Responsibility |
-|------|--------|---------------|
-| Project Manager | [Name] | Coordination, deadlines |
-| Frontend | [Name] | UI/UX development |
-| Backend | [Name] | Server, APIs |
-| QA / Testing | [Name] | Debugging & testing |
+### 👤 Mikey Nguyen
+- **Major:** Computer Science
+- **GitHub:** https://github.com/migingyn
+- **About:** Working out is fun, and sleeping.
+
+### 👤 Harvir Ghuman
+- **Major:** Computer Science
+- **GitHub:** https://github.com/HARVIRGHUMAN
+- **About:** I am a third-year transfer student. I enjoy competing in sports and going to the gym with friends in my free time.
+
+### 👤 Dylan Williams
+- **Major:** Computer Engineering
+- **GitHub:** https://github.com/dywilliams
+- **About:** A few things I enjoy most include playing tennis, making coffee and trying new cafe spots, and going to concerts!
 
 ---
 
