@@ -1,4 +1,4 @@
-# 🚀 Team Name: [Your Team Name]
+# 🚀 Team Name: Capybara
 
 ## 🎨 Brand Identity
 - **Theme:** [e.g. AI + Gaming / Minimalist / Cyberpunk]
