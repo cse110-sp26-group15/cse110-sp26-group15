@@ -2,27 +2,17 @@
 
 ## 🎨 Brand Identity
 - **Theme:** Superheroes
-- **Colors:** Brown #600000e3, Dark Blue #001069
-- **Logo:** ![Team Logo](./branding/logo.png)
-
+- **Colors:** Brown, Blue
+- **Logo:**\
+<img src="branding/logo.png" alt="Team Logo" width="250"/>
 - **Mascot:** Capybara
-- **Tagline:** *"[Your slogan here]"*
 
 ---
 
 ## 🌟 Team Values
-- 🤝 Collaboration: We support each other and communicate clearly
-- 🚀 Growth: We continuously improve and learn
-- 🧠 Accountability: Everyone takes responsibility for their work
-- 💡 Creativity: We encourage new ideas and innovation
-
----
-
-## 📌 Team Goals
-- Deliver a high-quality final project
-- Maintain clean and readable code
-- Communicate effectively through Slack and meetings
-- Meet all deadlines on time
+- Proactiveness: We all want to get things done!
+- Positivity: Staying positive and supporting each other!
+- Perseverence: Never giving up on the task at hand!
 
 ---
 
@@ -84,20 +74,6 @@
 - **Major:** Computer Engineering
 - **GitHub:** https://github.com/dywilliams
 - **About:** A few things I enjoy most include playing tennis, making coffee and trying new cafe spots, and going to concerts!
-
----
-
-## 💬 Communication
-- **Slack:** [Workspace link or channel name]
-- **Meeting Time:** [e.g. Weekly Sunday 7pm]
-- **Response Expectation:** Within 24 hours
-
----
-
-## ⚠️ Conflict Resolution
-- Discuss issues openly first  
-- If unresolved → team vote  
-- If still unresolved → escalate to TA  
 
 ---
 
