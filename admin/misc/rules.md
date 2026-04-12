@@ -44,4 +44,4 @@
 3. Weekly team meetings
 
 ## Signature
-> [sign here]
+> 
