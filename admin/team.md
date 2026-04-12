@@ -1,4 +1,4 @@
-# Team Capybara
+# Team The League Of Super Acquaintances
 
 ## 🎨 Brand Identity
 - **Theme:** [e.g. AI + Gaming / Minimalist / Cyberpunk]
