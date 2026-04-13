@@ -29,6 +29,7 @@ Wong Avery 123 at 2:00 pm
 - Team Name: Leauge of Super Acquaintances 
 - Team colors: Brown and  a darker blue
 - Custom Font/Powerpoint Style: Georgia
+- Team Video: Clips of everyone introducing themselves and a final clip of the entire team. 
 
 
 ## Decisions:
