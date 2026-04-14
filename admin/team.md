@@ -85,4 +85,4 @@
 ---
 
 ## 🎬 Team Intro Video
-*(Will be added here)*
+`/admin/videos/teamintro.mp4`
