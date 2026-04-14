@@ -26,3 +26,8 @@ Unnati: 008
 Michael: 039
 
 ## Decisions
+    - Best Iteration: candidate 037
+    - Slideshow was created and video presentation will be done tomorrow after class.
+
+## Meeting Ended
+6:30 PM
