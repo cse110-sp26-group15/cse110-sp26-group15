@@ -26,7 +26,7 @@
 
 ### 👤 Laksh Goyal
 - **Major:** Computer Science
-- **GitHub:** https://github.com/lakshgoyal06-eng
+- **GitHub:** https://github.com/lgoyal6
 - **About:** Apart from pursuing to build problem solving software, I am an outdoor enthusiast!
 
 ## 🧑‍💻 Team Members
