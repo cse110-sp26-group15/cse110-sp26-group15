@@ -6,8 +6,10 @@ Meeting with team to go over iterations and choose the best one. Keep refining u
 ## Memebers Present:
 Unnati Goyal, Thomas Arreola, Harvir, Michael Sun, Erick Garcia, Pablo Wells. 
 
+Running Late: Mikey Nguyen, Dylan Williams
+
 ## Members Missing:
-Sasha Brook, Mikey Nguyen, Yizhen, Laksh Goyal, Dylan Williams
+Sasha Brook, Yizhen, Laksh Goyal
 
 ## Meeting Time and Place:
 CSE Building 3rd floor at 4:00 PM
