@@ -23,4 +23,26 @@ Takeaways from Steady:
 ### Application 2 - taiga 
 ### Application 3 - range 
 ### UI/UX
+- **Simplicity and Clarity**  
+  The interface should focus on the core interaction. In our design, the "SPIN" button is placed prominently in the center, making it clear and easy for users to understand how to start playing without confusion.
+
+- **Visual Hierarchy and Layout**  
+  Important information such as credits, bet amount, and free spins are displayed at the top, while the slot grid is centered as the main focus. Supporting elements like the payout table and rewards are placed below or on the side, allowing users to access additional information without overwhelming the main gameplay area.
+
+- **Feedback and Responsiveness**  
+  The interface provides clear feedback through visual updates such as spinning reels, updated credits, and highlighted results. This helps users immediately understand the outcome of their actions.
+
+- **Consistency in Design**  
+  The color scheme (green jungle theme), button styles, and icon usage remain consistent across the interface, making the application feel cohesive and easier to navigate.
+
+- **Accessibility**  
+  The design includes features such as audio toggling, dark mode, and color blindness settings. These ensure that a wider range of users can comfortably interact with the application.
+
+### Additional UI/UX Improvements
+
+- **Betting Control (User Control & Flexibility)**  
+  Add more control over the betting system. Currently, the bet amount is fixed, which limits user interaction and strategic decision-making. Allowing users to adjust their bet size (e.g., increase or decrease bet amounts) would improve flexibility and engagement.
+
+- **Clearer Win Explanations (Transparency & Usability)**  
+  Provide clearer explanations of winning results. For example, highlighting the exact winning line or displaying a short message explaining the win would help users understand why they won. This improves usability by reducing confusion and making the system more transparent.
 ### Different project types the app can handle
