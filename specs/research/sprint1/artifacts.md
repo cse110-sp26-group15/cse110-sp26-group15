@@ -21,7 +21,19 @@ Takeaways from Steady:
 - Design async from day one. Don't assume everyone is online at the same time.
 
 ### Application 2 - taiga 
+
 ### Application 3 - range 
+- Features: 
+    - Sign in asks if Range has access to edit calander
+    - Has a create goal functionality, which you can assign to different people and update status
+    - Report function: Shows how often the team used various flags within the app
+    - Meetings: connects to calander, can create new events, and has various templates which the meeting can follow
+    - A person can have multiple teams
+
+**Takeaways**
+- Have a functionality which shows status of each task, and who is assigned to it. 
+- Have it be able to connect to different applications which user uses like calander and github
+
 ### UI/UX
 - **Simplicity and Clarity**  
   The interface should focus on the core interaction. In our design, the "SPIN" button is placed prominently in the center, making it clear and easy for users to understand how to start playing without confusion.
@@ -45,4 +57,5 @@ Takeaways from Steady:
 
 - **Clearer Win Explanations (Transparency & Usability)**  
   Provide clearer explanations of winning results. For example, highlighting the exact winning line or displaying a short message explaining the win would help users understand why they won. This improves usability by reducing confusion and making the system more transparent.
+
 ### Different project types the app can handle
