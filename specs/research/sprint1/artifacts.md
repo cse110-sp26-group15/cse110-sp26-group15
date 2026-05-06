@@ -21,7 +21,7 @@ Takeaways from Steady:
 - Design async from day one. Don't assume everyone is online at the same time.
 
 ### Application 2 - taiga 
-
+[Taiga Research](taiga_artifact.md)
 ### Application 3 - range 
 - Features: 
     - Sign in asks if Range has access to edit calander
