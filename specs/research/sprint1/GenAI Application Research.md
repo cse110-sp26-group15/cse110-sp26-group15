@@ -1,6 +1,6 @@
 ## **LLM API:**
 
-Groq API \- [https://groq.com/](https://groq.com/)
+Groq API \- [https://groq.com/](https://groq.com/), generous usage, decent speeds
 
 ## **Idea:**
 
