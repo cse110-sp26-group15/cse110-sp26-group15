@@ -1,0 +1,306 @@
+# Existing Applications Research - Laksh Goyal
+
+> SE SitRep — Sprint 1 research artifact
+> Author: Laksh
+> Scope: competitor analysis of existing standup / team-coordination / status-tracking tools, broken down by feature, with pros and cons of each, and a final synthesis on where the gap is for our project.
+
+## Why this matters
+
+The prompt explicitly names Steady (formerly Status Hero) as the reference product, and Powell flagged AI agents as the new wrinkle. So before we design anything, we need to know what's already out there, which features are table stakes, which are differentiators, and where the gap is that SE SitRep can fill. Each app below is evaluated on the same axes so we can compare apples to apples.
+
+## Apps reviewed
+
+1. Steady (runsteady.com, formerly Status Hero) — the named competitor
+2. Geekbot — the most popular Slack-native standup bot
+3. Range — async check-ins with mood and team-culture focus
+4. DailyBot — multi-platform standup bot with mood tracking
+5. Standuply — agile-ceremony automation (standups, retros, planning poker)
+6. Jell — OKR/performance-focused check-ins
+7. Slack Workflow Builder — native, free baseline
+8. Linear / Jira (briefly) — adjacent, for blocker and ticket context
+
+---
+
+## 1. Steady (runsteady.com)
+
+The product Powell named in the prompt. Positions itself as a "lightweight teamwork OS" rather than just a standup bot.
+
+### Features
+
+- Smart Check-ins — async daily check-ins delivered via Slack, Teams, web, or email; pull commits, PRs, Jira/Linear tickets in automatically so devs don't have to type "worked on PROJ-1234"
+- Echoes — AI agents that you prompt in natural language ("summarize all PRs merged in the last 2 weeks") and that deliver scheduled or on-demand reports via DM
+- Goal Stories — weekly/biweekly cross-team narrative updates with AI-drafted templates that summarize underlying tool activity
+- Blocker alerts — managers get pinged the moment someone reports a blocker in their check-in
+- Multi-team support — one person can check in to multiple teams at once with unified views
+- Insights — analytics on participation rates, blocker frequency, intentions met, cross-correlated with GitHub/Jira activity
+- 20+ integrations — GitHub, GitLab, Jira, Linear, Asana, Trello, Shortcut, Monday, Confluence, Zoom, Google Calendar, Slack, Teams
+- MCP support — works with Claude, ChatGPT, and other MCP-aware assistants
+
+### Pros
+
+- Deepest integration story of any tool reviewed; activity flows in automatically rather than being manually pasted
+- The Echoes AI-agent pattern is genuinely novel and is the closest thing to "AI in the team coordination loop"
+- Multi-team support handles real-world org structures where people sit across teams
+- Replaces standups, sprint planning prep, and 1:1 context assembly with one tool, so it's not just a standup bot
+- Distinguishes between "personalized DMs" (private) vs "feed" (shared), reducing notification noise
+
+### Cons
+
+- Heavy. Lots of moving parts (Smart Check-ins, Goal Stories, Echoes, Insights) with a learning curve
+- AI agents track human activity, but there's no first-class concept of an AI agent itself being a teammate that needs check-ins
+- Built for medium-to-large orgs; overkill for a small team
+- Closed source, paid SaaS; not transparent about what the AI sees
+
+---
+
+## 2. Geekbot
+
+The most established and widely-used async standup bot. Slack/Teams-only. Used by GitLab, Netflix, Shopify, Zapier, and 200,000+ users.
+
+### Features
+
+- DMs each team member on a configurable schedule with customizable questions; posts answers to a shared channel
+- Templates for daily standup, retrospective, weekly review, mood/wellbeing, Friday Kudos
+- Threaded follow-up so side discussions don't extend the standup for everyone
+- Searchable history and dashboard
+- Timezone handling per-user (you can set "DM me when I come online after X time")
+- Polls and surveys
+- Friday Kudos for peer recognition
+- Free for up to 10 users; ~$2.50/user/month after
+
+### Pros
+
+- Dead simple to set up (5 minutes per user reviews)
+- Lives entirely in Slack, so no extra app to log into
+- Great timezone handling, repeatedly called out in reviews
+- Customizable questions let you adapt it to any cadence (daily, weekly, retro, etc.)
+- Built-in mood/wellbeing template directly addresses the "are we feeling bad?" question in the SE SitRep prompt
+- Friday Kudos covers peer recognition without a separate tool
+
+### Cons
+
+- Pure question-based. If devs write "same as yesterday" or "fixed bugs, fixing more bugs," the data is useless. Reviews and articles repeatedly call this out
+- No integration that pulls GitHub/Jira activity in automatically; you have to paste links yourself
+- No first-class blocker tracking or escalation, just whatever the user types
+- Standalone Slack bot only; no concept of cross-team coordination or rollups
+- Limited template library compared to Standuply (per Capterra reviews)
+- No AI agent tracking
+- Initial setup of the dashboard outside Slack is reportedly clunky
+
+---
+
+## 3. Range
+
+Web-first async check-in tool with a heavy team-culture focus.
+
+### Features
+
+- Daily check-ins answering "yesterday / today / how I'm feeling"
+- Red/yellow/green mood indicator plus 1800+ emoji options for daily mood expression
+- 350+ icebreaker questions to rotate through for team-building
+- Flags — items raised on a check-in to "bring up as a group" so synchronous standup time is spent only on flagged items
+- Team Dashboard tracking team mood over time, intended for managers to spot burnout early
+- Hashtags to track work streams
+- 75+ tool integrations (GitHub, GitLab, Asana, Trello, Jira, Google Drive, Calendar)
+- Slack and Microsoft Teams integration; Range can be added as a tab to a Teams meeting invite to surface moods/flags before the meeting
+
+### Pros
+
+- Best-in-class mood and wellbeing UX. The red/yellow/green system is simple, low-friction, and directly maps to the "are we feeling bad?" prompt question
+- Flags are a smart UX pattern: instead of every standup item being equal, you mark what needs discussion. Reviewers report 50% reduction in standup length
+- Strong integration list; pulls work items into check-ins like Steady does
+- Designed for the human/cultural side of standups, not just status reporting
+
+### Cons
+
+- Lighter on analytics than Steady; no AI agent layer for synthesis
+- No native goals or OKR depth (Steady, Jell are stronger here)
+- No AI agent tracking
+- Some users dislike having a separate web app on top of Slack
+- Authentication quirks on Microsoft Teams (no email-link sign-in)
+
+---
+
+## 4. DailyBot
+
+Slack/Teams/Google Chat/Discord standup bot, the "jack of all trades" of the category.
+
+### Features
+
+- Async standups with AI-powered blocker detection and risk flagging from check-in text
+- Mood tracking, plus pro health-check templates
+- Kudos, rewards, and gamification for team-building
+- Custom slash commands and no-code automation builder
+- Multi-language support (English, Spanish, Portuguese)
+- Free starter plan; Essentials at $2.10/user/month, Advanced at $3.60/user/month for AI features
+- Multi-team setup with sub-teams and roles
+- Exports to PDF, CSV, XLS
+
+### Pros
+
+- Widest platform support; only tool that covers all 4 chat platforms
+- AI blocker detection from natural language is closer to what the SE SitRep prompt actually asks for than any other tool
+- Gamification + kudos cover the team-building angle without needing Range
+- Multi-team and sub-team support out of the box, unlike Geekbot
+- Cheaper than Geekbot per seat
+
+### Cons
+
+- Tries to do a lot, so the interface feels overbuilt if you only want standups (Vereda AI review)
+- Free tier capped at 3 users
+- AI features gated behind the more expensive plan
+- Still question-based at its core, so still suffers from low-effort answers
+- No AI agent tracking
+
+---
+
+## 5. Standuply
+
+Slack/Teams agile-ceremony bot, the most Scrum-focused tool in the space.
+
+### Features
+
+- Async standups, retros, planning poker, and backlog grooming
+- Text, voice, OR video responses (the only major tool that supports voice notes for standup answers)
+- Jira and Trello deep integration; pulls ticket data into responses on the free tier
+- Recurring polls, Q&A knowledge base, mood surveys
+- Free for up to 3 users; Team plan ~$2-3.50/user/month, flat $199/month for up to 200 users, Business at $299/month for retros and planning poker
+
+### Pros
+
+- Only tool that automates planning poker and full retros end-to-end, valuable for Scrum teams
+- Voice/video responses are a real UX win for devs who hate typing standups
+- Free tier includes Jira integration, which is unusual
+- Deep Q&A bot routes unanswered questions to the right person
+- Strong if your whole team lives in Slack and runs textbook Scrum
+
+### Cons
+
+- Mainly only useful if you do textbook Scrum; for non-Scrum teams much of the surface area is wasted
+- Jira-centric; less compelling if your team uses Linear or GitHub Projects
+- Free tier is only 3 users
+- No AI agent tracking
+- Reviews note the setup curve is steeper than Geekbot
+
+---
+
+## 6. Jell
+
+OKR-focused check-in tool.
+
+### Features
+
+- Daily, weekly, and custom check-ins
+- OKR/goal tracking tied to check-ins so updates are framed against goals
+- Slack and Teams integration
+- Reporting on goal progress over time
+
+### Pros
+
+- Strongest tool for tying daily updates to long-term goals
+- Useful for orgs that already run OKRs
+- Lighter weight than Steady's full goals feature
+
+### Cons
+
+- Cultural fit issue: teams that don't run OKRs find it forces structure they don't want
+- Less sophisticated mood/wellbeing layer than Range or DailyBot
+- Limited integration depth compared to Steady
+- No AI features, no AI agent tracking
+
+---
+
+## 7. Slack Workflow Builder (the free baseline)
+
+Slack's native automation tool.
+
+### Features
+
+- Build a custom standup workflow that DMs members on a schedule with form-style questions
+- Posts responses to a channel
+- Free, native, no third-party app needed
+
+### Pros
+
+- Free, no extra account or vendor risk
+- Data stays in Slack; nothing to onboard the team to
+- Good enough for very small teams that just want async question answers
+
+### Cons
+
+- No analytics, no rollups, no integrations beyond Slack itself
+- No mood tracking, no blocker escalation, no goals
+- Manual setup per workflow; not optimized for standups
+- No AI features at all
+
+---
+
+## 8. Adjacent: Linear and Jira
+
+Worth mentioning because much of the "what is everyone working on" question is already answered by issue trackers, and modern teams often skip dedicated standup tools.
+
+### Pros (as standup substitutes)
+
+- Source of truth for what's actually being worked on; ticket status and assignee already encode the answer
+- Linear in particular has Cycles, a clean issue board, and Slack notifications that surface progress without a separate standup
+
+### Cons (as standup substitutes)
+
+- No first-class concept of "I'm blocked," "I'm sick," "I'm feeling burned out," or "can someone cover for me"
+- Doesn't capture work that isn't ticketed (design exploration, meetings, cross-team conversations)
+- No mood, no wellbeing, no team-culture layer
+- Managers still end up chasing context across Slack, the board, and 1:1s
+- This is exactly why dedicated tools like Steady exist
+
+---
+
+## Cross-cutting feature matrix
+
+| Feature | Steady | Geekbot | Range | DailyBot | Standuply | Jell | Slack WB |
+|---|---|---|---|---|---|---|---|
+| Async check-ins | yes | yes | yes | yes | yes | yes | yes |
+| Mood/wellbeing tracking | partial | yes (template) | yes (best) | yes | partial | no | no |
+| Blocker escalation alerts | yes | no | partial (flags) | yes (AI) | partial | no | no |
+| Auto-pull GitHub/Jira activity | yes (best) | no | yes | partial | yes (Jira/Trello) | no | no |
+| AI summary of team activity | yes (Echoes) | no | no | partial | no | no | no |
+| Voice/video responses | no | no | no | no | yes | no | no |
+| Multi-team rollups | yes | no | partial | yes | partial | partial | no |
+| Goals / OKR linkage | yes | no | yes | partial | no | yes (best) | no |
+| Schedule/availability awareness | partial | yes (TZ) | yes | yes | yes | partial | no |
+| AI agent (e.g. Cursor, Claude Code) tracking | no | no | no | no | no | no | no |
+| Free tier | trial | yes (10) | yes | yes (3) | yes (3) | trial | free |
+
+---
+
+## Analysis: where the gap is
+
+Three observations from this matrix:
+
+**1. The "feeling bad / cover for me" axis is partially solved but never well.**
+Range nailed the UX of mood (red/yellow/green plus emoji), and DailyBot does AI-driven sentiment, but no tool turns "I'm feeling burnt out" or "I'm sick" into an actionable "who can cover this?" workflow. The prompt asks "do we need someone to cover for us?" and no current tool answers that question; they only surface the signal and leave the decision to a human manager. A coverage-suggestion feature based on declared availability, current load, and skills overlap would be a real differentiator.
+
+**2. "When can we all meet?" is barely addressed.**
+Every tool in this space integrates with Google Calendar to pull availability, but none of them do the actual scheduling problem (finding a time that works for everyone) inside the standup tool. That's left to Calendly, When2Meet, or the calendar itself. Folding meeting-finding directly into the team status feed would close a real gap, especially for small teams that don't want to context-switch to a scheduling tool.
+
+**3. AI agents are completely untracked. This is our differentiator.**
+Every tool in the space assumes a team is humans only. But teams in 2026 increasingly include AI coding agents (Claude Code, Cursor agents, Codex, Gemini CLI) doing meaningful work, sometimes 10-20 parallel agents per developer per Builder.io's writeup. None of Steady, Geekbot, Range, DailyBot, or Standuply have a concept of "what did the AI agents do yesterday, what are they working on today, are any of them stuck waiting for human review." This is exactly what Powell flagged in the prompt and exactly where SE SitRep can stake out new ground. Concretely this would mean: an agent run shows up in the team feed with what it touched, what PRs it opened, what it's blocked on (e.g. waiting for review or hitting a rate limit), and the human teammate it's "assigned to" gets pinged just like a human teammate would be on a blocker.
+
+**4. There is no open-source, lightweight option for small teams.**
+Every serious tool is paid SaaS. Slack Workflow Builder is the only free baseline, and it's barely usable. A small team running a class project, a hackathon, or a 4-person startup has no good free option. Since our project is web-first and free by default, we land naturally in this gap.
+
+## Recommendations for our feature scope
+
+Given the above, the SE SitRep MVP should prioritize, in this order:
+
+1. Async check-ins with the standard 3 questions (yesterday / today / blockers), with a fourth question for mood (red/yellow/green like Range)
+2. A team feed that shows everyone's check-in for the day plus who hasn't checked in yet
+3. Blocker surfacing: when someone reports a blocker, it gets pinned and the team lead gets notified
+4. AI agent check-ins: a way to register an AI agent as a teammate and have it post its own check-in (manual entry initially, with a clear path to GitHub/CLI integration later)
+5. "Who can cover" suggestion when someone marks themselves out or red-status
+6. Meeting time suggestion based on declared availability windows
+
+Items 4 and 5 are the differentiators. Items 1-3 are table stakes; if we don't do them, we're not in the category.
+
+## Sources
+
+Steady (runsteady.com), Geekbot (geekbot.com), Range (range.co), DailyBot (dailybot.com), Standuply (standuply.com), Vereda AI 2026 standup bot comparison, Gitmore async standup tools roundup 2026, Stepsize Geekbot alternatives writeup, Capterra and SoftwareAdvice reviews of Geekbot, Zapier's Geekbot blog post, Builder.io and Northflank Cursor vs Claude Code comparisons, Faros AI on Claude Code measurement.
