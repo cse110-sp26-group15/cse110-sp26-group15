@@ -36,7 +36,7 @@ Hedy \- [https://www.hedy.ai/](https://www.hedy.ai/)
 AI Usage \- Hedy acts as a coach during meetings. It can monitor the energy of a meeting. If a discussion is going in circles or people are sounding frustrated, Hedy can suggest a break or a follow-up.
 
 ## LLM API
-Groq API \- [https://groq.com/](https://groq.com/), generous usage, decent speeds
+Groq API \- [https://groq.com/](https://groq.com/), generous usage, decent speeds, and free
 
 ## AI Usage
 AI Agent (summarize standups and monitors git activity, assist check-in prompts based on user activity, weekly report) \+ AI Chatbot Assistant (answers users questions like “What did the team ship this week” based off stored activity)
