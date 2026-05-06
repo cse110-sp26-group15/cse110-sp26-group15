@@ -36,16 +36,16 @@ Takeaways from Steady:
 
 ### UI/UX
 - **Simplicity and Clarity**  
-  The interface should focus on the core interaction. In our design, the "SPIN" button is placed prominently in the center, making it clear and easy for users to understand how to start playing without confusion.
+  The interface should focus on the core interaction. In our design, the "SPIN" button is placed prominently in the center, making it clear and easy for users to understand how to start playing.
 
 - **Visual Hierarchy and Layout**  
   Important information such as credits, bet amount, and free spins are displayed at the top, while the slot grid is centered as the main focus. Supporting elements like the payout table and rewards are placed below or on the side, allowing users to access additional information without overwhelming the main gameplay area.
 
 - **Feedback and Responsiveness**  
-  The interface provides clear feedback through visual updates such as spinning reels, updated credits, and highlighted results. This helps users immediately understand the outcome of their actions.
+  The interface provides clear feedback through visual updates such as spinning reels, updated credits. This helps users immediately understand the outcome of their actions.
 
 - **Consistency in Design**  
-  The color scheme (green jungle theme), button styles, and icon usage remain consistent across the interface, making the application feel cohesive and easier to navigate.
+  The color scheme (green jungle theme), button styles, and icon usage remain consistent across the interface, making the application feel cohesive and easier to navigate. The background features dynamic effects, enhancing the visual appeal.
 
 - **Accessibility**  
   The design includes features such as audio toggling, dark mode, and color blindness settings. These ensure that a wider range of users can comfortably interact with the application.
