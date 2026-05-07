@@ -35,32 +35,16 @@ Takeaways from Steady:
 - Have it be able to connect to different applications which user uses like calander and github
 
 ### UI/UX
-- **Simplicity and Clarity**  
-  The interface should focus on the core interaction. In our design, the "SPIN" button is placed prominently in the center, making it clear and easy for users to understand how to start playing.
+After researching modern productivity and collaboration applications such as Notion, Slack, Linear, Trello, Figma, and Duolingo, several common UI/UX patterns were identified:
 
-- **Visual Hierarchy and Layout**  
-  Important information such as credits, bet amount, and free spins are displayed at the top, while the slot grid is centered as the main focus. Supporting elements like the payout table and rewards are placed below or on the side, allowing users to access additional information without overwhelming the main gameplay area.
+- Minimal and uncluttered interfaces improve usability.
+- Clear visual hierarchy helps users focus on important tasks.
+- Real-time collaboration improves team productivity.
+- Gamification and feedback systems increase engagement.
+- Fast and responsive interactions create smoother user experiences.
+- Consistent layouts and navigation reduce user confusion.
+- Integrating multiple tools into one platform reduces workflow friction.
+- Personalization and customization allow users to adapt the interface to their own workflow and preferences, improving overall user satisfaction.
+- Accessibility features such as dark mode, keyboard shortcuts, and colorblind settings help create a more inclusive experience for a wider range of users.
 
-- **Feedback and Responsiveness**  
-  The interface provides clear feedback through visual updates such as spinning reels, updated credits. This helps users immediately understand the outcome of their actions.
-
-- **Consistency in Design**  
-  The color scheme (green jungle theme), button styles, and icon usage remain consistent across the interface, making the application feel cohesive and easier to navigate. The background features dynamic effects, enhancing the visual appeal.
-
-- **Accessibility**  
-  The design includes features such as audio toggling, dark mode, and color blindness settings. These ensure that a wider range of users can comfortably interact with the application.
-
-### Additional UI/UX Improvements
-
-- **Betting Control (User Control & Flexibility)**  
-  Add more control over the betting system. Currently, the bet amount is fixed, which limits user interaction and strategic decision-making. Allowing users to adjust their bet size (e.g., increase or decrease bet amounts) would improve flexibility and engagement.
-
-- **Clearer Win Explanations (Transparency & Usability)**  
-  Provide clearer explanations of winning results. For example, highlighting the exact winning line or displaying a short message explaining the win would help users understand why they won. This improves usability by reducing confusion and making the system more transparent.
-
-- **Error Prevention**
-  The interface could prevent invalid user actions by disabling buttons when required inputs are empty. For example, the speech synthesis button could remain disabled until text is entered, helping reduce confusion and improving the overall user experience.
-
-- **Responsive Design Improvements**
-The layout could be improved for smaller screens and mobile devices by resizing buttons and reorganizing controls dynamically. This would make the application easier to use across different screen sizes and devices.
 ### Different project types the app can handle
