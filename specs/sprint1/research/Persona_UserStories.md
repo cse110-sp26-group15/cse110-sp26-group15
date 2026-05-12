@@ -52,10 +52,27 @@ As an AI Native SWE, I want to log my daily check-ins and stressors directly thr
 
 As an AI Native SWE, I want major technical decisions made by my AI agents to be automatically captured in a markdown ADR both for my own observability and for other/future developers.
 
-### Persona 3 Description 
+### Persona 3: Engineering Manager
+
+### Persona 2: The Vigilant Engineering Manager
+
+#### Brief Identity
+An Engineering Manager at a rapidly scaling SaaS company managing a hybrid workforce of software engineers and AI coding agents.
+
+#### Background and Goals
+The Engineering Manager leads a team of 8–12 engineers supported by multiple AI coding agents integrated directly into development workflows. In a fast-moving environment where delivery speed and reliability are equally important, they need constant visibility into both human and AI-generated work. They are highly outcome-driven and have little tolerance for ambiguity, making proactive observability a top priority. Their goal is to understand what everyone is working on in real time, detect blockers before they are reported, and ensure AI systems are not introducing silent failures, risky code, or architectural drift into production systems.
+
+#### Pain Points
+The Engineering Manager struggles with fragmented visibility across tools like Slack, GitHub, Jira, and AI agent dashboards. Engineers often communicate blockers too late, while AI-generated work can be difficult to audit and validate at scale. Traditional standups also fail to provide real-time awareness, leaving them without a reliable operational picture of the team throughout the workday.
 
 **User Story 1**
 
+As an Engineering Manager, I want to see a real-time breakdown of what each engineer and AI agent is actively working on so that I can understand team progress without asking for manual updates.
+
 **User Story 2**
 
+As an Engineering Manager, I want the platform to proactively detect blockers and stalled work so that I can intervene before issues impact sprint delivery timelines.
+
 **User Story 3**
+
+As an Engineering Manager, I want a complete trace of every AI agent action, including its reasoning and code changes, so that I can ensure risky or low-quality work does not silently enter production.
