@@ -52,9 +52,7 @@ As an AI Native SWE, I want to log my daily check-ins and stressors directly thr
 
 As an AI Native SWE, I want major technical decisions made by my AI agents to be automatically captured in a markdown ADR both for my own observability and for other/future developers.
 
-### Persona 3: Engineering Manager
-
-### Persona 2: The Vigilant Engineering Manager
+### Persona 3: The Engineering Manager
 
 #### Brief Identity
 An Engineering Manager at a rapidly scaling SaaS company managing a hybrid workforce of software engineers and AI coding agents.
