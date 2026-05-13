@@ -1,47 +1,44 @@
-name: CI
+name: CI/CD Pipeline # name of the workflow
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+on: [push, pull_request] # activates on push events and pull requests
 
 jobs:
-  lint:
+  lint: # ESLint check for code quality
     name: Lint (ESLint)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run lint
+      - name: Install Dependencies
+        run: npm install
+      - name: Run ESLint
+        run: npm run lint
 
-  format:
+  format: # Prettier check for consistent formatting
     name: Format (Prettier)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run format:check
+      - name: Install Dependencies
+        run: npm install
+      - name: Check Formatting
+        run: npm run format:check
+        
+  build: # fails if code is broken
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: npm install
+      - name: Build Project
+        run: npm run build
 
-  # TODO: Activate once src/ files exist
-  # test:
+  # TODO: Uncomment when unit tests are written
+  # unit-tests:
   #   name: Unit Tests
-  #   ...
-
-  # TODO: Activate once build output exists
-  # e2e:
-  #   name: E2E Tests
-  #   ...
-
-  # TODO: Wire up after first real build
-  # deploy:
-  #   name: Deploy to GitHub Pages
-  #   ...
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Install Dependencies
+  #       run: npm install
+  #     - name: Unit Test
+  #       run: npm test ./__tests__/example.test.js
