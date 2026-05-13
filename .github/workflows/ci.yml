@@ -22,7 +22,7 @@ jobs:
         run: npm install
       - name: Check Formatting
         run: npm run format:check
-        
+
   build: # fails if code is broken
     runs-on: ubuntu-latest
     steps:
