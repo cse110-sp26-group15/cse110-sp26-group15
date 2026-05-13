@@ -1,0 +1,44 @@
+name: CI/CD Pipeline # name of the workflow
+
+on: [push, pull_request] # activates on push events and pull requests
+
+jobs:
+  lint: # ESLint check for code quality
+    name: Lint (ESLint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: npm install
+      - name: Run ESLint
+        run: npm run lint
+
+  format: # Prettier check for consistent formatting
+    name: Format (Prettier)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: npm install
+      - name: Check Formatting
+        run: npm run format:check
+
+  build: # fails if code is broken
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: npm install
+      - name: Build Project
+        run: npm run build
+
+  # TODO: Uncomment when unit tests are written
+  # unit-tests:
+  #   name: Unit Tests
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Install Dependencies
+  #       run: npm install
+  #     - name: Unit Test
+  #       run: npm test ./__tests__/example.test.js

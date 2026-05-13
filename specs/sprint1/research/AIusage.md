@@ -1,9 +1,10 @@
-# Research 
+# Research
+
 Steady \- [https://runsteady.com/integrations/category/ai-tools/](https://runsteady.com/integrations/category/ai-tools/)  
 AI Usage \- MCPs, AI Agent (daily team standup summary, prompt and answer)
 
 GeekBot \- [https://geekbot.com/](https://geekbot.com/)  
-AI Usage \- MCP server turns standup data into AI tooling, AI Agent (weekly report summaries of standups, highlight key updates, identifies risks, and tracks upcoming launches), highlight team’s participation, blockers, and sentiments 
+AI Usage \- MCP server turns standup data into AI tooling, AI Agent (weekly report summaries of standups, highlight key updates, identifies risks, and tracks upcoming launches), highlight team’s participation, blockers, and sentiments
 
 DailyBot \- [https://www.dailybot.com/](https://www.dailybot.com/)  
 AI Usage \- AI Agent (coding agents report work to DailyBot, managers see AI agent and team work side-by-side), AI-powered insights that checks patterns, blockers, and trends from check-ins, AI-driven blocker detection, risk flagging, automated workflow triggers based on team events
@@ -30,13 +31,15 @@ Spinach \- [http://Spinach.ai](http://Spinach.ai)
 AI Usage \- This bot actually joins your Zoom/Google Meet calls. It takes notes during the meeting and turns them into action items in Jira/Slack.
 
 DX \- [https://getdx.com/](https://getdx.com/)  
-AI Usage \- DX sends out "Snapshot" surveys. It doesn't just ask "how are you," it asks technical questions like *"How is the build speed?"* or *"Do you feel you have clear requirements?"* It combines GitHub/Jira data with human sentiment to give you a Health Score. If the team says they feel good, but the Cycle Time (how long it takes to finish a task) is increasing, the AI flags a Silent Blocker.
+AI Usage \- DX sends out "Snapshot" surveys. It doesn't just ask "how are you," it asks technical questions like _"How is the build speed?"_ or _"Do you feel you have clear requirements?"_ It combines GitHub/Jira data with human sentiment to give you a Health Score. If the team says they feel good, but the Cycle Time (how long it takes to finish a task) is increasing, the AI flags a Silent Blocker.
 
 Hedy \- [https://www.hedy.ai/](https://www.hedy.ai/)  
 AI Usage \- Hedy acts as a coach during meetings. It can monitor the energy of a meeting. If a discussion is going in circles or people are sounding frustrated, Hedy can suggest a break or a follow-up.
 
 ## LLM API
+
 Groq API \- [https://groq.com/](https://groq.com/), generous usage, decent speeds, and free
 
 ## AI Usage
+
 AI Agent (summarize standups and monitors git activity, assist check-in prompts based on user activity, weekly report) \+ AI Chatbot Assistant (answers users questions like “What did the team ship this week” based off stored activity)

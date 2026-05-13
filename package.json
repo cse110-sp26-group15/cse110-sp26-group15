@@ -1,0 +1,20 @@
+{
+  "name": "cse110-sp26-group15",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CSE 110 Spring 2026 Group 15 project",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "build": "echo \"No build step configured yet\""
+  },
+  "devDependencies": {
+    "eslint": "^9.15.0",
+    "prettier": "^3.3.3",
+    "globals": "^15.12.0",
+    "@eslint/js": "^9.15.0"
+  }
+}
