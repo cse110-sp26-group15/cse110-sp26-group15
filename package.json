@@ -10,8 +10,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "shx mkdir -p dist && shx cp index.html dist/index.html",
-    "deploy": "wrangler pages deploy",
-    "deploy:preview": "wrangler pages deploy"
+    "deploy": "npx wrangler deploy --assets=./dist",
+    "deploy:preview": "npx wrangler versions upload --assets=./dist"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
