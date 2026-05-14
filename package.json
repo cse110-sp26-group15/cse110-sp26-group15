@@ -9,9 +9,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "build": "shx mkdir -p dist && shx cp index.html dist/index.html",
-    "deploy": "npx wrangler pages deploy ./dist",
-    "deploy:preview": "npx wrangler versions upload --assets=./dist"
+    "build": "shx mkdir -p dist && shx cp index.html dist/index.html"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
