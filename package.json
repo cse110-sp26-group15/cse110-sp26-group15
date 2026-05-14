@@ -9,7 +9,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "build": "shx mkdir -p dist && shx cp index.html dist/index.html",
+    "build": "shx mkdir -p dist && shx cp index.html dist/index.html && shx cp -r source/. dist/",
     "dev:pages": "wrangler pages dev dist",
     "db:migrate:local": "wrangler d1 migrations apply cse110-sp26-group15 --local",
     "db:seed:local": "wrangler d1 execute cse110-sp26-group15 --local --file=./db/seed.sql",
