@@ -56,3 +56,41 @@ After researching modern productivity and collaboration applications such as Not
 - Accessibility features such as dark mode, keyboard shortcuts, and colorblind settings help create a more inclusive experience for a wider range of users.
 
 ### Different project types the app can handle
+
+### Color Research
+
+
+#### Color Psychology
+
+* Blue is heavily associated with reliability and trust, they are commonly used in fintech and corporate apps
+  * This color should be used to convey reliability and efficency in UI Elements
+* Red is used for urgency, excitement, and danger. It is used in a lot of entertainment apps like Youtube, and Netflix
+  * This used be used to signify to the user a type of danger or something urgent that needs to be addressed in the UI
+* Green is associated with growth, health, and success. Its used in apps like spotify, and duolingo.
+  * This color should be used to signify an achievement of some kind
+* Yellow is associated with optimism, clarity, and attention. Its used in apps like snapchat
+  * This is typically used for tips or warnings
+* Black and white is typically associated with power and minimalism, its typically used to convey a premium feel. Companies like apple do this a lot
+* You should use the 60-30-10 rule when distributing colors across your UI
+  * 60% should be your primary color
+    * This is the color that should be associated with your brand identity
+    * This color should also be based on the color you want to evoke to the user
+  * 30% should be your secondary color
+    * This color should complement your primary color
+    * Should be used for secondary elements
+  * 10% should be your accent color
+    * This is a high contrast color
+    * Should be used for stuff like call to action buttons
+* You can use semanic colors to instantly convey meanings to people
+  * Green - success, confirmation
+  * Red - error, warning, negative feedback
+  * Yellow/Orange - caution, warning, pending action
+  * Blue - informational links, primary actions
+* What should you avoid
+  * Don't use too many colors, try to keep a consistent color pallete
+  * Low and unpleasant contrast
+  * Not being consistent with color usage in UI elements
+  * Trying to use every single color in color pallete for every feature
+  * Don't use neon colors or heavy blacks
+  * You shouldn't use purple for UI because it can get confused with links
+
