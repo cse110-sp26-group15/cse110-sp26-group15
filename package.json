@@ -10,7 +10,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "shx mkdir -p dist && shx cp index.html dist/index.html",
-    "deploy": "npx wrangler pages deploy --assets=./dist",
+    "deploy": "npx wrangler pages deploy ./dist",
     "deploy:preview": "npx wrangler versions upload --assets=./dist"
   },
   "devDependencies": {
