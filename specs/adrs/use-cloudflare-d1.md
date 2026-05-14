@@ -6,16 +6,16 @@ Based on application deployment on Cloudflare Pages, we need a database solution
 
 ## Decision Drivers
 
-* Must share persistent team data.
-* Clean integration with current hosting.
-* Must satisfy course deployment/server-side constraints.
+- Must share persistent team data.
+- Clean integration with current hosting.
+- Must satisfy course deployment/server-side constraints.
 
 ## Considered Options
 
-* Cloudflare D1
-* Browser storage via `localstorage` or `IndexedDB`
-* Static JSON files
-* Third party backend + database service
+- Cloudflare D1
+- Browser storage via `localstorage` or `IndexedDB`
+- Static JSON files
+- Third party backend + database service
 
 ## Decision Outcome
 
@@ -23,11 +23,11 @@ Chosen option: Cloudflare D1, because it meets all technical constraints without
 
 ### Consequences
 
-* Good, because it uses SQL-style relational data, appropriately fitting project entities.
-* Good, because it is relatively simple to implement and does not need a separate backend server.
-* Good, because the schema can be versioned in the repo through SQL migration files.
-* Bad, because it requires extra Cloudflare specific setup.
-* Bad, because it is dependent on Cloudflare page functions usage.\
+- Good, because it uses SQL-style relational data, appropriately fitting project entities.
+- Good, because it is relatively simple to implement and does not need a separate backend server.
+- Good, because the schema can be versioned in the repo through SQL migration files.
+- Bad, because it requires extra Cloudflare specific setup.
+- Bad, because it is dependent on Cloudflare page functions usage.\
 
 ## More Information
 

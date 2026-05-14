@@ -8,15 +8,15 @@ Our application is expected to support team-wide updates, blockers, check-ins, e
 
 ## Decision Drivers
 
-* Static deployment with automatic deployment.
-* Integratable with the GitHub repo that our code lives in.
-* Able to access CRUD operations on database.
+- Static deployment with automatic deployment.
+- Integratable with the GitHub repo that our code lives in.
+- Able to access CRUD operations on database.
 
 ## Considered Options
 
-* GitHub Pages
-* Cloudflare Pages
-* Downloadable Asset
+- GitHub Pages
+- Cloudflare Pages
+- Downloadable Asset
 
 ## Decision Outcome
 
@@ -24,10 +24,10 @@ Chosen option: "Cloudflare Pages", because it is the only option that fulfills a
 
 ### Consequences
 
-* Good, because it supports direct integration with Cloudflare D1 databases.
-* Good, because it offers page functions, which are scripts that can function similar to an API. This gives us the ability to perform CRUD on the database despite the app being statically hosted.
-* Bad, because it provides another platform (layer of complexity) to learn.
-* Bad, because some deployment configuration must live outside of the GitHub.
+- Good, because it supports direct integration with Cloudflare D1 databases.
+- Good, because it offers page functions, which are scripts that can function similar to an API. This gives us the ability to perform CRUD on the database despite the app being statically hosted.
+- Bad, because it provides another platform (layer of complexity) to learn.
+- Bad, because some deployment configuration must live outside of the GitHub.
 
 ## More Information
 
