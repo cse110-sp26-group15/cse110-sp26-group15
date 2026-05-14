@@ -9,12 +9,16 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "build": "echo \"No build step configured yet\""
+    "build": "shx mkdir -p dist && shx cp index.html dist/index.html",
+    "deploy": "npx wrangler deploy --assets=./dist",
+    "deploy:preview": "npx wrangler versions upload --assets=./dist"
   },
   "devDependencies": {
+    "@eslint/js": "^9.15.0",
     "eslint": "^9.15.0",
-    "prettier": "^3.3.3",
     "globals": "^15.12.0",
-    "@eslint/js": "^9.15.0"
+    "prettier": "^3.3.3",
+    "shx": "^0.4.0",
+    "wrangler": "^4.0.0"
   }
 }
