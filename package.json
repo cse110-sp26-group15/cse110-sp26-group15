@@ -9,7 +9,14 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "build": "shx mkdir -p dist && shx cp index.html dist/index.html && shx cp -r source/. dist/"
+    "build": "shx mkdir -p dist && shx cp index.html dist/index.html && shx cp -r source/. dist/",
+    "dev:pages": "wrangler pages dev dist",
+    "db:migrate:local": "wrangler d1 migrations apply cse110-sp26-group15 --local",
+    "db:seed:local": "wrangler d1 execute cse110-sp26-group15 --local --file=./db/seed.sql",
+    "db:reset:local": "wrangler d1 execute cse110-sp26-group15 --local --file=./db/reset.sql",
+    "db:migrate:remote": "wrangler d1 migrations apply cse110-sp26-group15 --remote",
+    "db:seed:remote": "wrangler d1 execute cse110-sp26-group15 --remote --file=./db/seed.sql",
+    "db:reset:remote": "wrangler d1 execute cse110-sp26-group15 --remote --file=./db/reset.sql"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

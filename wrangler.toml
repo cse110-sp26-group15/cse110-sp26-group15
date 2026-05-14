@@ -1,3 +1,9 @@
 name = "cse110-sp26-group15"
 compatibility_date = "2026-05-13"
 pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cse110-sp26-group15"
+database_id = "032e436e-1cf5-4521-99db-e844a024961c"
+migrations_dir = "./db/migrations"
