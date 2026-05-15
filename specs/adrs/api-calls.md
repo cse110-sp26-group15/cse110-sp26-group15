@@ -35,6 +35,7 @@ The project required an API endpoint for retrieving blocker information for both
 Chosen option: "Single endpoint using query parameters with support for multiple blockers per task."
 
 The API supports:
+
 - `?task=frontend`
 - `?general=true`
 - `?task=general`
@@ -51,6 +52,7 @@ The endpoint returns all blockers for a task and dynamically determines whether 
 ### Confirmation
 
 The endpoint was validated using Vitest tests covering:
+
 - missing query parameters
 - general blocker queries
 - multiple blockers
@@ -73,3 +75,4 @@ Example response:
     }
   ]
 }
+```
