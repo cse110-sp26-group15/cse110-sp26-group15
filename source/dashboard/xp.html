@@ -3,198 +3,63 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>XP Dashboard — SitRep</title>
-    <link rel="stylesheet" href="style.css" />
+    <title>SitRep</title>
+    <link rel="stylesheet" href="main.css" />
   </head>
   <body>
-    <div class="dashboard-shell">
-      <!-- ── Sidebar ────────────────────────────────────── -->
+    <div class="app-shell">
       <aside class="sidebar">
-        <div class="sidebar-brand">
-          <div class="sidebar-logo-mark">S</div>
-          <span class="sidebar-logo-name">SitRep</span>
+        <div class="sidebar-header">
+          <div class="sidebar-logo">
+            <div class="logo-mark">A</div>
+            <div class="logo-text">Agile Style App</div>
+          </div>
         </div>
 
-        <nav class="sidebar-nav" aria-label="Main navigation">
-          <a href="#" class="nav-item active" aria-current="page">
-            <span class="nav-icon">▦</span>
-            <span>Dashboard</span>
-          </a>
-          <a href="#" class="nav-item">
-            <span class="nav-icon">✓</span>
-            <span>My Check-ins</span>
-          </a>
-          <a href="#" class="nav-item">
-            <span class="nav-icon">👥</span>
-            <span>Team</span>
-          </a>
-          <a href="#" class="nav-item">
-            <span class="nav-icon">📋</span>
-            <span>Weekly Report</span>
-          </a>
-          <a href="#" class="nav-item">
-            <span class="nav-icon">⚙</span>
-            <span>Settings</span>
-          </a>
+        <nav class="sidebar-nav">
+          <a href="#" class="nav-item active"> Dashboard </a>
+          <a href="#" class="nav-item"> My Check-ins </a>
+          <a href="#" class="nav-item"> Team </a>
+          <a href="#" class="nav-item"> Weekly Report </a>
+          <a href="#" class="nav-item"> Settings </a>
         </nav>
 
-        <div class="sidebar-user">
-          <div class="user-avatar">W</div>
-          <span class="user-name">Wayne D.</span>
+        <div class="sidebar-footer">
+          <div class="user-row">
+            <div class="avatar">U</div>
+            <div class="user-info">
+              <p class="user-name">Username</p>
+            </div>
+          </div>
         </div>
       </aside>
 
-      <!-- ── Main content ───────────────────────────────── -->
-      <div class="dashboard-content">
-        <header class="dashboard-header">
-          <div class="header-title-block">
-            <h1 class="header-title">Team Dashboard</h1>
-            <p class="header-subtitle">XP Mode &middot; May 7 &middot; Rapid check-ins active</p>
-          </div>
-          <button class="btn-checkin" type="button">+ Quick check-in</button>
+      <div class="main-content">
+        <header class="topbar">
+          <span class="topbar-title">Dashboard</span>
         </header>
 
-        <main class="dashboard-main">
-          <!-- Blockers banner -->
-          <div class="blockers-banner" role="alert" aria-label="Blockers">
-            <div class="blockers-title-inline">
-              <span>⚠</span>
-              <span>Blockers (1) &middot; Wayne blocked &middot; tagged</span>
-              <span class="blocker-tag">@Alex</span>
-            </div>
-          </div>
-
-          <!-- Pair Programming / Agent Collaboration -->
-          <div class="section-header">
-            <h2 class="section-title">Pair Programming / Agent Collaboration</h2>
-            <a href="#" class="section-link">+ new pair</a>
-          </div>
-
-          <div class="pair-grid">
-            <!-- Pair Session A: Human + Human -->
-            <div class="pair-card">
-              <div class="pair-card-title">Pair Session A</div>
-              <div class="pair-members">
-                <div class="pair-member">
-                  <div class="pair-avatar">W</div>
-                  <span class="pair-member-name">Wayne</span>
-                  <span class="pair-member-role">driving</span>
-                </div>
-                <span class="pair-arrow">⇄</span>
-                <div class="pair-member">
-                  <div class="pair-avatar">A</div>
-                  <span class="pair-member-name">Alex</span>
-                  <span class="pair-member-role">navigating</span>
-                </div>
-              </div>
-              <div class="pair-card-meta">active &middot; last check-in 12m ago</div>
+        <main class="content-area" id="page-content">
+          <div id="dashboard-view">
+            <div class="section-header">
+              <h2 class="section-title">Tasks</h2>
+              <button class="btn-primary" id="add-task-btn">+ Add Task</button>
             </div>
 
-            <!-- Pair Session B: Human + AI -->
-            <div class="pair-card pair-ai">
-              <div class="pair-card-title">Pair Session B &middot; Human + AI</div>
-              <div class="pair-members">
-                <div class="pair-member">
-                  <div class="pair-avatar">J</div>
-                  <span class="pair-member-name">Jordan</span>
-                  <span class="pair-member-role">driving</span>
-                </div>
-                <span class="pair-arrow">⇄</span>
-                <div class="pair-member">
-                  <div class="pair-avatar ai-avatar">AI</div>
-                  <span class="pair-member-name">Agent-02</span>
-                  <span class="pair-member-role">co-pilot</span>
-                </div>
-              </div>
-              <div class="pair-card-meta">active &middot; agent last commit 3m ago</div>
-            </div>
-          </div>
-
-          <!-- Rapid Check-ins -->
-          <div class="section-header">
-            <h2 class="section-title">
-              Rapid Check-ins
-              <span
-                style="font-size: 13px; font-weight: 400; color: var(--muted); margin-left: 8px"
-              >
-                &middot; lightweight, anytime updates
-              </span>
-            </h2>
-          </div>
-
-          <div class="checkin-list">
-            <!-- Wayne -->
-            <div class="checkin-row">
-              <div
-                class="checkin-avatar"
-                style="background: var(--accent-light); color: var(--accent)"
-              >
-                W
-              </div>
-              <span class="checkin-name">Wayne D.</span>
-              <span class="checkin-task">Working on auth middleware blocker</span>
-              <span class="badge badge-on-track">on track</span>
-              <span class="checkin-time">12m ago</span>
+            <div id="add-task-form" class="task-form hidden">
+              <input type="text" id="new-task-title" class="task-input" placeholder="Task title" />
+              <button class="btn-primary" id="submit-task-btn">Create</button>
+              <button class="btn-secondary" id="cancel-task-btn">Cancel</button>
             </div>
 
-            <!-- Alex -->
-            <div class="checkin-row">
-              <div
-                class="checkin-avatar"
-                style="background: var(--accent-light); color: var(--accent)"
-              >
-                A
-              </div>
-              <span class="checkin-name">Alex K.</span>
-              <span class="checkin-task">Stuck on API rate limit — need env access</span>
-              <span class="badge badge-blocked">blocked</span>
-              <span class="checkin-time">47m ago</span>
-            </div>
-
-            <!-- Jordan -->
-            <div class="checkin-row">
-              <div
-                class="checkin-avatar"
-                style="background: var(--accent-light); color: var(--accent)"
-              >
-                J
-              </div>
-              <span class="checkin-name">Jordan M.</span>
-              <span class="checkin-task">Pairing with Agent-02 on dashboard layout</span>
-              <span class="badge badge-in-progress">in progress</span>
-              <span class="checkin-time">1h ago</span>
-            </div>
-
-            <!-- Agent-01 AI -->
-            <div class="checkin-row ai-row">
-              <div
-                class="checkin-avatar"
-                style="background: var(--ai-badge); color: #fff; font-size: 10px"
-              >
-                AI
-              </div>
-              <span class="checkin-name">Agent-01</span>
-              <span class="checkin-task">Running code review on PR #47</span>
-              <span class="badge badge-running">running</span>
-              <span class="checkin-time" style="color: var(--ai-badge)">3m ago</span>
-            </div>
-
-            <!-- Agent-02 AI -->
-            <div class="checkin-row ai-row">
-              <div
-                class="checkin-avatar"
-                style="background: var(--ai-badge); color: #fff; font-size: 10px"
-              >
-                AI
-              </div>
-              <span class="checkin-name">Agent-02</span>
-              <span class="checkin-task">Dashboard component generation — waiting for review</span>
-              <span class="badge badge-needs-review">needs review</span>
-              <span class="checkin-time" style="color: var(--ai-badge)">8m ago</span>
+            <div id="task-list" class="task-list">
+              <p class="task-empty">Loading tasks...</p>
             </div>
           </div>
         </main>
       </div>
     </div>
+
+    <script src="main.js"></script>
   </body>
 </html>
