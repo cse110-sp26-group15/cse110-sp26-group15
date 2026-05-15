@@ -61,7 +61,7 @@ export async function onRequest(context) {
        LIMIT 1`
     )
     .bind(task)
-    .first();
+    .all();
 
     // If no blocker data is found for the task, return a response indicating that the task is not blocked
   if (!result) {
@@ -80,10 +80,13 @@ export async function onRequest(context) {
   // Return the blocker status for the specified task
   return new Response(
     JSON.stringify({
-      task: result.task,
-      blocked: !result.is_resolved,
-      helper: result.helper || null,
-      description: result.description,
+      task,
+      blocked: result.results.some((row) => !row.is_resolved),
+      blockers: result.results.map((row) => ({
+        blocked: !row.is_resolved,
+        helper: row.helper || null,
+        description: row.description,
+      })),
     }),
     { headers: { "Content-Type": "application/json" } }
   );
