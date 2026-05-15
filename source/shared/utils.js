@@ -52,7 +52,7 @@ export function navigateTo(path) {
  * TODO: Replace mock with real backend when API is ready.
  * POST /api/login
  */
-export async function apiLogin({ email, password, workflow }) {
+export async function apiLogin({ email }) {
   // Mock: simulate network delay
   await mockDelay(600);
 
@@ -61,7 +61,7 @@ export async function apiLogin({ email, password, workflow }) {
   const res = await fetch("/api/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, workflow }),
+    body: JSON.stringify({ email }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -70,15 +70,15 @@ export async function apiLogin({ email, password, workflow }) {
   return res.json();
   */
 
-  // Mock success – any email/password accepted
-  return { token: "mock-token-login", user: { email, workflow } };
+  // Mock success – any email accepted
+  return { token: "mock-token-login", user: { email } };
 }
 
 /**
  * TODO: Replace mock with real backend when API is ready.
  * POST /api/signup
  */
-export async function apiSignup({ email, password, workflow }) {
+export async function apiSignup({ email }) {
   await mockDelay(600);
 
   // TODO: Remove mock and uncomment fetch below
@@ -86,7 +86,7 @@ export async function apiSignup({ email, password, workflow }) {
   const res = await fetch("/api/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, workflow }),
+    body: JSON.stringify({ email }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -95,7 +95,7 @@ export async function apiSignup({ email, password, workflow }) {
   return res.json();
   */
 
-  return { token: "mock-token-signup", user: { email, workflow } };
+  return { token: "mock-token-signup", user: { email } };
 }
 
 /**
