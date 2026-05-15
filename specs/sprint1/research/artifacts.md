@@ -96,6 +96,7 @@ After researching modern productivity and collaboration applications such as Not
 ### Task Card Research
 
 **Features seen on Kanban Cards**
+
 - Task Name
 - Who is assigned to the task
 - Attachements
@@ -105,6 +106,7 @@ After researching modern productivity and collaboration applications such as Not
 - Urgency
 
 **Features seen on Scrum Cards**
+
 - Task Name
 - Who is assigned to the task
 - Attaching tags to cards to show what the task the card is related to
@@ -115,6 +117,7 @@ After researching modern productivity and collaboration applications such as Not
 - Sprint Label
 
 **Features seen on XP Cards**
+
 - Task Name
 - Person 1 asigned
 - Person 2 assigned
