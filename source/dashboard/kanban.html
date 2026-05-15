@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kanban Dashboard — SitRep</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="dashboard-shell">
+      <!-- ── Sidebar ────────────────────────────────────── -->
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="sidebar-logo-mark">S</div>
+          <span class="sidebar-logo-name">SitRep</span>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Main navigation">
+          <a href="#" class="nav-item active" aria-current="page">
+            <span class="nav-icon">▦</span>
+            <span>Dashboard</span>
+          </a>
+          <a href="#" class="nav-item">
+            <span class="nav-icon">✓</span>
+            <span>My Check-ins</span>
+          </a>
+          <a href="#" class="nav-item">
+            <span class="nav-icon">👥</span>
+            <span>Team</span>
+          </a>
+          <a href="#" class="nav-item">
+            <span class="nav-icon">📋</span>
+            <span>Weekly Report</span>
+          </a>
+          <a href="#" class="nav-item">
+            <span class="nav-icon">⚙</span>
+            <span>Settings</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-user">
+          <div class="user-avatar">W</div>
+          <span class="user-name">Wayne D.</span>
+        </div>
+      </aside>
+
+      <!-- ── Main content ───────────────────────────────── -->
+      <div class="dashboard-content">
+        <header class="dashboard-header">
+          <div class="header-title-block">
+            <h1 class="header-title">Team Dashboard</h1>
+            <p class="header-subtitle">Kanban &middot; May 7 &middot; 3 of 6 checked in today</p>
+          </div>
+          <button class="btn-checkin" type="button">+ Check in today</button>
+        </header>
+
+        <main class="dashboard-main">
+          <!-- Blockers banner -->
+          <div class="blockers-banner" role="alert" aria-label="Blockers">
+            <div class="blockers-title-inline">
+              <span>⚠</span>
+              <span>Blockers (1) &middot; Wayne is blocked on API integration &middot; tagged</span>
+              <span class="blocker-tag">@Alex</span>
+            </div>
+          </div>
+
+          <!-- Board -->
+          <div class="section-header">
+            <h2 class="section-title">Board</h2>
+          </div>
+
+          <div class="kanban-board">
+            <!-- To Do column -->
+            <div class="kanban-col">
+              <div class="kanban-col-header col-todo">
+                <span class="col-title">To Do</span>
+                <span class="col-count col-todo">4</span>
+              </div>
+              <div class="kanban-col-body">
+                <div class="kanban-card">
+                  <div class="kanban-card-title">Set up CI pipeline</div>
+                  <div class="kanban-card-desc">Configure GitHub Actions for automated builds</div>
+                  <div class="kanban-card-footer">
+                    <span class="kanban-card-meta">unassigned</span>
+                    <div class="kanban-card-avatar"></div>
+                  </div>
+                </div>
+
+                <div class="kanban-card">
+                  <div class="kanban-card-title">Write unit tests for auth</div>
+                  <div class="kanban-card-desc">Cover login, logout, and token refresh flows</div>
+                  <div class="kanban-card-footer">
+                    <span class="kanban-card-meta">unassigned</span>
+                    <div class="kanban-card-avatar"></div>
+                  </div>
+                </div>
+
+                <div class="kanban-card">
+                  <div class="kanban-card-title">Update user profile page</div>
+                  <div class="kanban-card-desc">Add avatar upload and display name editing</div>
+                  <div class="kanban-card-footer">
+                    <span class="kanban-card-meta">unassigned</span>
+                    <div class="kanban-card-avatar"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Doing column -->
+            <div class="kanban-col">
+              <div class="kanban-col-header col-doing">
+                <span class="col-title col-doing">Doing</span>
+                <span class="col-count col-doing">3</span>
+              </div>
+              <div class="kanban-col-body">
+                <div class="kanban-card card-on-track">
+                  <div class="kanban-card-title">Implement check-in form</div>
+                  <div class="kanban-card-desc">Daily standup submission UI</div>
+                  <div class="kanban-card-footer">
+                    <span class="badge badge-on-track">on track</span>
+                    <span class="kanban-card-meta">Wayne &middot; updated 9:32am</span>
+                  </div>
+                </div>
+
+                <div class="kanban-card card-blocked">
+                  <div class="kanban-card-title">API rate limit handling</div>
+                  <div class="kanban-card-desc">Retry logic for staging environment</div>
+                  <div class="kanban-card-footer">
+                    <span class="badge badge-blocked">blocked</span>
+                    <span class="kanban-card-meta">Alex &middot; updated 10:15am</span>
+                  </div>
+                </div>
+
+                <div class="kanban-card card-ai">
+                  <div class="kanban-card-title">
+                    <span class="ai-badge">AI</span>&nbsp;Code review scan
+                  </div>
+                  <div class="kanban-card-desc">Automated review of open PRs</div>
+                  <div class="kanban-card-footer">
+                    <span class="badge badge-running">running</span>
+                    <span class="kanban-card-meta">Agent-01 &middot; auto</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Done column -->
+            <div class="kanban-col">
+              <div class="kanban-col-header col-done">
+                <span class="col-title col-done">Done</span>
+                <span class="col-count col-done">5</span>
+              </div>
+              <div class="kanban-col-body">
+                <div class="kanban-card card-done">
+                  <div class="kanban-card-title">Login page UI</div>
+                  <div class="kanban-card-desc">Design and build the sign-in form</div>
+                  <div class="kanban-card-footer">
+                    <span class="kanban-card-meta">completed &middot; May 6</span>
+                    <div class="kanban-card-avatar">W</div>
+                  </div>
+                </div>
+
+                <div class="kanban-card card-done">
+                  <div class="kanban-card-title">Project setup wizard</div>
+                  <div class="kanban-card-desc">Workflow selection and team invite</div>
+                  <div class="kanban-card-footer">
+                    <span class="kanban-card-meta">completed &middot; May 5</span>
+                    <div class="kanban-card-avatar">J</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Standup summary -->
+          <div class="standup-row-bar">
+            <span class="standup-row-label">Today's standup</span>
+            <span class="standup-row-meta">3 of 6 submitted</span>
+          </div>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

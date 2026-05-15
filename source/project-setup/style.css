@@ -1,0 +1,388 @@
+/* ── Reset ───────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Variables ─────────────────────────────────────────── */
+:root {
+  --accent: #e07b39;
+  --accent-hover: #c9612a;
+  --accent-light: #fdf0e6;
+  --accent-100: #fce4cb;
+
+  --green: #4a9d6f;
+  --green-hover: #3a8a5c;
+
+  --color-bg: #faf5ef;
+  --color-surface: #ffffff;
+  --color-border: #e5d8cc;
+  --color-text: #111827;
+  --color-muted: #7c6b5a;
+  --color-error: #ef4444;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+}
+
+/* ── Shell ───────────────────────────────────────────── */
+.setup-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Top nav ─────────────────────────────────────────── */
+.setup-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 56px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.logo-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.3px;
+}
+
+.topbar-step {
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+/* ── Main centered area ──────────────────────────────── */
+.setup-main {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+/* ── Card ────────────────────────────────────────────── */
+.setup-card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 40px 44px;
+}
+
+.setup-card-header {
+  margin-bottom: 28px;
+}
+
+.setup-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.setup-subtitle {
+  font-size: 14px;
+  color: var(--color-muted);
+  margin-top: 6px;
+}
+
+/* ── Fields ──────────────────────────────────────────── */
+.field {
+  margin-bottom: 20px;
+}
+
+.field label,
+.field-label-block {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.field input[type="text"],
+.field input[type="email"] {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--color-text);
+  background: #fff;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-100);
+}
+
+.field input.invalid {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.field-error {
+  font-size: 12px;
+  color: var(--color-error);
+  margin-top: 4px;
+  display: none;
+}
+
+.field-error.visible {
+  display: block;
+}
+
+/* ── Workflow segmented control ───────────────────────── */
+.workflow-selector {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.workflow-selector input[type="radio"] {
+  display: none;
+}
+
+.workflow-selector label {
+  flex: 1;
+  text-align: center;
+  padding: 9px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  user-select: none;
+}
+
+.workflow-selector input[type="radio"]:checked + label {
+  background: var(--accent);
+  color: #fff;
+}
+
+.workflow-selector label:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.workflow-selector input[type="radio"]:checked + label:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Add member row ──────────────────────────────────── */
+.member-add-row {
+  display: flex;
+  gap: 10px;
+}
+
+.member-add-row input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.member-add-row input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-100);
+}
+
+.member-add-row input.invalid {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.btn-add-member {
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid var(--accent-100);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.btn-add-member:hover {
+  background: var(--accent-100);
+}
+
+/* ── Member list ─────────────────────────────────────── */
+.member-list-wrap {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.member-list-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.member-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+
+.member-item-email {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.btn-remove-member {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.btn-remove-member:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--color-error);
+}
+
+/* ── Error banner ─────────────────────────────────────── */
+.form-error-banner {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--color-error);
+  margin-bottom: 16px;
+  display: none;
+}
+
+.form-error-banner.visible {
+  display: block;
+}
+
+/* ── Submit ───────────────────────────────────────────── */
+.setup-actions {
+  padding-top: 4px;
+}
+
+.btn {
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
+}
+
+.btn-primary {
+  background: var(--green);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--green-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 600px) {
+  .setup-card {
+    padding: 28px 20px;
+  }
+
+  .topbar-step {
+    display: none;
+  }
+}
