@@ -59,7 +59,7 @@ After researching modern productivity and collaboration applications such as Not
 
 ### Color Research
 
-#### Color Psychology
+**Color Psychology**
 
 - Blue is heavily associated with reliability and trust, they are commonly used in fintech and corporate apps
   - This color should be used to convey reliability and efficency in UI Elements
@@ -92,3 +92,33 @@ After researching modern productivity and collaboration applications such as Not
   - Trying to use every single color in color pallete for every feature
   - Don't use neon colors or heavy blacks
   - You shouldn't use purple for UI because it can get confused with links
+
+### Task Card Research
+
+**Features seen on Kanban Cards**
+- Task Name
+- Who is assigned to the task
+- Attachements
+- Comments
+- Adding tags to cards to show what task the card is related to
+- Date created
+- Urgency
+
+**Features seen on Scrum Cards**
+- Task Name
+- Who is assigned to the task
+- Attaching tags to cards to show what the task the card is related to
+- Date created
+- Urgency
+- User Story
+- Story Points
+- Sprint Label
+
+**Features seen on XP Cards**
+- Task Name
+- Person 1 asigned
+- Person 2 assigned
+- Adding tags to cards to show what task the card is related to
+- Date created
+- Urgency
+- Iteration
