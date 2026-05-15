@@ -70,7 +70,6 @@ form.addEventListener("submit", async (e) => {
 
   const email = emailInput.value.trim();
   const password = pwInput.value;
-  const workflow = form.querySelector('input[name="workflow"]:checked')?.value ?? "scrum";
 
   let valid = true;
 
@@ -91,7 +90,7 @@ form.addEventListener("submit", async (e) => {
   submitBtn.textContent = "Signing in…";
 
   try {
-    const { token } = await apiLogin({ email, password, workflow });
+    const { token } = await apiLogin({ email, password });
     saveToken(token);
     // TODO: Redirect to dashboard once it exists; for now go to project setup
     navigateTo("../project-setup/");

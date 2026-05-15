@@ -126,8 +126,12 @@ form.addEventListener("submit", async (e) => {
 
   try {
     await apiCreateProject({ name, workflow, members: [...members] });
-    // TODO: Navigate to dashboard once it exists
-    navigateTo("../main.html");
+    const dashMap = {
+      scrum: "../dashboard/scrum.html",
+      kanban: "../dashboard/kanban.html",
+      xp: "../dashboard/xp.html",
+    };
+    navigateTo(dashMap[workflow] ?? "../dashboard/scrum.html");
   } catch (err) {
     showBanner(banner, err.message || "Something went wrong. Please try again.");
   } finally {

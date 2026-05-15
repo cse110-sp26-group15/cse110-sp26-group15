@@ -75,7 +75,6 @@ form.addEventListener("submit", async (e) => {
   const email = emailInput.value.trim();
   const password = pwInput.value;
   const confirm = confirmInput.value;
-  const workflow = form.querySelector('input[name="workflow"]:checked')?.value ?? "scrum";
 
   let valid = true;
 
@@ -101,7 +100,7 @@ form.addEventListener("submit", async (e) => {
   submitBtn.textContent = "Creating account…";
 
   try {
-    const { token } = await apiSignup({ email, password, workflow });
+    const { token } = await apiSignup({ email, password });
     saveToken(token);
     navigateTo("../project-setup/");
   } catch (err) {

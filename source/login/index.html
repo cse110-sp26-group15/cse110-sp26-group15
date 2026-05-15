@@ -17,7 +17,9 @@
         </div>
 
         <div class="panel-body">
-          <h1 class="panel-headline">What's the situation with your team?</h1>
+          <h1 class="panel-headline">
+            What's the <span class="highlight">Situation</span> with your team?
+          </h1>
           <p class="panel-subtext">
             Track check-ins, surface blockers, and keep your whole team — human and AI — in sync.
           </p>
@@ -57,19 +59,6 @@
           <div class="form-error-banner" id="error-banner" role="alert" aria-live="polite"></div>
 
           <form id="login-form" novalidate>
-            <!-- Workflow selector -->
-            <p class="workflow-label">Team workflow</p>
-            <div class="workflow-selector" role="group" aria-label="Select workflow">
-              <input type="radio" name="workflow" id="wf-scrum" value="scrum" checked />
-              <label for="wf-scrum">Scrum</label>
-
-              <input type="radio" name="workflow" id="wf-kanban" value="kanban" />
-              <label for="wf-kanban">Kanban</label>
-
-              <input type="radio" name="workflow" id="wf-xp" value="xp" />
-              <label for="wf-xp">XP</label>
-            </div>
-
             <!-- Email -->
             <div class="field">
               <label for="email">Email</label>

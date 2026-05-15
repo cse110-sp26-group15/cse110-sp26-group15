@@ -8,20 +8,19 @@
 }
 
 :root {
-  --purple-600: #7c3aed;
-  --purple-700: #6d28d9;
-  --purple-800: #5b21b6;
-  --purple-50: #f5f3ff;
-  --purple-100: #ede9fe;
-  --purple-200: #ddd6fe;
-  --purple-panel-start: #7c3aed;
-  --purple-panel-end: #6d28d9;
+  --accent: #e07b39;
+  --accent-hover: #c9612a;
+  --accent-light: #fdf0e6;
+  --accent-100: #fce4cb;
 
-  --color-bg: #f5f4f8;
+  --green: #4a9d6f;
+  --green-hover: #3a8a5c;
+
+  --color-bg: #faf5ef;
   --color-surface: #ffffff;
-  --color-border: #e5e7eb;
+  --color-border: #e5d8cc;
   --color-text: #111827;
-  --color-muted: #6b7280;
+  --color-muted: #7c6b5a;
   --color-error: #ef4444;
 
   --radius-sm: 6px;
@@ -55,11 +54,11 @@ body {
 .auth-panel {
   width: 44%;
   min-width: 340px;
-  background: linear-gradient(160deg, var(--purple-panel-start), var(--purple-panel-end));
+  background: linear-gradient(160deg, #fef5e7, #fde8c8);
   padding: 48px 52px;
   display: flex;
   flex-direction: column;
-  color: #fff;
+  color: #1c0f00;
 }
 
 .panel-brand {
@@ -73,7 +72,7 @@ body {
   width: 36px;
   height: 36px;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,6 +85,7 @@ body {
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.3px;
+  color: #1c0f00;
 }
 
 .panel-body {
@@ -102,11 +102,16 @@ body {
   line-height: 1.15;
   letter-spacing: -0.5px;
   margin-bottom: 16px;
+  color: #1c0f00;
+}
+
+.panel-headline .highlight {
+  color: var(--accent);
 }
 
 .panel-subtext {
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.8);
+  color: #7c5a3a;
   line-height: 1.6;
   margin-bottom: 36px;
 }
@@ -116,15 +121,16 @@ body {
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 40px;
+  list-style: none;
 }
 
 .panel-pill {
   padding: 6px 16px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: #fff;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #4a3020;
+  border: 1px solid #e8d5be;
   white-space: nowrap;
 }
 
@@ -135,8 +141,8 @@ body {
 
 .stat-card {
   flex: 1;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #fff;
+  border: 1px solid #e8d5be;
   border-radius: var(--radius-md);
   padding: 14px 16px;
   text-align: center;
@@ -145,12 +151,12 @@ body {
 .stat-value {
   font-size: 24px;
   font-weight: 800;
-  color: #fff;
+  color: var(--accent);
 }
 
 .stat-label {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.75);
+  color: #7c5a3a;
   margin-top: 2px;
 }
 
@@ -170,7 +176,7 @@ body {
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  padding: 40px 40px;
+  padding: 40px;
 }
 
 .auth-card-title {
@@ -187,50 +193,6 @@ body {
   text-align: center;
   margin-top: 6px;
   margin-bottom: 28px;
-}
-
-/* ── Workflow segmented control ───────────────────────── */
-.workflow-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-muted);
-  margin-bottom: 8px;
-}
-
-.workflow-selector {
-  display: flex;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  margin-bottom: 24px;
-}
-
-.workflow-selector input[type="radio"] {
-  display: none;
-}
-
-.workflow-selector label {
-  flex: 1;
-  text-align: center;
-  padding: 9px 0;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-muted);
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s;
-  user-select: none;
-}
-
-.workflow-selector input[type="radio"]:checked + label {
-  background: var(--purple-600);
-  color: #fff;
-}
-
-.workflow-selector label:hover:not(.checked) {
-  background: var(--purple-50);
-  color: var(--purple-600);
 }
 
 /* ── Form fields ──────────────────────────────────────── */
@@ -261,8 +223,8 @@ body {
 }
 
 .field input:focus {
-  border-color: var(--purple-600);
-  box-shadow: 0 0 0 3px var(--purple-100);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-100);
 }
 
 .field input.invalid {
@@ -318,7 +280,7 @@ body {
 
 .link-muted {
   font-size: 12px;
-  color: var(--purple-600);
+  color: var(--accent);
   text-decoration: none;
 }
 
@@ -341,12 +303,12 @@ body {
 }
 
 .btn-primary {
-  background: var(--purple-600);
+  background: var(--green);
   color: #fff;
 }
 
 .btn-primary:hover {
-  background: var(--purple-700);
+  background: var(--green-hover);
 }
 
 .btn-primary:disabled {
@@ -392,7 +354,7 @@ body {
 }
 
 .auth-footer a {
-  color: var(--purple-600);
+  color: var(--accent);
   text-decoration: none;
   font-weight: 600;
 }

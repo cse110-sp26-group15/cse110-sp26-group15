@@ -7,18 +7,21 @@
   padding: 0;
 }
 
-/* ── Variables (mirrors auth.css palette) ─────────────── */
+/* ── Variables ─────────────────────────────────────────── */
 :root {
-  --purple-600: #7c3aed;
-  --purple-700: #6d28d9;
-  --purple-100: #ede9fe;
-  --purple-50: #f5f3ff;
+  --accent: #e07b39;
+  --accent-hover: #c9612a;
+  --accent-light: #fdf0e6;
+  --accent-100: #fce4cb;
 
-  --color-bg: #f5f4f8;
+  --green: #4a9d6f;
+  --green-hover: #3a8a5c;
+
+  --color-bg: #faf5ef;
   --color-surface: #ffffff;
-  --color-border: #e5e7eb;
+  --color-border: #e5d8cc;
   --color-text: #111827;
-  --color-muted: #6b7280;
+  --color-muted: #7c6b5a;
   --color-error: #ef4444;
 
   --radius-sm: 6px;
@@ -69,7 +72,7 @@ body {
   width: 34px;
   height: 34px;
   border-radius: var(--radius-sm);
-  background: var(--purple-600);
+  background: var(--accent);
   color: #fff;
   display: flex;
   align-items: center;
@@ -155,8 +158,8 @@ body {
 }
 
 .field input:focus {
-  border-color: var(--purple-600);
-  box-shadow: 0 0 0 3px var(--purple-100);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-100);
 }
 
 .field input.invalid {
@@ -202,17 +205,17 @@ body {
 }
 
 .workflow-selector input[type="radio"]:checked + label {
-  background: var(--purple-600);
+  background: var(--accent);
   color: #fff;
 }
 
 .workflow-selector label:hover {
-  background: var(--purple-50);
-  color: var(--purple-600);
+  background: var(--accent-light);
+  color: var(--accent);
 }
 
 .workflow-selector input[type="radio"]:checked + label:hover {
-  background: var(--purple-600);
+  background: var(--accent);
   color: #fff;
 }
 
@@ -235,8 +238,8 @@ body {
 }
 
 .member-add-row input:focus {
-  border-color: var(--purple-600);
-  box-shadow: 0 0 0 3px var(--purple-100);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-100);
 }
 
 .member-add-row input.invalid {
@@ -247,9 +250,9 @@ body {
 .btn-add-member {
   padding: 10px 20px;
   border-radius: var(--radius-sm);
-  background: var(--purple-50);
-  color: var(--purple-600);
-  border: 1px solid var(--purple-100);
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid var(--accent-100);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -258,7 +261,7 @@ body {
 }
 
 .btn-add-member:hover {
-  background: var(--purple-100);
+  background: var(--accent-100);
 }
 
 /* ── Member list ─────────────────────────────────────── */
@@ -355,12 +358,12 @@ body {
 }
 
 .btn-primary {
-  background: var(--purple-600);
+  background: var(--green);
   color: #fff;
 }
 
 .btn-primary:hover {
-  background: var(--purple-700);
+  background: var(--green-hover);
 }
 
 .btn-primary:disabled {
