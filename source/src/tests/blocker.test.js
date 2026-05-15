@@ -58,7 +58,9 @@ describe("blocker API", () => {
       },
     });
 
-    const response = await onRequest(createContext("http://localhost/api/blockers?general=true", db));
+    const response = await onRequest(
+      createContext("http://localhost/api/blockers?general=true", db)
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -88,7 +90,9 @@ describe("blocker API", () => {
       },
     });
 
-    const response = await onRequest(createContext("http://localhost/api/blockers?task=general", db));
+    const response = await onRequest(
+      createContext("http://localhost/api/blockers?task=general", db)
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -109,7 +113,9 @@ describe("blocker API", () => {
       },
     });
 
-    const response = await onRequest(createContext("http://localhost/api/blockers?task=frontend", db));
+    const response = await onRequest(
+      createContext("http://localhost/api/blockers?task=frontend", db)
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -146,7 +152,9 @@ describe("blocker API", () => {
       },
     });
 
-    const response = await onRequest(createContext("http://localhost/api/blockers?task=frontend", db));
+    const response = await onRequest(
+      createContext("http://localhost/api/blockers?task=frontend", db)
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -187,7 +195,9 @@ describe("blocker API", () => {
       },
     });
 
-    const response = await onRequest(createContext("http://localhost/api/blockers?task=frontend", db));
+    const response = await onRequest(
+      createContext("http://localhost/api/blockers?task=frontend", db)
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -218,7 +228,9 @@ describe("blocker API", () => {
       },
     });
 
-    const response = await onRequest(createContext("http://localhost/api/blockers?task=backend", db));
+    const response = await onRequest(
+      createContext("http://localhost/api/blockers?task=backend", db)
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);

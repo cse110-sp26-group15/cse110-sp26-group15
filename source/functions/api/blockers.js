@@ -63,7 +63,7 @@ export async function onRequest(context) {
     .bind(task)
     .all();
 
-    // If no blocker data is found for the task, return a response indicating that the task is not blocked
+  // If no blocker data is found for the task, return a response indicating that the task is not blocked
   if (!result) {
     return new Response(
       JSON.stringify({
