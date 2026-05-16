@@ -103,7 +103,7 @@ After researching modern productivity and collaboration applications such as Not
 - Comments
 - Adding tags to cards to show what task the card is related to
 - Date created
-- Urgency
+- Priority
 
 **Features seen on Scrum Cards**
 
@@ -111,7 +111,7 @@ After researching modern productivity and collaboration applications such as Not
 - Who is assigned to the task
 - Attaching tags to cards to show what the task the card is related to
 - Date created
-- Urgency
+- Priority
 - User Story
 - Story Points
 - Sprint Label
@@ -123,5 +123,7 @@ After researching modern productivity and collaboration applications such as Not
 - Person 2 assigned
 - Adding tags to cards to show what task the card is related to
 - Date created
-- Urgency
+- Priority
 - Iteration
+- Estimate in ideal developer hours
+- Story card reference
