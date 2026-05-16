@@ -6,6 +6,15 @@ Use `npm run db:seed:local` to seed your database with example data. Note that i
 
 Use `npm run db:reset:local` to reset your local database. This will delete all rows, but leave the tables.
 
+### Dashboard API tests
+
+The dashboard integration tests load fixture data from `dashboard-test-seed.sql` into local D1 via wrangler, then clear it with `reset.sql` when finished. To apply the fixture manually:
+
+```bash
+npm run db:reset:local
+npx wrangler d1 execute cse110-sp26-group15 --local --file=./db/dashboard-test-seed.sql
+```
+
 ## Remote Development
 
 Use `db:migrate:remote` to update the remote d1 database with the latest schema.
