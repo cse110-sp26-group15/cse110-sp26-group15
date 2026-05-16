@@ -106,28 +106,20 @@ function buildBody(task, projectType) {
   }
 
   if (task.description) {
-    const descWrap = document.createElement("div");
-    descWrap.className = "task-card__description-wrap";
-    descWrap.title = "Click to expand";
-
     const description = document.createElement("p");
     description.className = "task-card__description";
     description.textContent = task.description;
-    descWrap.appendChild(description);
+    description.title = "Click to expand";
+    body.appendChild(description);
 
-    const chevron = document.createElement("span");
-    chevron.className = "task-card__description-toggle";
-    chevron.setAttribute("aria-hidden", "true");
-    chevron.textContent = "▾";
-    descWrap.appendChild(chevron);
+    title.classList.add("task-card__title--clickable");
+    title.title = "Click to expand description";
 
-    descWrap.addEventListener("click", () => {
-      const expanded = descWrap.classList.toggle("task-card__description-wrap--expanded");
-      description.classList.toggle("task-card__description--expanded", expanded);
-      chevron.textContent = expanded ? "▴" : "▾";
-    });
-
-    body.appendChild(descWrap);
+    const toggle = () => {
+      description.classList.toggle("task-card__description--expanded");
+    };
+    title.addEventListener("click", toggle);
+    description.addEventListener("click", toggle);
   }
 
   const tags = [...(task.tags ?? [])];
