@@ -6,9 +6,9 @@ Aggregate read endpoint for a single project. Returns project info, team members
 
 ## Endpoint
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/projects/:projectId/dashboard` | Full dashboard payload for one project |
+| Method | Path                                 | Description                            |
+| ------ | ------------------------------------ | -------------------------------------- |
+| `GET`  | `/api/projects/:projectId/dashboard` | Full dashboard payload for one project |
 
 `:projectId` is the numeric project ID from the `projects` table.
 
@@ -124,29 +124,29 @@ All fields use **snake_case**. Empty collections are `[]`, not omitted.
 
 ### Field reference
 
-| Field | Description |
-|-------|-------------|
-| `project` | Project row: `project_id`, `name`, `description`, `created_at` |
-| `members` | Users on this project via `project_members` |
-| `tasks` | All tasks for the project; `full_name` is the assignee (null if unassigned) |
-| `open_blockers` | Unresolved blockers (`is_resolved = 0`) linked through a check-in on this project |
-| `open_blockers[].task` | Task name string, or `null` for a general blocker |
-| `open_blockers[].helper` | Suggested helper, or `null` |
-| `open_blockers[].reported_by` | User who submitted the linked check-in |
-| `checkins.date_range` | Inclusive window: today and yesterday (`YYYY-MM-DD`) |
-| `checkins.entries` | Check-ins where `checkin_date >= date('now', '-1 day')` |
-| `meta.generated_at` | ISO timestamp when the response was built |
-| `meta.checkin_days` | Always `2` |
+| Field                         | Description                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------------- |
+| `project`                     | Project row: `project_id`, `name`, `description`, `created_at`                    |
+| `members`                     | Users on this project via `project_members`                                       |
+| `tasks`                       | All tasks for the project; `full_name` is the assignee (null if unassigned)       |
+| `open_blockers`               | Unresolved blockers (`is_resolved = 0`) linked through a check-in on this project |
+| `open_blockers[].task`        | Task name string, or `null` for a general blocker                                 |
+| `open_blockers[].helper`      | Suggested helper, or `null`                                                       |
+| `open_blockers[].reported_by` | User who submitted the linked check-in                                            |
+| `checkins.date_range`         | Inclusive window: today and yesterday (`YYYY-MM-DD`)                              |
+| `checkins.entries`            | Check-ins where `checkin_date >= date('now', '-1 day')`                           |
+| `meta.generated_at`           | ISO timestamp when the response was built                                         |
+| `meta.checkin_days`           | Always `2`                                                                        |
 
 `tasks` matches the shape returned by `GET /api/projects/:projectId/tasks`.
 
 ## Error responses
 
-| Status | Body | When |
-|--------|------|------|
-| `404` | `{ "error": "Project not found" }` | No project with the given `projectId` |
-| `500` | `{ "error": "D1 database binding not configured." }` | `env.DB` is missing (misconfigured Pages/D1 binding) |
-| `500` | `{ "error": "<message>" }` | Database or other server error |
+| Status | Body                                                 | When                                                 |
+| ------ | ---------------------------------------------------- | ---------------------------------------------------- |
+| `404`  | `{ "error": "Project not found" }`                   | No project with the given `projectId`                |
+| `500`  | `{ "error": "D1 database binding not configured." }` | `env.DB` is missing (misconfigured Pages/D1 binding) |
+| `500`  | `{ "error": "<message>" }`                           | Database or other server error                       |
 
 Example error handling:
 
@@ -166,10 +166,10 @@ if (!res.ok) {
 
 These are exported from the same module for unit tests; clients should use the HTTP endpoint only.
 
-| Function | Purpose |
-|----------|---------|
-| `onRequestGet(context)` | Cloudflare Pages handler |
-| `buildDashboardPayload(data)` | Assembles the JSON shape from query results |
-| `mapOpenBlocker(row)` | Maps a blocker DB row to `open_blockers[]` item |
-| `mapCheckinEntry(row)` | Maps a check-in DB row to `checkins.entries[]` item |
-| `getCheckinDateRange()` | Returns `{ from, to }` for the two-day window |
+| Function                      | Purpose                                             |
+| ----------------------------- | --------------------------------------------------- |
+| `onRequestGet(context)`       | Cloudflare Pages handler                            |
+| `buildDashboardPayload(data)` | Assembles the JSON shape from query results         |
+| `mapOpenBlocker(row)`         | Maps a blocker DB row to `open_blockers[]` item     |
+| `mapCheckinEntry(row)`        | Maps a check-in DB row to `checkins.entries[]` item |
+| `getCheckinDateRange()`       | Returns `{ from, to }` for the two-day window       |
