@@ -7,8 +7,8 @@ Live demo: open `source/task-card-demo.html`.
 ## Quick start
 
 ```html
-<!-- include BOTH stylesheets, in this order -->
-<link rel="stylesheet" href="main.css" />
+<!-- include BOTH stylesheets, in this order. Adjust the relative paths to wherever you import from. -->
+<link rel="stylesheet" href="../main.css" />
 <link rel="stylesheet" href="task-card.css" />
 
 <!-- modules require a server (wrangler pages dev); file:// won't work -->
