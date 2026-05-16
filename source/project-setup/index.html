@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Setup — SitRep</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="setup-shell">
+      <!-- ── Top nav ───────────────────────────────── -->
+      <header class="setup-topbar">
+        <div class="topbar-brand">
+          <div class="logo-mark">S</div>
+          <span class="logo-name">SitRep</span>
+        </div>
+        <span class="topbar-step">Step 1 of 1 — Create your first project</span>
+      </header>
+
+      <!-- ── Centered card ─────────────────────────── -->
+      <main class="setup-main">
+        <div class="setup-card">
+          <div class="setup-card-header">
+            <h1 class="setup-title">Set up your project</h1>
+            <p class="setup-subtitle">Configure your workspace and invite your team.</p>
+          </div>
+
+          <div class="form-error-banner" id="error-banner" role="alert" aria-live="polite"></div>
+
+          <form id="setup-form" novalidate>
+            <!-- Project name -->
+            <div class="field">
+              <label for="project-name">Project name</label>
+              <input
+                type="text"
+                id="project-name"
+                name="project-name"
+                placeholder="e.g. Team Alpha Sprint Board"
+                required
+              />
+              <p class="field-error" id="name-error">Project name is required.</p>
+            </div>
+
+            <!-- Workflow selector -->
+            <div class="field">
+              <label class="field-label-block">Workflow</label>
+              <div class="workflow-selector" role="group" aria-label="Select workflow">
+                <input type="radio" name="workflow" id="wf-scrum" value="scrum" checked />
+                <label for="wf-scrum">Scrum</label>
+
+                <input type="radio" name="workflow" id="wf-kanban" value="kanban" />
+                <label for="wf-kanban">Kanban</label>
+
+                <input type="radio" name="workflow" id="wf-xp" value="xp" />
+                <label for="wf-xp">XP</label>
+              </div>
+            </div>
+
+            <!-- Team members -->
+            <div class="field">
+              <label for="member-email">Invite team members</label>
+              <div class="member-add-row">
+                <input
+                  type="email"
+                  id="member-email"
+                  name="member-email"
+                  placeholder="teammate@example.com"
+                  autocomplete="off"
+                />
+                <button type="button" class="btn-add-member" id="add-member-btn">Add</button>
+              </div>
+              <p class="field-error" id="member-error">Please enter a valid email address.</p>
+            </div>
+
+            <!-- Member list -->
+            <div class="member-list-wrap" id="member-list-wrap" hidden>
+              <p class="member-list-label">Team members</p>
+              <ul class="member-list" id="member-list" aria-label="Team members"></ul>
+            </div>
+
+            <!-- Submit -->
+            <div class="setup-actions">
+              <button type="submit" class="btn btn-primary" id="submit-btn">Create project</button>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>

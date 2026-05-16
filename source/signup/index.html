@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Account — SitRep</title>
+    <link rel="stylesheet" href="../shared/auth.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="auth-shell">
+      <!-- ── Left marketing panel ───────────────────── -->
+      <aside class="auth-panel">
+        <div class="panel-brand">
+          <div class="logo-mark">S</div>
+          <span class="logo-name">SitRep</span>
+        </div>
+
+        <div class="panel-body">
+          <h1 class="panel-headline">Stay in sync, ship with confidence.</h1>
+          <p class="panel-subtext">
+            SitRep replaces scattered standups with async check-ins your whole team — including AI
+            agents — can contribute to.
+          </p>
+
+          <ul class="panel-pills" aria-label="Features">
+            <li class="panel-pill">Daily check-ins</li>
+            <li class="panel-pill">Blocker alerts</li>
+            <li class="panel-pill">Team dashboard</li>
+            <li class="panel-pill">AI agent tracking</li>
+            <li class="panel-pill">Weekly reports</li>
+            <li class="panel-pill">Scrum / Kanban / XP</li>
+          </ul>
+
+          <div class="panel-stats" aria-label="Key benefits">
+            <div class="stat-card">
+              <div class="stat-value">5 min</div>
+              <div class="stat-label">to set up</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">Free</div>
+              <div class="stat-label">to start</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">100%</div>
+              <div class="stat-label">async friendly</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── Right form side ────────────────────────── -->
+      <main class="auth-side">
+        <div class="auth-card">
+          <h2 class="auth-card-title">Create your account</h2>
+          <p class="auth-card-subtitle">Get your team's SitRep up and running</p>
+
+          <div class="form-error-banner" id="error-banner" role="alert" aria-live="polite"></div>
+
+          <form id="signup-form" novalidate>
+            <!-- Email -->
+            <div class="field">
+              <label for="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="you@example.com"
+                autocomplete="email"
+                required
+              />
+              <p class="field-error" id="email-error">Please enter a valid email address.</p>
+            </div>
+
+            <!-- Password -->
+            <div class="field">
+              <label for="password">Password</label>
+              <div class="password-wrap">
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  placeholder="••••••••"
+                  autocomplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="btn-show-password"
+                  id="toggle-password"
+                  aria-label="Show password"
+                >
+                  <span id="toggle-label">show</span>
+                </button>
+              </div>
+              <p class="field-error" id="password-error">Password must be at least 8 characters.</p>
+            </div>
+
+            <!-- Confirm password -->
+            <div class="field">
+              <label for="confirm-password">Confirm password</label>
+              <div class="password-wrap">
+                <input
+                  type="password"
+                  id="confirm-password"
+                  name="confirm-password"
+                  placeholder="••••••••"
+                  autocomplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  class="btn-show-password"
+                  id="toggle-confirm"
+                  aria-label="Show confirm password"
+                >
+                  <span id="toggle-confirm-label">show</span>
+                </button>
+              </div>
+              <p class="field-error" id="confirm-error">Passwords do not match.</p>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn btn-primary" id="submit-btn">Create account</button>
+          </form>
+
+          <p class="auth-footer">Already have an account? <a href="../login/">Sign in</a></p>
+          <p class="auth-terms">By creating an account you agree to the Terms of Service</p>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
