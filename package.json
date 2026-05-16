@@ -16,7 +16,8 @@
     "db:reset:local": "wrangler d1 execute cse110-sp26-group15 --local --file=./db/reset.sql",
     "db:migrate:remote": "wrangler d1 migrations apply cse110-sp26-group15 --remote",
     "db:seed:remote": "wrangler d1 execute cse110-sp26-group15 --remote --file=./db/seed.sql",
-    "db:reset:remote": "wrangler d1 execute cse110-sp26-group15 --remote --file=./db/reset.sql"
+    "db:reset:remote": "wrangler d1 execute cse110-sp26-group15 --remote --file=./db/reset.sql",
+    "test": "vitest"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
@@ -24,6 +25,7 @@
     "globals": "^15.12.0",
     "prettier": "^3.3.3",
     "shx": "^0.4.0",
+    "vitest": "^4.1.6",
     "wrangler": "^4.0.0"
   }
 }
