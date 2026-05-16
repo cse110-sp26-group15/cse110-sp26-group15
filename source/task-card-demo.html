@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Card — Demo</title>
+    <link rel="stylesheet" href="main.css" />
+    <link rel="stylesheet" href="task-card.css" />
+    <style>
+      body {
+        background: var(--color-surface);
+        overflow: auto;
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .demo-page {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 32px 24px 64px;
+      }
+
+      .demo-page > h1 {
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 4px;
+      }
+
+      .demo-page > p {
+        font-size: 13px;
+        color: var(--color-text-secondary);
+        margin-bottom: 28px;
+      }
+
+      .demo-section {
+        margin-bottom: 32px;
+      }
+
+      .demo-section-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-text-secondary);
+        margin-bottom: 10px;
+      }
+
+      .demo-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: start;
+        gap: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="demo-page">
+      <h1>Task Card — All Variants</h1>
+      <p>
+        Same base component (<code>createTaskCard</code>) rendered for each project type. Cards
+        below match the mockup: urgent w/ blocker, high in-progress, low done.
+      </p>
+
+      <section class="demo-section" id="demo-kanban">
+        <div class="demo-section-label">Kanban — base card</div>
+        <div class="demo-grid"></div>
+      </section>
+
+      <section class="demo-section" id="demo-scrum">
+        <div class="demo-section-label">
+          Scrum — sprint label + story points in banner, story type in tags
+        </div>
+        <div class="demo-grid"></div>
+      </section>
+
+      <section class="demo-section" id="demo-xp">
+        <div class="demo-section-label">XP — hour estimate in banner, pair assignees at bottom</div>
+        <div class="demo-grid"></div>
+      </section>
+    </div>
+
+    <script type="module" src="task-card-demo.js"></script>
+  </body>
+</html>
