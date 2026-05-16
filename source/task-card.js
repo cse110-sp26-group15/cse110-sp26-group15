@@ -187,10 +187,43 @@ function buildFooter(task, projectType) {
 }
 
 // ── Public API ────────────────────────────────────────
-export function createTaskCard(task, projectType = "kanban") {
+/**
+ * Build a task card DOM element for kanban / scrum / xp dashboards.
+ *
+ * Missing fields are tolerated — the card degrades gracefully (e.g. no
+ * priority defaults to "low", no description hides the row entirely).
+ *
+ * @param {object} task                Task data from the API.
+ * @param {number|string} task.task_id          Set on `data-task-id`.
+ * @param {string}  task.title                  Card title.
+ * @param {string}  [task.description]          Click title/preview to expand.
+ * @param {string}  [task.full_name]            Assignee display name.
+ * @param {"todo"|"in-progress"|"done"|"blocked"} [task.status="todo"]
+ * @param {"urgent"|"high"|"medium"|"low"}        [task.priority="low"]
+ * @param {string}  [task.due_date]             ISO date string (YYYY-MM-DD).
+ * @param {string[]} [task.tags]                Rendered as pills.
+ * @param {boolean} [task.is_blocked]           Shows red blocker chip + status.
+ * @param {string}  [task.blocker_reason]       Shown inside the blocker chip.
+ * @param {number}  [task.story_points]         Scrum only — circle in banner.
+ * @param {string}  [task.sprint]               Scrum only — appended to priority.
+ * @param {string}  [task.story_type]           Scrum only — prepended to tags.
+ * @param {number}  [task.estimate_hours]       XP only — pill in banner.
+ * @param {string}  [task.pair_assignee]        XP only — second avatar + name.
+ *
+ * @param {"kanban"|"scrum"|"xp"} [projectType="kanban"]
+ *        Controls which conditional fields render.
+ *
+ * @param {object}  [options]
+ * @param {boolean} [options.compact=false]     Adds `task-card--compact`
+ *        (hides description preview — useful for dense kanban columns).
+ *
+ * @returns {HTMLElement} A detached <article> ready to be appended.
+ */
+export function createTaskCard(task, projectType = "kanban", { compact = false } = {}) {
   const priority = task.priority ?? "low";
   const card = document.createElement("article");
   card.className = `task-card task-card--priority-${priority} task-card--${projectType}`;
+  if (compact) card.classList.add("task-card--compact");
   card.dataset.taskId = task.task_id;
 
   card.appendChild(buildBanner(task, projectType));
