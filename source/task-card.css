@@ -113,15 +113,15 @@
 .task-card__body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
+  gap: 8px;
+  padding: 10px 12px;
 }
 
 .task-card__title {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.3;
   color: var(--color-text-primary);
 }
 
@@ -143,26 +143,45 @@
   line-height: 1;
 }
 
+.task-card__description-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  cursor: pointer;
+}
+
+.task-card__description-wrap:hover .task-card__description {
+  color: var(--color-text-primary);
+}
+
+.task-card__description-wrap:hover .task-card__description-toggle {
+  color: var(--color-text-secondary);
+}
+
 .task-card__description {
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.35;
   color: var(--color-text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  cursor: pointer;
-}
-
-.task-card__description:hover {
-  color: var(--color-text-primary);
 }
 
 .task-card__description--expanded {
   -webkit-line-clamp: unset;
   display: block;
   overflow: visible;
+}
+
+.task-card__description-toggle {
+  align-self: center;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  user-select: none;
+  margin-top: 2px;
 }
 
 .task-card--compact .task-card__description {
@@ -172,15 +191,15 @@
 .task-card__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 5px;
 }
 
 .task-card__tag {
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 999px;
   background: var(--tag-bg);
   color: var(--tag-fg);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
 }
 
@@ -189,14 +208,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
+  padding: 8px 12px;
   border-top: 1px solid var(--color-border);
 }
 
 .task-card__assignees {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   min-width: 0;
 }
 
@@ -206,25 +225,25 @@
 }
 
 .task-card__avatar {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--color-accent-bg);
   color: var(--color-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   border: 1.5px solid var(--color-bg);
 }
 
 .task-card__avatar--pair {
-  margin-left: -6px;
+  margin-left: -7px;
 }
 
 .task-card__assignee-name {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;

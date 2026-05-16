@@ -7,7 +7,7 @@ const SAMPLE_TASKS = [
     title: "Fix login timeout on mobile devices",
     description:
       "Users on iOS are getting logged out after 30 seconds of inactivity. Need to investigate session refresh.",
-    full_name: "Thomas A.",
+    full_name: "Alex K.",
     status: "in-progress",
     priority: "urgent",
     due_date: "2025-05-18",
@@ -18,14 +18,14 @@ const SAMPLE_TASKS = [
     sprint: "Sprint 3",
     story_type: "bug",
     estimate_hours: 8,
-    pair_assignee: "Erick G.",
+    pair_assignee: "Jordan M.",
   },
   {
     task_id: 2,
     title: "Add filter by priority to dashboard",
     description:
       "Allow users to filter the task list by priority level so they can focus on what matters most this week.",
-    full_name: "Erick G.",
+    full_name: "Jordan M.",
     status: "in-progress",
     priority: "high",
     due_date: "2025-05-20",
@@ -35,14 +35,14 @@ const SAMPLE_TASKS = [
     sprint: "Sprint 3",
     story_type: "story",
     estimate_hours: 4,
-    pair_assignee: "Unnati N.",
+    pair_assignee: "Sam R.",
   },
   {
     task_id: 3,
     title: "Update readme with setup instructions",
     description:
       "Add Wrangler CLI setup steps and environment variable configuration so new contributors can get started quickly.",
-    full_name: "Unnati N.",
+    full_name: "Sam R.",
     status: "done",
     priority: "low",
     due_date: "2025-05-25",
@@ -52,7 +52,7 @@ const SAMPLE_TASKS = [
     sprint: "Sprint 3",
     story_type: "task",
     estimate_hours: 2,
-    pair_assignee: "Michael S.",
+    pair_assignee: "Riley T.",
   },
 ];
 

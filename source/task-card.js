@@ -105,14 +105,30 @@ function buildBody(task, projectType) {
     body.appendChild(blocker);
   }
 
-  const description = document.createElement("p");
-  description.className = "task-card__description";
-  description.textContent = task.description ?? "";
-  description.title = "Click to expand";
-  description.addEventListener("click", () => {
-    description.classList.toggle("task-card__description--expanded");
-  });
-  body.appendChild(description);
+  if (task.description) {
+    const descWrap = document.createElement("div");
+    descWrap.className = "task-card__description-wrap";
+    descWrap.title = "Click to expand";
+
+    const description = document.createElement("p");
+    description.className = "task-card__description";
+    description.textContent = task.description;
+    descWrap.appendChild(description);
+
+    const chevron = document.createElement("span");
+    chevron.className = "task-card__description-toggle";
+    chevron.setAttribute("aria-hidden", "true");
+    chevron.textContent = "▾";
+    descWrap.appendChild(chevron);
+
+    descWrap.addEventListener("click", () => {
+      const expanded = descWrap.classList.toggle("task-card__description-wrap--expanded");
+      description.classList.toggle("task-card__description--expanded", expanded);
+      chevron.textContent = expanded ? "▴" : "▾";
+    });
+
+    body.appendChild(descWrap);
+  }
 
   const tags = [...(task.tags ?? [])];
   if (projectType === "scrum" && task.story_type) {
