@@ -108,6 +108,10 @@ function buildBody(task, projectType) {
   const description = document.createElement("p");
   description.className = "task-card__description";
   description.textContent = task.description ?? "";
+  description.title = "Click to expand";
+  description.addEventListener("click", () => {
+    description.classList.toggle("task-card__description--expanded");
+  });
   body.appendChild(description);
 
   const tags = [...(task.tags ?? [])];

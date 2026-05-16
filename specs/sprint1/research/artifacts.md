@@ -102,7 +102,7 @@ After researching modern productivity and collaboration applications such as Not
 - Attachements
 - Comments
 - Adding tags to cards to show what task the card is related to
-- Date created
+- Due Date
 - Priority
 
 **Features seen on Scrum Cards**
@@ -110,7 +110,7 @@ After researching modern productivity and collaboration applications such as Not
 - Task Name
 - Who is assigned to the task
 - Attaching tags to cards to show what the task the card is related to
-- Date created
+- Due Date
 - Priority
 - User Story
 - Story Points
@@ -122,8 +122,15 @@ After researching modern productivity and collaboration applications such as Not
 - Person 1 asigned
 - Person 2 assigned
 - Adding tags to cards to show what task the card is related to
-- Date created
+- Due Date
 - Priority
 - Iteration
 - Estimate in ideal developer hours
 - Story card reference
+
+**What are the most important visual elements?**
+- Title: 1
+- Priority: 2
+- Category/Type: 5
+- Who is assigned/: 3
+- Status: 4
