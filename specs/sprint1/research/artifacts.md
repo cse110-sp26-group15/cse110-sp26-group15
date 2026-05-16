@@ -129,6 +129,7 @@ After researching modern productivity and collaboration applications such as Not
 - Story card reference
 
 **What are the most important visual elements?**
+
 - Title: 1
 - Priority: 2
 - Category/Type: 5
