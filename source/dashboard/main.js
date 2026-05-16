@@ -21,6 +21,7 @@ async function fetchTasks() {
   return data.tasks ?? [];
 }
 
+// eslint-disable-next-line no-unused-vars
 async function createTask(title) {
   const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`, {
     method: "POST",

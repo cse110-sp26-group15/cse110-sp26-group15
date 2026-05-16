@@ -193,7 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Inject stylesheet
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = "task-form.css";
+  link.href = "../task-form/task-form.css";
   document.head.appendChild(link);
 
   // Remove the old inline form
