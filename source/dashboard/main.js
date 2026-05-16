@@ -95,27 +95,5 @@ async function loadTasks() {
   renderTasks(tasks);
 }
 
-// ── Add Task Form ─────────────────────────────────────
-document.getElementById("add-task-btn")?.addEventListener("click", () => {
-  document.getElementById("add-task-form").classList.remove("hidden");
-  document.getElementById("new-task-title").focus();
-});
-
-document.getElementById("cancel-task-btn")?.addEventListener("click", () => {
-  document.getElementById("add-task-form").classList.add("hidden");
-  document.getElementById("new-task-title").value = "";
-});
-
-document.getElementById("submit-task-btn")?.addEventListener("click", async () => {
-  const input = document.getElementById("new-task-title");
-  const title = input.value.trim();
-  if (!title) return;
-
-  await createTask(title);
-  input.value = "";
-  document.getElementById("add-task-form").classList.add("hidden");
-  loadTasks();
-});
-
 // ── Init ──────────────────────────────────────────────
 loadTasks();
