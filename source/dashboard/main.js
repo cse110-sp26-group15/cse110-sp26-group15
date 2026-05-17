@@ -21,12 +21,17 @@ async function fetchTasks() {
   return data.tasks ?? [];
 }
 
-// eslint-disable-next-line no-unused-vars
-async function createTask(title) {
+async function fetchMembers() {
+  const res = await fetch(`/api/projects/${PROJECT_ID}/members`);
+  const data = await res.json();
+  return data.members ?? [];
+}
+
+async function createTask(title, assignedTo) {
   const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title, assigned_to: assignedTo || null }),
   });
   return res.json();
 }
@@ -45,6 +50,26 @@ async function deleteTask(taskId) {
   return res.json();
 }
 
+// ── Members cache ─────────────────────────────────────
+let projectMembers = [];
+
+function buildAssigneeOptions(selectedUserId) {
+  const unassigned = `<option value=""${!selectedUserId ? " selected" : ""}>Unassigned</option>`;
+  const memberOpts = projectMembers
+    .map(
+      (m) =>
+        `<option value="${m.user_id}"${m.user_id === selectedUserId ? " selected" : ""}>${m.full_name}</option>`
+    )
+    .join("");
+  return unassigned + memberOpts;
+}
+
+function populateCreateFormAssignees() {
+  const sel = document.getElementById("new-task-assignee");
+  if (!sel) return;
+  sel.innerHTML = buildAssigneeOptions(null);
+}
+
 // ── Task UI ───────────────────────────────────────────
 function renderTasks(tasks) {
   const list = document.getElementById("task-list");
@@ -61,7 +86,9 @@ function renderTasks(tasks) {
     <div class="task-card" data-task-id="${t.task_id}">
       <span class="task-title">${t.title}</span>
       <div class="task-meta">
-        <span class="task-assignee">${t.full_name ?? "Unassigned"}</span>
+        <select class="assignee-select" data-task-id="${t.task_id}">
+          ${buildAssigneeOptions(t.user_id)}
+        </select>
         <select class="status-select status-${t.status}" data-task-id="${t.task_id}">
           <option value="todo" ${t.status === "todo" ? "selected" : ""}>Todo</option>
           <option value="in-progress" ${t.status === "in-progress" ? "selected" : ""}>In Progress</option>
@@ -73,6 +100,7 @@ function renderTasks(tasks) {
     )
     .join("");
 
+  // Status change handler
   list.querySelectorAll(".status-select").forEach((sel) => {
     sel.addEventListener("change", async (e) => {
       const taskId = e.target.dataset.taskId;
@@ -82,6 +110,16 @@ function renderTasks(tasks) {
     });
   });
 
+  // Assignee change handler
+  list.querySelectorAll(".assignee-select").forEach((sel) => {
+    sel.addEventListener("change", async (e) => {
+      const taskId = e.target.dataset.taskId;
+      const userId = e.target.value ? Number(e.target.value) : null;
+      await updateTask(taskId, { assigned_to: userId });
+    });
+  });
+
+  // Delete handler
   list.querySelectorAll(".btn-delete").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       const taskId = e.target.dataset.taskId;
@@ -96,5 +134,16 @@ async function loadTasks() {
   renderTasks(tasks);
 }
 
+// Expose to task-form module
+window.getProjectMembers = () => projectMembers;
+window.createTask = createTask;
+window.loadTasks = loadTasks;
+
 // ── Init ──────────────────────────────────────────────
-loadTasks();
+async function init() {
+  projectMembers = await fetchMembers();
+  populateCreateFormAssignees();
+  await loadTasks();
+}
+
+init();

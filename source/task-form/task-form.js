@@ -79,14 +79,26 @@ export function openTaskModal(onSubmit) {
   assigneeLabel.setAttribute("for", "tf-input-assignee");
   assigneeLabel.textContent = "Assignee";
 
-  const assigneeInput = document.createElement("input");
-  assigneeInput.type = "text";
-  assigneeInput.id = "tf-input-assignee";
-  assigneeInput.className = "tf-input";
-  assigneeInput.placeholder = "Name or leave blank";
+  const assigneeSelect = document.createElement("select");
+  assigneeSelect.id = "tf-input-assignee";
+  assigneeSelect.className = "tf-select";
+
+  const unassignedOpt = document.createElement("option");
+  unassignedOpt.value = "";
+  unassignedOpt.textContent = "Unassigned";
+  assigneeSelect.appendChild(unassignedOpt);
+
+  // Populate from cached project members (exposed by main.js)
+  const members = typeof window.getProjectMembers === "function" ? window.getProjectMembers() : [];
+  for (const m of members) {
+    const o = document.createElement("option");
+    o.value = m.user_id;
+    o.textContent = m.full_name;
+    assigneeSelect.appendChild(o);
+  }
 
   assigneeField.appendChild(assigneeLabel);
-  assigneeField.appendChild(assigneeInput);
+  assigneeField.appendChild(assigneeSelect);
 
   const statusField = document.createElement("div");
   statusField.className = "tf-field";
@@ -165,7 +177,7 @@ export function openTaskModal(onSubmit) {
     onSubmit({
       title,
       description: descInput.value.trim(),
-      assigned_to: assigneeInput.value.trim(),
+      assigned_to: assigneeSelect.value ? Number(assigneeSelect.value) : null,
       status: statusSelect.value,
     });
     close();
@@ -201,8 +213,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Hook up the existing add-task button
   document.getElementById("add-task-btn")?.addEventListener("click", () => {
-    openTaskModal((data) => {
-      console.log("New task:", data);
+    openTaskModal(async (data) => {
+      await window.createTask(data.title, data.assigned_to);
+      await window.loadTasks();
     });
   });
 });
