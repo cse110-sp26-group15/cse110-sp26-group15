@@ -28,4 +28,3 @@ Outside lecture hall @ 6:30 PM
 ## To-Do:
 
 - Compelete all assigned issues by Sunday
-
