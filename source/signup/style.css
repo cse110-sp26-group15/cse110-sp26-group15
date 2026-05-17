@@ -1,0 +1,12 @@
+/* Signup-page-specific overrides */
+
+/* Extra top margin before submit to match design */
+#submit-btn {
+  margin-top: 4px;
+}
+
+/* Loading state */
+#submit-btn.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

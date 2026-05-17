@@ -1,0 +1,17 @@
+/* Login-page-specific overrides */
+
+#submit-btn {
+  margin-top: 4px;
+}
+
+/* Loading state */
+#submit-btn.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Slack button icon placeholder */
+.btn-secondary::before {
+  content: "⬡ ";
+  font-size: 14px;
+}

@@ -27,6 +27,7 @@ async function fetchMembers() {
   return data.members ?? [];
 }
 
+// eslint-disable-next-line no-unused-vars
 async function createTask(title, assignedTo) {
   const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`, {
     method: "POST",
@@ -129,36 +130,11 @@ function renderTasks(tasks) {
   });
 }
 
+// eslint-disable-next-line no-unused-vars
 async function loadTasks() {
   const tasks = await fetchTasks();
   renderTasks(tasks);
 }
-
-// ── Add Task Form ─────────────────────────────────────
-document.getElementById("add-task-btn")?.addEventListener("click", () => {
-  document.getElementById("add-task-form").classList.remove("hidden");
-  document.getElementById("new-task-title").focus();
-});
-
-document.getElementById("cancel-task-btn")?.addEventListener("click", () => {
-  document.getElementById("add-task-form").classList.add("hidden");
-  document.getElementById("new-task-title").value = "";
-  document.getElementById("new-task-assignee").value = "";
-});
-
-document.getElementById("submit-task-btn")?.addEventListener("click", async () => {
-  const input = document.getElementById("new-task-title");
-  const assigneeSelect = document.getElementById("new-task-assignee");
-  const title = input.value.trim();
-  if (!title) return;
-
-  const assignedTo = assigneeSelect.value ? Number(assigneeSelect.value) : null;
-  await createTask(title, assignedTo);
-  input.value = "";
-  assigneeSelect.value = "";
-  document.getElementById("add-task-form").classList.add("hidden");
-  loadTasks();
-});
 
 // ── Init ──────────────────────────────────────────────
 async function init() {

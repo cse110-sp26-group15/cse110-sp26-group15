@@ -1,0 +1,2 @@
+ALTER TABLE blockers ADD COLUMN task TEXT;
+ALTER TABLE blockers ADD COLUMN helper TEXT;
