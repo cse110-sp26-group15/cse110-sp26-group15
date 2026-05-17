@@ -43,16 +43,18 @@ function buildBanner(blocker, { onResolve } = {}) {
       button.textContent = "Resolving…";
       try {
         await onResolve(blocker);
+        // Successful resolve usually triggers a rail refresh that removes
+        // this card entirely; if the caller didn't dispatch one, fully
+        // restore the button so it stays usable.
+        button.textContent = originalText;
+        button.disabled = false;
+        delete button.dataset.busy;
       } catch (err) {
         console.warn("[blocker-rail] resolve failed", err);
         button.textContent = "Failed — retry";
         button.disabled = false;
         delete button.dataset.busy;
-        return;
       }
-      // Successful resolve usually triggers a rail refresh (which removes the card),
-      // but if the caller didn't dispatch one, leave the button in a neutral done state.
-      button.textContent = originalText;
     });
     banner.appendChild(button);
   }

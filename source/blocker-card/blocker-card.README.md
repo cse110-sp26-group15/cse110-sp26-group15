@@ -176,8 +176,7 @@ Cards are a fixed `240px` so they line up cleanly in the scroll rail. The rail u
 ## Files
 
 - `blocker-card.js` — DOM builders + pure helpers.
-- `blocker-card-nav.js` — `attachRailNavigation` (click/keyboard behavior).
-- `blocker-card-init.js` — `mountBlockerRail` factory + auto-mount on dashboard.
+- `blocker-card-init.js` — `mountBlockerRail` factory, `attachRailNavigation` (click/keyboard behavior), and auto-mount on dashboard.
 - `blocker-card.css` — styles + scoped tokens.
 - `blocker-card-demo.html` + `blocker-card-demo.js` — live demo (rail + standalone cards).
 

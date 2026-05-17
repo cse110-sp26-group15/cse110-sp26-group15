@@ -5,9 +5,92 @@ import {
   matchTaskByName,
   normalizeTaskName,
 } from "./blocker-card.js";
-import { attachRailNavigation } from "./blocker-card-nav.js";
 
 const DEFAULT_API_URL = "/api/blockers?general=true";
+
+// ── Rail navigation (click + keyboard) ────────────────
+// Caller supplies `findTask` so the lookup strategy stays decoupled from
+// the rail (dashboard matches `#task-list` by title; demo passes a stub
+// that returns null to showcase the missing-state flash).
+const FLASH_TASK_MS = 1600;
+const FLASH_MISSING_MS = 1600;
+const MISSING_LABEL = "Not in current view";
+
+function flashTaskCard(card) {
+  card.scrollIntoView({ behavior: "smooth", block: "center" });
+  card.classList.add("task-card--blocker-highlight");
+  window.setTimeout(() => {
+    card.classList.remove("task-card--blocker-highlight");
+  }, FLASH_TASK_MS);
+}
+
+function ensureLiveRegion(rail) {
+  let region = rail.querySelector(".blocker-rail__live");
+  if (region) return region;
+  region = document.createElement("div");
+  region.className = "blocker-rail__live";
+  region.setAttribute("role", "status");
+  region.setAttribute("aria-live", "polite");
+  rail.appendChild(region);
+  return region;
+}
+
+function announce(rail, message) {
+  const region = ensureLiveRegion(rail);
+  // Clear then set so repeated identical messages re-announce.
+  region.textContent = "";
+  window.setTimeout(() => {
+    region.textContent = message;
+  }, 50);
+}
+
+function flashFooterMissing(footer, rail) {
+  if (footer.dataset.flashing === "1") return;
+  footer.dataset.flashing = "1";
+
+  const arrow = footer.querySelector(".blocker-card__footer-arrow");
+  const originalArrow = arrow ? arrow.textContent : null;
+  if (arrow) arrow.textContent = MISSING_LABEL;
+  footer.classList.add("blocker-card__footer--missing");
+  announce(rail, `${footer.dataset.taskName || "Task"} is not in the current view`);
+
+  window.setTimeout(() => {
+    footer.classList.remove("blocker-card__footer--missing");
+    if (arrow && originalArrow !== null) arrow.textContent = originalArrow;
+    delete footer.dataset.flashing;
+  }, FLASH_MISSING_MS);
+}
+
+function makeNavHandler(rail, findTask) {
+  return (event) => {
+    const footer = event.target.closest(".blocker-card__footer");
+    if (!footer) return;
+    if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+
+    const card = findTask(footer.dataset.taskName);
+    if (card) {
+      flashTaskCard(card);
+    } else {
+      flashFooterMissing(footer, rail);
+    }
+  };
+}
+
+/**
+ * Attach click + Enter/Space activation to a blocker rail.
+ *
+ * @param {HTMLElement} rail         A rail element returned by createBlockerRail.
+ * @param {object}      options
+ * @param {(taskName: string) => HTMLElement | null} options.findTask
+ *        Resolve a task name to a DOM node to scroll-and-highlight, or
+ *        return null to trigger the missing-state flash on the footer.
+ */
+export function attachRailNavigation(rail, { findTask }) {
+  const handler = makeNavHandler(rail, findTask);
+  rail.addEventListener("click", handler);
+  rail.addEventListener("keydown", handler);
+}
 
 // ── Default fetch + lookup (dashboard) ────────────────
 async function defaultFetchBlockers() {
@@ -84,6 +167,12 @@ export async function mountBlockerRail({
 } = {}) {
   if (!container) throw new Error("mountBlockerRail: `container` is required");
 
+  // If this container already has a rail mounted, tear it down first so we
+  // don't stack duplicate `blockers:changed` listeners or leave a stale node.
+  if (container.__blockerRailDestroy) {
+    container.__blockerRailDestroy();
+  }
+
   let currentRail = null;
 
   // Wrap caller's resolver so a successful PATCH automatically triggers a
@@ -128,7 +217,11 @@ export async function mountBlockerRail({
       currentRail.remove();
       currentRail = null;
     }
+    if (container.__blockerRailDestroy === destroy) {
+      delete container.__blockerRailDestroy;
+    }
   }
+  container.__blockerRailDestroy = destroy;
 
   await refresh();
   return { refresh, destroy };

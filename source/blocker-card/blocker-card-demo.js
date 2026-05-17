@@ -37,7 +37,9 @@ async function demoFetchBlockers() {
 }
 
 async function demoResolveBlocker(blocker) {
-  // Real impl would PATCH /api/blockers/:id. Here we just flip the in-memory row.
+  // Real impl would PATCH /api/blockers/:id and match on `blocker_id` — the
+  // field-equality match below is a demo-only shim because mapApiBlocker
+  // doesn't carry the id through yet. Don't copy this pattern into prod code.
   const target = STORE.find(
     (row) =>
       row.task === blocker.task &&
