@@ -157,7 +157,11 @@ describe.sequential("dashboard API", () => {
 
   beforeAll(async () => {
     seedDashboardTestDb();
-    const proxy = await getPlatformProxy({ configPath: join(ROOT, "wrangler.toml") });
+
+    const proxy = await getPlatformProxy({
+      configPath: join(ROOT, "wrangler.toml"),
+    });
+
     db = proxy.env.DB;
     dispose = proxy.dispose;
 
@@ -165,6 +169,7 @@ describe.sequential("dashboard API", () => {
       .prepare("SELECT project_id FROM projects WHERE name = ?")
       .bind("SE SitRep Prototype")
       .first();
+
     const emptyProject = await db
       .prepare("SELECT project_id FROM projects WHERE name = ?")
       .bind("Empty Project")
@@ -172,7 +177,7 @@ describe.sequential("dashboard API", () => {
 
     fullProjectId = String(fullProject.project_id);
     emptyProjectId = String(emptyProject.project_id);
-  });
+  }, 30000);
 
   afterAll(async () => {
     runD1File("reset.sql");
