@@ -21,6 +21,7 @@ async function fetchTasks() {
   return data.tasks ?? [];
 }
 
+// eslint-disable-next-line no-unused-vars
 async function createTask(title) {
   const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`, {
     method: "POST",
@@ -94,28 +95,6 @@ async function loadTasks() {
   const tasks = await fetchTasks();
   renderTasks(tasks);
 }
-
-// ── Add Task Form ─────────────────────────────────────
-document.getElementById("add-task-btn")?.addEventListener("click", () => {
-  document.getElementById("add-task-form").classList.remove("hidden");
-  document.getElementById("new-task-title").focus();
-});
-
-document.getElementById("cancel-task-btn")?.addEventListener("click", () => {
-  document.getElementById("add-task-form").classList.add("hidden");
-  document.getElementById("new-task-title").value = "";
-});
-
-document.getElementById("submit-task-btn")?.addEventListener("click", async () => {
-  const input = document.getElementById("new-task-title");
-  const title = input.value.trim();
-  if (!title) return;
-
-  await createTask(title);
-  input.value = "";
-  document.getElementById("add-task-form").classList.add("hidden");
-  loadTasks();
-});
 
 // ── Init ──────────────────────────────────────────────
 loadTasks();
