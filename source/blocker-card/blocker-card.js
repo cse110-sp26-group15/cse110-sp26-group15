@@ -77,6 +77,7 @@ function buildFooter(blocker) {
   footer.className = "blocker-card__footer";
   footer.dataset.taskName = blocker.task;
   footer.setAttribute("role", "button");
+  footer.setAttribute("aria-label", `Open task: ${blocker.task}`);
   footer.tabIndex = 0;
 
   const label = document.createElement("span");
@@ -87,6 +88,7 @@ function buildFooter(blocker) {
   const arrow = document.createElement("span");
   arrow.className = "blocker-card__footer-arrow";
   arrow.textContent = "›";
+  arrow.setAttribute("aria-hidden", "true");
   footer.appendChild(arrow);
 
   return footer;
@@ -189,4 +191,40 @@ export function mapApiBlocker(apiRow) {
     helper: apiRow.helper ?? null,
     description: apiRow.description ?? "",
   };
+}
+
+/**
+ * Filter blockers to active (unresolved) ones only.
+ *
+ * @param {object[]} blockers
+ * @returns {object[]}
+ */
+export function filterActiveBlockers(blockers) {
+  if (!Array.isArray(blockers)) return [];
+  return blockers.filter((b) => b && b.blocked);
+}
+
+/**
+ * Normalize a task title for fuzzy matching: trim, collapse whitespace,
+ * lowercase. Exported so test code and lookup callers stay aligned.
+ *
+ * @param {string|null|undefined} str
+ * @returns {string}
+ */
+export function normalizeTaskName(str) {
+  return (str ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+/**
+ * Find a task in a list whose `title` matches `taskName` after normalization.
+ * Pure — used by both the dashboard lookup and tests.
+ *
+ * @param {string} taskName
+ * @param {{title?: string}[]} tasks
+ * @returns {object|null}
+ */
+export function matchTaskByName(taskName, tasks) {
+  const target = normalizeTaskName(taskName);
+  if (!target || !Array.isArray(tasks)) return null;
+  return tasks.find((t) => normalizeTaskName(t?.title) === target) ?? null;
 }

@@ -1,0 +1,142 @@
+# Blocker Card Component
+
+A blocker rail for the dashboard: horizontally scrolling row of red "Blocker" cards with a header + count badge. Vanilla JS, no framework, no build step. Same DOM-builder style as `task-card/`.
+
+Live demo: open `source/blocker-card/blocker-card-demo.html` via `npm run dev:pages` (modules don't work over `file://`).
+
+## Quick start (drop-in on the dashboard)
+
+Already wired. `source/dashboard/main.html` loads:
+
+```html
+<link rel="stylesheet" href="../blocker-card/blocker-card.css" />
+<script type="module" src="../blocker-card/blocker-card-init.js"></script>
+```
+
+`blocker-card-init.js` auto-mounts a rail into `#dashboard-view`, before `.section-header`, on any page where those two selectors exist. On other pages it does nothing — no errors, no side effects.
+
+## Quick start (manual mount on another page)
+
+```js
+import { mountBlockerRail } from "../blocker-card/blocker-card-init.js";
+
+const rail = await mountBlockerRail({
+  container: document.getElementById("my-view"),
+  anchor: document.querySelector("#my-view .first-section"), // optional
+});
+
+// after the user creates/resolves a blocker elsewhere:
+await rail.refresh();
+
+// on SPA route change / unmount:
+rail.destroy();
+```
+
+## API
+
+### `mountBlockerRail(options) → Promise<{ refresh, destroy }>`
+
+Mount a rail, return a handle. **Use this from app code** — it handles fetching, mapping, navigation wiring, and DOM insertion.
+
+| Option            | Type                                        | Default                           | Notes                                                              |
+| ----------------- | ------------------------------------------- | --------------------------------- | ------------------------------------------------------------------ |
+| `container`       | `HTMLElement`                               | _required_                        | Where the rail is inserted.                                        |
+| `anchor`          | `HTMLElement \| null`                       | `null`                            | If set and a child of `container`, rail is inserted before it.     |
+| `fetchBlockers`   | `() => Promise<object[]>`                   | hits `/api/blockers?general=true` | Should return raw API rows (the `blockers` array).                 |
+| `findTask`        | `(taskName: string) => HTMLElement \| null` | matches `#task-list .task-card`   | Footer click resolver. See **Footer linking** below.               |
+| `includeResolved` | `boolean`                                   | `false`                           | When false, resolved blockers (`blocked: false`) are filtered out. |
+
+Returns `{ refresh, destroy }`. Call `refresh()` after blocker state changes elsewhere in the app. Call `destroy()` to remove the rail node.
+
+### `createBlockerCard(blocker) → HTMLElement`
+
+Pure DOM builder. Use only if you want a single card outside a rail.
+
+### `createBlockerRail(blockers) → HTMLElement | null`
+
+Pure DOM builder. Returns `null` when `blockers` is empty so callers can hide the rail entirely.
+
+### `attachRailNavigation(rail, { findTask }) → void`
+
+Attach click + Enter/Space activation. Call manually if you used `createBlockerRail` directly instead of `mountBlockerRail`.
+
+### Pure helpers (also exported)
+
+- `mapApiBlocker(apiRow)` — adapt one row from `/api/blockers` to the card shape.
+- `filterActiveBlockers(blockers)` — drop resolved entries.
+- `normalizeTaskName(str)` — same trim/lowercase rule used by `matchTaskByName`.
+- `matchTaskByName(taskName, tasks)` — name-based task lookup (see caveat below).
+
+## Blocker shape
+
+```ts
+{
+  task: string | null; // task name; renders the footer when present
+  blocked: boolean; // true → "BLOCKED", false → "RESOLVED" (and dimmed)
+  helper: string | null; // helper name; renders the "Can help" row when present
+  description: string; // main card body text (2-line clamp)
+}
+```
+
+This is exactly the shape `mapApiBlocker` produces from a `/api/blockers?general=true` row, so most callers won't construct it by hand.
+
+## Footer linking — known limitation
+
+Clicking a card's task footer **does not navigate to the task**. The current behavior:
+
+1. Look up a `.task-card` in `#task-list` whose `.task-title` text matches `blocker.task` (case + whitespace insensitive).
+2. **On match** → scroll into view and flash a red highlight.
+3. **On miss** → the footer shakes, the arrow swaps to "Not in current view" for 1.6 s, and the change is announced to assistive tech via a `role="status"` live region.
+
+**Why it's name-based:** the `/api/blockers` response doesn't include `task_id`. Once the API is extended to return it, replace `findTask` with an id-based lookup and delete the `matchTaskByName` fallback. Until then, editing a task title silently breaks the link.
+
+## Accessibility
+
+- Footer has `role="button"`, `tabIndex=0`, and `aria-label="Open task: <name>"`.
+- `:focus-visible` shows a 2 px red outline.
+- The decorative `›` arrow is `aria-hidden`.
+- Missing-state changes are announced via a visually-hidden `role="status"` live region appended to the rail.
+
+## Styling
+
+### CSS load order — important
+
+`blocker-card.css` references tokens defined in `dashboard/main.css` (`--color-text-primary`, `--color-text-secondary`, `--color-border`, `--color-bg`). **Load `main.css` first**, otherwise text colors and borders silently fall back to browser defaults.
+
+```html
+<link rel="stylesheet" href="../dashboard/main.css" />
+<link rel="stylesheet" href="../blocker-card/blocker-card.css" />
+```
+
+### Tokens
+
+The component defines its own red/green tokens, scoped to `.blocker-rail`, `.blocker-card`, and `.task-card--blocker-highlight` so they don't leak into the global cascade. Override by re-declaring them on the same selectors.
+
+| Token                      | Default   | Used for                            |
+| -------------------------- | --------- | ----------------------------------- |
+| `--blocker-card-bg`        | `#fef2f2` | Card background                     |
+| `--blocker-card-border`    | `#fecaca` | Card border, hover/highlight states |
+| `--blocker-card-fg`        | `#b91c1c` | Header, status label, footer text   |
+| `--blocker-card-fg-muted`  | `#c2515a` | Description copy                    |
+| `--blocker-card-footer-bg` | `#fde2e2` | Task-link footer strip              |
+| `--blocker-helper-bg`      | `#f0fdf4` | "Can help" avatar background        |
+| `--blocker-helper-fg`      | `#15803d` | "Can help" avatar text              |
+| `--blocker-rail-count-bg`  | `#b91c1c` | Count badge background              |
+
+### Sizing
+
+Cards are a fixed `240px` so they line up cleanly in the scroll rail. The rail uses `scroll-snap-type: x mandatory` and shows a thin scrollbar on hover.
+
+## Files
+
+- `blocker-card.js` — DOM builders + pure helpers.
+- `blocker-card-nav.js` — `attachRailNavigation` (click/keyboard behavior).
+- `blocker-card-init.js` — `mountBlockerRail` factory + auto-mount on dashboard.
+- `blocker-card.css` — styles + scoped tokens.
+- `blocker-card-demo.html` + `blocker-card-demo.js` — live demo (rail + standalone cards).
+
+## Tests
+
+Pure helpers are covered in `source/src/tests/blocker-card.test.js` (run with `npm test`).
+
+DOM-level behavior (mount/refresh/click flash) is **not** covered — the project doesn't have a DOM test environment configured. Add `jsdom` or `happy-dom` as a Vitest environment if you want to extend coverage there.

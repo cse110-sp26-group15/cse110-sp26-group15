@@ -1,4 +1,5 @@
 import { createBlockerCard, createBlockerRail, mapApiBlocker } from "./blocker-card.js";
+import { attachRailNavigation } from "./blocker-card-nav.js";
 
 // ── Sample blockers (matches /api/blockers?general=true response rows) ──
 const SAMPLE_API_ROWS = [
@@ -35,7 +36,10 @@ function renderRail() {
   const section = document.getElementById("demo-rail");
   if (!section) return;
   const rail = createBlockerRail(BLOCKERS);
-  if (rail) section.appendChild(rail);
+  if (!rail) return;
+  // Demo has no task list, so every footer click triggers the missing-state flash.
+  attachRailNavigation(rail, { findTask: () => null });
+  section.appendChild(rail);
 }
 
 function renderCards() {

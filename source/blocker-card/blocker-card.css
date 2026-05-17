@@ -1,5 +1,7 @@
-/* ── Blocker card tokens ──────────────────────────── */
-:root {
+/* ── Blocker card tokens (scoped to the component subtree) ── */
+.blocker-rail,
+.blocker-card,
+.task-card--blocker-highlight {
   --blocker-card-bg: #fef2f2;
   --blocker-card-border: #fecaca;
   --blocker-card-fg: #b91c1c;
@@ -63,6 +65,18 @@
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
   padding-bottom: 8px;
+}
+
+.blocker-rail__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .blocker-rail__track::-webkit-scrollbar {
@@ -213,10 +227,14 @@
   border: none;
 }
 
-.blocker-card__footer:hover,
+.blocker-card__footer:hover {
+  background: var(--blocker-card-border);
+}
+
 .blocker-card__footer:focus-visible {
   background: var(--blocker-card-border);
-  outline: none;
+  outline: 2px solid var(--blocker-card-fg);
+  outline-offset: -2px;
 }
 
 .blocker-card__footer-label {
@@ -229,4 +247,51 @@
   font-size: 14px;
   line-height: 1;
   flex-shrink: 0;
+}
+
+/* ── Linked task highlight (applied by blocker-card-init) ── */
+.task-card--blocker-highlight {
+  animation: blocker-highlight-flash 1.6s ease-out;
+}
+
+@keyframes blocker-highlight-flash {
+  0% {
+    background: var(--blocker-card-bg);
+    border-color: var(--blocker-card-border);
+    box-shadow: 0 0 0 3px var(--blocker-card-border);
+  }
+  100% {
+    background: var(--color-bg);
+    border-color: var(--color-border);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* ── Missing-task footer flash ────────────────────── */
+.blocker-card__footer--missing {
+  background: var(--blocker-card-border);
+  color: var(--blocker-card-fg);
+  animation: blocker-footer-shake 0.4s ease-in-out;
+}
+
+.blocker-card__footer--missing .blocker-card__footer-arrow {
+  font-size: 11px;
+  font-weight: 600;
+  font-style: italic;
+  line-height: 1.2;
+}
+
+@keyframes blocker-footer-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-3px);
+  }
+  40%,
+  80% {
+    transform: translateX(3px);
+  }
 }
