@@ -13,12 +13,14 @@ describe("mapApiBlocker", () => {
         task: "Fix login",
         blocked: true,
         helper: "Alex",
+        reported_by: "Sam",
         description: "Token broken",
       })
     ).toEqual({
       task: "Fix login",
       blocked: true,
       helper: "Alex",
+      reportedBy: "Sam",
       description: "Token broken",
     });
   });
@@ -28,6 +30,7 @@ describe("mapApiBlocker", () => {
       task: null,
       blocked: false,
       helper: null,
+      reportedBy: null,
       description: "",
     });
   });
@@ -40,6 +43,18 @@ describe("mapApiBlocker", () => {
 
   it("preserves null helper (no fallback name)", () => {
     expect(mapApiBlocker({ helper: null }).helper).toBeNull();
+  });
+
+  it("renames reported_by → reportedBy and defaults to null", () => {
+    expect(mapApiBlocker({ reported_by: "Sam" }).reportedBy).toBe("Sam");
+    expect(mapApiBlocker({}).reportedBy).toBeNull();
+  });
+
+  it("extracts full_name when reported_by is a {user_id, full_name} object", () => {
+    expect(mapApiBlocker({ reported_by: { user_id: 3, full_name: "Sam Chen" } }).reportedBy).toBe(
+      "Sam Chen"
+    );
+    expect(mapApiBlocker({ reported_by: { user_id: 3 } }).reportedBy).toBeNull();
   });
 });
 

@@ -15,6 +15,9 @@ function buildBanner(blocker, { onResolve } = {}) {
   const banner = document.createElement("div");
   banner.className = "blocker-card__banner";
 
+  const left = document.createElement("div");
+  left.className = "blocker-card__banner-left";
+
   const label = document.createElement("span");
   label.className = "blocker-card__status-label";
 
@@ -23,7 +26,17 @@ function buildBanner(blocker, { onResolve } = {}) {
   label.appendChild(dot);
 
   label.appendChild(document.createTextNode(blocker.blocked ? "BLOCKED" : "RESOLVED"));
-  banner.appendChild(label);
+  left.appendChild(label);
+
+  if (blocker.reportedBy) {
+    const needsHelp = document.createElement("span");
+    needsHelp.className = "blocker-card__needs-help";
+    needsHelp.textContent = blocker.reportedBy;
+    needsHelp.title = `${blocker.reportedBy} needs help`;
+    left.appendChild(needsHelp);
+  }
+
+  banner.appendChild(left);
 
   if (onResolve && blocker.blocked) {
     const button = document.createElement("button");
@@ -143,6 +156,7 @@ function buildFooter(blocker) {
  * @param {string|null} [blocker.task]         Task name; renders the footer when present.
  * @param {boolean} [blocker.blocked]          true → "BLOCKED" label, false → "RESOLVED".
  * @param {string|null} [blocker.helper]       Helper name; renders the "Can help" row.
+ * @param {string|null} [blocker.reportedBy]   Person who needs help; renders a small inline note in the banner when present.
  * @param {string}  [blocker.description]      Main card body text.
  *
  * @param {object}  [options]
@@ -228,10 +242,16 @@ export function createBlockerRail(blockers, { onResolve } = {}) {
  * @returns {object} A blocker object ready for createBlockerCard.
  */
 export function mapApiBlocker(apiRow) {
+  const rawReporter = apiRow.reported_by;
+  const reportedBy =
+    rawReporter && typeof rawReporter === "object"
+      ? (rawReporter.full_name ?? null)
+      : (rawReporter ?? null);
   return {
     task: apiRow.task ?? null,
     blocked: Boolean(apiRow.blocked),
     helper: apiRow.helper ?? null,
+    reportedBy,
     description: apiRow.description ?? "",
   };
 }

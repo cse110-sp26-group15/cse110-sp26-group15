@@ -7,24 +7,28 @@ const SAMPLE_API_ROWS = [
     task: "Add filter by priority to dashboard",
     blocked: true,
     helper: "Sara R.",
+    reported_by: "Mia C.",
     description: "Mobile breakpoints and dark mode tokens are missing from the Figma file.",
   },
   {
     task: "Deploy staging environment",
     blocked: true,
     helper: "Wayne D.",
+    reported_by: "Ren K.",
     description: "Database migration script needs to land before integration testing can begin.",
   },
   {
     task: "Fix login timeout on mobile",
     blocked: true,
     helper: null,
+    reported_by: "Alex P.",
     description: "Security team hasn't provisioned OAuth tokens for prod.",
   },
   {
     task: null,
     blocked: false,
     helper: "Jordan M.",
+    reported_by: null,
     description: "Backend API contract finalized — unblocked the auth team.",
   },
 ];
