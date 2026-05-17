@@ -318,11 +318,32 @@ body {
   color: var(--color-text-muted);
 }
 
+.task-form .assignee-select {
+  min-width: 130px;
+}
+
 .task-empty {
   font-size: 13px;
   color: var(--color-text-muted);
   padding: 24px 0;
   text-align: center;
+}
+
+/* ── Assignee dropdown ─────────────────────────────── */
+.assignee-select {
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+  cursor: pointer;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  outline: none;
+  max-width: 140px;
+}
+
+.assignee-select:focus {
+  border-color: var(--color-accent);
 }
 
 /* ── Status dropdown ───────────────────────────────── */
