@@ -27,7 +27,6 @@ async function fetchMembers() {
   return data.members ?? [];
 }
 
-// eslint-disable-next-line no-unused-vars
 async function createTask(title, assignedTo) {
   const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`, {
     method: "POST",
@@ -130,11 +129,15 @@ function renderTasks(tasks) {
   });
 }
 
-// eslint-disable-next-line no-unused-vars
 async function loadTasks() {
   const tasks = await fetchTasks();
   renderTasks(tasks);
 }
+
+// Expose to task-form module
+window.getProjectMembers = () => projectMembers;
+window.createTask = createTask;
+window.loadTasks = loadTasks;
 
 // ── Init ──────────────────────────────────────────────
 async function init() {

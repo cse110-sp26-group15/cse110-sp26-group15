@@ -88,14 +88,13 @@ export function openTaskModal(onSubmit) {
   unassignedOpt.textContent = "Unassigned";
   assigneeSelect.appendChild(unassignedOpt);
 
-  // Populate from cached project members (set by main.js init)
-  if (typeof projectMembers !== "undefined") {
-    for (const m of projectMembers) {
-      const o = document.createElement("option");
-      o.value = m.user_id;
-      o.textContent = m.full_name;
-      assigneeSelect.appendChild(o);
-    }
+  // Populate from cached project members (exposed by main.js)
+  const members = typeof window.getProjectMembers === "function" ? window.getProjectMembers() : [];
+  for (const m of members) {
+    const o = document.createElement("option");
+    o.value = m.user_id;
+    o.textContent = m.full_name;
+    assigneeSelect.appendChild(o);
   }
 
   assigneeField.appendChild(assigneeLabel);
@@ -215,8 +214,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Hook up the existing add-task button
   document.getElementById("add-task-btn")?.addEventListener("click", () => {
     openTaskModal(async (data) => {
-      await createTask(data.title, data.assigned_to);
-      await loadTasks();
+      await window.createTask(data.title, data.assigned_to);
+      await window.loadTasks();
     });
   });
 });
