@@ -36,6 +36,17 @@ function defaultFindTaskByName(taskName) {
   return null;
 }
 
+// Safe stub used when the caller hasn't supplied a real resolver.
+// Logs a warning so it's obvious the PATCH route isn't wired yet,
+// but throws so the card's button shows the "Failed — retry" state
+// instead of pretending the resolve succeeded.
+async function defaultResolveBlocker() {
+  const msg =
+    "[blocker-rail] resolveBlocker not configured — pass `resolveBlocker` to mountBlockerRail once PATCH /api/blockers/:id exists";
+  console.warn(msg);
+  throw new Error(msg);
+}
+
 // ── Public mount API ──────────────────────────────────
 /**
  * Mount a blocker rail into the page and return handles to refresh / tear it down.
@@ -68,11 +79,19 @@ export async function mountBlockerRail({
   anchor = null,
   fetchBlockers = defaultFetchBlockers,
   findTask = defaultFindTaskByName,
+  resolveBlocker = defaultResolveBlocker,
   includeResolved = false,
 } = {}) {
   if (!container) throw new Error("mountBlockerRail: `container` is required");
 
   let currentRail = null;
+
+  // Wrap caller's resolver so a successful PATCH automatically triggers a
+  // rail refresh — caller code doesn't have to remember to dispatch the event.
+  async function onResolve(blocker) {
+    await resolveBlocker(blocker);
+    document.dispatchEvent(new CustomEvent("blockers:changed"));
+  }
 
   async function refresh() {
     let blockers;
@@ -85,7 +104,7 @@ export async function mountBlockerRail({
     }
     if (!includeResolved) blockers = filterActiveBlockers(blockers);
 
-    const nextRail = createBlockerRail(blockers);
+    const nextRail = createBlockerRail(blockers, { onResolve });
     if (currentRail) currentRail.remove();
     currentRail = nextRail;
     if (!nextRail) return;
@@ -98,7 +117,13 @@ export async function mountBlockerRail({
     }
   }
 
+  function refreshOnEvent() {
+    refresh().catch((err) => console.warn("[blocker-rail] event-triggered refresh failed", err));
+  }
+  document.addEventListener("blockers:changed", refreshOnEvent);
+
   function destroy() {
+    document.removeEventListener("blockers:changed", refreshOnEvent);
     if (currentRail) {
       currentRail.remove();
       currentRail = null;

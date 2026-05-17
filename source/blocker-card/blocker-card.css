@@ -145,6 +145,39 @@
   background: var(--blocker-helper-fg);
 }
 
+.blocker-card__resolve {
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--blocker-card-fg);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+}
+
+.blocker-card__resolve:hover {
+  background: var(--blocker-helper-bg);
+  border-color: var(--blocker-helper-fg);
+  color: var(--blocker-helper-fg);
+}
+
+.blocker-card__resolve:focus-visible {
+  outline: 2px solid var(--blocker-helper-fg);
+  outline-offset: 1px;
+}
+
+.blocker-card__resolve:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 /* ── Body ─────────────────────────────────────────── */
 .blocker-card__body {
   flex: 1 1 auto;

@@ -1,5 +1,5 @@
-import { createBlockerCard, createBlockerRail, mapApiBlocker } from "./blocker-card.js";
-import { attachRailNavigation } from "./blocker-card-nav.js";
+import { createBlockerCard, mapApiBlocker } from "./blocker-card.js";
+import { mountBlockerRail } from "./blocker-card-init.js";
 
 // ── Sample blockers (matches /api/blockers?general=true response rows) ──
 const SAMPLE_API_ROWS = [
@@ -29,26 +29,40 @@ const SAMPLE_API_ROWS = [
   },
 ];
 
-const BLOCKERS = SAMPLE_API_ROWS.map(mapApiBlocker);
+// ── In-memory store (stands in for the API) ───────────
+const STORE = SAMPLE_API_ROWS.map((row, idx) => ({ ...row, blocker_id: idx + 1 }));
 
-// ── Render ────────────────────────────────────────────
-function renderRail() {
-  const section = document.getElementById("demo-rail");
-  if (!section) return;
-  const rail = createBlockerRail(BLOCKERS);
-  if (!rail) return;
-  // Demo has no task list, so every footer click triggers the missing-state flash.
-  attachRailNavigation(rail, { findTask: () => null });
-  section.appendChild(rail);
+async function demoFetchBlockers() {
+  return STORE.slice();
 }
 
-function renderCards() {
+async function demoResolveBlocker(blocker) {
+  // Real impl would PATCH /api/blockers/:id. Here we just flip the in-memory row.
+  const target = STORE.find(
+    (row) =>
+      row.task === blocker.task &&
+      row.description === blocker.description &&
+      row.helper === blocker.helper
+  );
+  if (target) target.blocked = false;
+}
+
+// ── Render the live rail (using the real mount factory) ──
+mountBlockerRail({
+  container: document.getElementById("demo-rail"),
+  fetchBlockers: demoFetchBlockers,
+  resolveBlocker: demoResolveBlocker,
+  findTask: () => null, // demo has no task list — every footer click shows the missing flash
+});
+
+// ── Static card grid (no rail) showing visual variants ──
+// No onResolve here — these cards are visual references only.
+function renderStaticCards() {
   const grid = document.querySelector("#demo-cards .demo-grid");
   if (!grid) return;
-  BLOCKERS.forEach((blocker) => {
+  SAMPLE_API_ROWS.map(mapApiBlocker).forEach((blocker) => {
     grid.appendChild(createBlockerCard(blocker));
   });
 }
 
-renderRail();
-renderCards();
+renderStaticCards();

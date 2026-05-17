@@ -11,7 +11,7 @@ function initials(name) {
 }
 
 // ── Sections ──────────────────────────────────────────
-function buildBanner(blocker) {
+function buildBanner(blocker, { onResolve } = {}) {
   const banner = document.createElement("div");
   banner.className = "blocker-card__banner";
 
@@ -24,6 +24,38 @@ function buildBanner(blocker) {
 
   label.appendChild(document.createTextNode(blocker.blocked ? "BLOCKED" : "RESOLVED"));
   banner.appendChild(label);
+
+  if (onResolve && blocker.blocked) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "blocker-card__resolve";
+    button.setAttribute(
+      "aria-label",
+      `Mark blocker as resolved: ${blocker.task ?? blocker.description ?? ""}`.trim()
+    );
+    button.textContent = "✓ Resolve";
+    button.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      if (button.dataset.busy === "1") return;
+      button.dataset.busy = "1";
+      button.disabled = true;
+      const originalText = button.textContent;
+      button.textContent = "Resolving…";
+      try {
+        await onResolve(blocker);
+      } catch (err) {
+        console.warn("[blocker-rail] resolve failed", err);
+        button.textContent = "Failed — retry";
+        button.disabled = false;
+        delete button.dataset.busy;
+        return;
+      }
+      // Successful resolve usually triggers a rail refresh (which removes the card),
+      // but if the caller didn't dispatch one, leave the button in a neutral done state.
+      button.textContent = originalText;
+    });
+    banner.appendChild(button);
+  }
 
   return banner;
 }
@@ -111,14 +143,20 @@ function buildFooter(blocker) {
  * @param {string|null} [blocker.helper]       Helper name; renders the "Can help" row.
  * @param {string}  [blocker.description]      Main card body text.
  *
+ * @param {object}  [options]
+ * @param {(blocker: object) => Promise<void> | void} [options.onResolve]
+ *        When provided (and blocker.blocked is true), renders a "Resolve" button
+ *        in the banner. The handler should perform the PATCH and is expected to
+ *        trigger a `blockers:changed` event (mountBlockerRail does this for you).
+ *
  * @returns {HTMLElement} A detached <article> ready to be appended.
  */
-export function createBlockerCard(blocker) {
+export function createBlockerCard(blocker, { onResolve } = {}) {
   const card = document.createElement("article");
   card.className = "blocker-card";
   if (!blocker.blocked) card.classList.add("blocker-card--resolved");
 
-  card.appendChild(buildBanner(blocker));
+  card.appendChild(buildBanner(blocker, { onResolve }));
   card.appendChild(buildBody(blocker));
 
   const people = buildPeople(blocker);
@@ -137,9 +175,12 @@ export function createBlockerCard(blocker) {
  * (no empty state).
  *
  * @param {object[]} blockers  Array of blocker objects (see createBlockerCard).
+ * @param {object}   [options]
+ * @param {(blocker: object) => Promise<void> | void} [options.onResolve]
+ *        Forwarded to every card. See createBlockerCard for behavior.
  * @returns {HTMLElement|null} A detached <section> or null if blockers is empty.
  */
-export function createBlockerRail(blockers) {
+export function createBlockerRail(blockers, { onResolve } = {}) {
   if (!Array.isArray(blockers) || blockers.length === 0) return null;
 
   const rail = document.createElement("section");
@@ -169,7 +210,7 @@ export function createBlockerRail(blockers) {
   const track = document.createElement("div");
   track.className = "blocker-rail__track";
   blockers.forEach((blocker) => {
-    track.appendChild(createBlockerCard(blocker));
+    track.appendChild(createBlockerCard(blocker, { onResolve }));
   });
   rail.appendChild(track);
 

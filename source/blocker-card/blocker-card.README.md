@@ -38,15 +38,28 @@ rail.destroy();
 
 Mount a rail, return a handle. **Use this from app code** — it handles fetching, mapping, navigation wiring, and DOM insertion.
 
-| Option            | Type                                        | Default                           | Notes                                                              |
-| ----------------- | ------------------------------------------- | --------------------------------- | ------------------------------------------------------------------ |
-| `container`       | `HTMLElement`                               | _required_                        | Where the rail is inserted.                                        |
-| `anchor`          | `HTMLElement \| null`                       | `null`                            | If set and a child of `container`, rail is inserted before it.     |
-| `fetchBlockers`   | `() => Promise<object[]>`                   | hits `/api/blockers?general=true` | Should return raw API rows (the `blockers` array).                 |
-| `findTask`        | `(taskName: string) => HTMLElement \| null` | matches `#task-list .task-card`   | Footer click resolver. See **Footer linking** below.               |
-| `includeResolved` | `boolean`                                   | `false`                           | When false, resolved blockers (`blocked: false`) are filtered out. |
+| Option            | Type                                         | Default                           | Notes                                                              |
+| ----------------- | -------------------------------------------- | --------------------------------- | ------------------------------------------------------------------ |
+| `container`       | `HTMLElement`                                | _required_                        | Where the rail is inserted.                                        |
+| `anchor`          | `HTMLElement \| null`                        | `null`                            | If set and a child of `container`, rail is inserted before it.     |
+| `fetchBlockers`   | `() => Promise<object[]>`                    | hits `/api/blockers?general=true` | Should return raw API rows (the `blockers` array).                 |
+| `findTask`        | `(taskName: string) => HTMLElement \| null`  | matches `#task-list .task-card`   | Footer click resolver. See **Footer linking** below.               |
+| `resolveBlocker`  | `(blocker: object) => Promise<void> \| void` | stub that warns + throws          | Per-card Resolve button handler. See **Resolving blockers** below. |
+| `includeResolved` | `boolean`                                    | `false`                           | When false, resolved blockers (`blocked: false`) are filtered out. |
 
 Returns `{ refresh, destroy }`. Call `refresh()` after blocker state changes elsewhere in the app. Call `destroy()` to remove the rail node.
+
+### Refresh from anywhere via custom event
+
+You usually don't have a reference to the rail handle from feature code (e.g. a check-in form that creates blockers). Instead, dispatch a `blockers:changed` event on `document` — every mounted rail listens for it and refreshes itself:
+
+```js
+// in a form's submit handler, after POST /blockers resolves:
+await fetch("/api/projects/1/blockers", { method: "POST", body: ... });
+document.dispatchEvent(new CustomEvent("blockers:changed"));
+```
+
+No import, no shared state, no coupling to this module. The listener is wired by `mountBlockerRail` and torn down by `destroy()`.
 
 ### `createBlockerCard(blocker) → HTMLElement`
 
@@ -79,6 +92,39 @@ Attach click + Enter/Space activation. Call manually if you used `createBlockerR
 ```
 
 This is exactly the shape `mapApiBlocker` produces from a `/api/blockers?general=true` row, so most callers won't construct it by hand.
+
+## Resolving blockers
+
+Each active card shows a small **"✓ Resolve"** button in its banner when a `resolveBlocker` handler is configured. Click flow:
+
+1. Button enters a loading state (`disabled`, label → "Resolving…").
+2. `resolveBlocker(blocker)` runs. On success, `mountBlockerRail` dispatches `blockers:changed` automatically, which triggers a refresh and removes the resolved card from the rail.
+3. On error, the button shows "Failed — retry" and is re-enabled.
+
+### Today's default (PATCH endpoint not yet implemented)
+
+Issue #17 lists `PATCH /blockers/:blockerId` as planned but unbuilt. Until that lands, the default `resolveBlocker` logs a warning and throws — clicking the button on the live dashboard will show the "Failed — retry" state. **The demo page (`blocker-card-demo.html`) passes a working in-memory resolver so you can see the full success flow.**
+
+### Wiring the real handler once the PATCH endpoint exists
+
+When the endpoint lands and `/api/blockers` starts returning `blocker_id`, swap one function:
+
+```js
+mountBlockerRail({
+  container: document.getElementById("dashboard-view"),
+  anchor: document.querySelector(".section-header"),
+  resolveBlocker: async (blocker) => {
+    const res = await fetch(`/api/blockers/${blocker.blocker_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_resolved: true }),
+    });
+    if (!res.ok) throw new Error(`PATCH failed: ${res.status}`);
+  },
+});
+```
+
+This means replacing the auto-mount in `blocker-card-init.js`, or calling `mountBlockerRail` manually from `main.js`.
 
 ## Footer linking — known limitation
 
