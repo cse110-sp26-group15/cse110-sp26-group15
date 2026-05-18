@@ -1,4 +1,5 @@
 import {
+  createBlockerPlaceholder,
   createBlockerRail,
   filterActiveBlockers,
   mapApiBlocker,
@@ -234,19 +235,68 @@ export async function mountBlockerRail({
   return { refresh, destroy };
 }
 
+// ── Placeholder collapse toggle ───────────────────────
+// Shares the "blocker-rail:collapsed" localStorage key with createBlockerRail
+// so toggling either state stays consistent when the rail appears/disappears.
+function setupPlaceholderToggle(placeholder) {
+  placeholder.setAttribute("role", "button");
+  placeholder.setAttribute("tabindex", "0");
+  placeholder.setAttribute("aria-expanded", "true");
+  placeholder.setAttribute("aria-label", "Toggle blockers section");
+
+  function setCollapsed(collapsed) {
+    placeholder.dataset.collapsed = String(collapsed);
+    placeholder.setAttribute("aria-expanded", String(!collapsed));
+    try {
+      localStorage.setItem("blocker-rail:collapsed", String(collapsed));
+    } catch {
+      /* localStorage unavailable */
+    }
+  }
+
+  placeholder.addEventListener("click", () => {
+    setCollapsed(placeholder.dataset.collapsed !== "true");
+  });
+  placeholder.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setCollapsed(placeholder.dataset.collapsed !== "true");
+    }
+  });
+
+  try {
+    if (localStorage.getItem("blocker-rail:collapsed") === "true") {
+      placeholder.dataset.collapsed = "true";
+      placeholder.setAttribute("aria-expanded", "false");
+    }
+  } catch {
+    /* localStorage unavailable */
+  }
+}
+
 // ── Auto-mount on the dashboard view only ─────────────
 async function autoMountIfDashboard() {
   const container = document.getElementById("dashboard-view");
   if (!container) return;
-  // Anchor to the placeholder when present so the real rail lands in the
-  // same spot dashboard designers reserved space for; otherwise fall back
-  // to before the section header.
-  const anchor =
-    container.querySelector("[data-blocker-placeholder]") ??
-    container.querySelector(".section-header");
-  if (!anchor) return;
+
+  // Create the placeholder if a dashboard didn't author one inline. Default
+  // location: right after the section header. Dashboards can opt out of
+  // auto-creation by inserting their own `[data-blocker-placeholder]`.
+  let placeholder = container.querySelector("[data-blocker-placeholder]");
+  if (!placeholder) {
+    placeholder = createBlockerPlaceholder();
+    const sectionHeader = container.querySelector(".section-header");
+    if (sectionHeader) {
+      sectionHeader.insertAdjacentElement("afterend", placeholder);
+    } else {
+      container.prepend(placeholder);
+    }
+  }
+  setupPlaceholderToggle(placeholder);
+
+  // Anchor the rail to the placeholder so it lands in the same reserved spot.
   try {
-    await mountBlockerRail({ container, anchor });
+    await mountBlockerRail({ container, anchor: placeholder });
   } catch (err) {
     console.warn("[blocker-rail] auto-mount failed", err);
   }

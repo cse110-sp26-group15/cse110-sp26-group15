@@ -204,6 +204,10 @@ export function createBlockerRail(blockers, { onResolve } = {}) {
 
   const header = document.createElement("div");
   header.className = "blocker-rail__header";
+  header.setAttribute("role", "button");
+  header.setAttribute("tabindex", "0");
+  header.setAttribute("aria-expanded", "true");
+  header.setAttribute("aria-label", "Toggle blockers list");
 
   const title = document.createElement("h2");
   title.className = "blocker-rail__title";
@@ -221,6 +225,23 @@ export function createBlockerRail(blockers, { onResolve } = {}) {
   title.appendChild(count);
 
   header.appendChild(title);
+
+  const toggle = document.createElement("span");
+  toggle.className = "blocker-rail__toggle";
+
+  const toggleLabel = document.createElement("span");
+  toggleLabel.className = "blocker-rail__toggle-label";
+  toggleLabel.setAttribute("aria-hidden", "true");
+  toggle.appendChild(toggleLabel);
+
+  const chevron = document.createElement("span");
+  chevron.className = "blocker-rail__chevron";
+  chevron.setAttribute("aria-hidden", "true");
+  chevron.textContent = "▾";
+  toggle.appendChild(chevron);
+
+  header.appendChild(toggle);
+
   rail.appendChild(header);
 
   const track = document.createElement("div");
@@ -230,7 +251,87 @@ export function createBlockerRail(blockers, { onResolve } = {}) {
   });
   rail.appendChild(track);
 
+  // Persist across the recreate-on-refresh that mountBlockerRail does, so
+  // resolving a blocker doesn't re-expand a section the user collapsed.
+  function setCollapsed(collapsed) {
+    rail.dataset.collapsed = String(collapsed);
+    header.setAttribute("aria-expanded", String(!collapsed));
+    try {
+      localStorage.setItem("blocker-rail:collapsed", String(collapsed));
+    } catch {
+      /* localStorage unavailable — silently skip persistence */
+    }
+  }
+
+  header.addEventListener("click", () => {
+    setCollapsed(rail.dataset.collapsed !== "true");
+  });
+  header.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setCollapsed(rail.dataset.collapsed !== "true");
+    }
+  });
+
+  try {
+    if (localStorage.getItem("blocker-rail:collapsed") === "true") {
+      rail.dataset.collapsed = "true";
+      header.setAttribute("aria-expanded", "false");
+    }
+  } catch {
+    /* localStorage unavailable */
+  }
+
   return rail;
+}
+
+/**
+ * Build the empty-state / reserved-space placeholder that dashboards show
+ * when no active blockers are loaded. The placeholder is collapsible — the
+ * toggle wiring is attached in blocker-card-init.js once it's in the DOM.
+ *
+ * Centralizing this means new dashboards don't need to copy a ~10-line HTML
+ * block, and structural changes happen in one place.
+ *
+ * @returns {HTMLElement} A detached <div data-blocker-placeholder>.
+ */
+export function createBlockerPlaceholder() {
+  const root = document.createElement("div");
+  root.className = "blocker-rail-placeholder";
+  root.setAttribute("data-blocker-placeholder", "");
+
+  const labelWrap = document.createElement("span");
+  labelWrap.className = "blocker-rail-placeholder__label";
+
+  const icon = document.createElement("span");
+  icon.className = "blocker-rail-placeholder__icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = "✓";
+  labelWrap.appendChild(icon);
+
+  const text = document.createElement("span");
+  text.textContent = "No current blockers";
+  labelWrap.appendChild(text);
+
+  root.appendChild(labelWrap);
+
+  const toggle = document.createElement("span");
+  toggle.className = "blocker-rail-placeholder__toggle";
+
+  const toggleLabel = document.createElement("span");
+  toggleLabel.className = "blocker-rail-placeholder__toggle-label";
+  toggleLabel.setAttribute("aria-hidden", "true");
+  toggle.appendChild(toggleLabel);
+
+  const chevron = document.createElement("span");
+  chevron.className = "blocker-rail-placeholder__chevron";
+  chevron.setAttribute("aria-hidden", "true");
+  chevron.textContent = "▾";
+  toggle.appendChild(chevron);
+
+  root.appendChild(toggle);
+
+  return root;
 }
 
 /**

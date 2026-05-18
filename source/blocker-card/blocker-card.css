@@ -17,6 +17,7 @@
 
 /* ── Placeholder (reserves space for other dashboards) ── */
 .blocker-rail-placeholder {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -29,15 +30,80 @@
   color: var(--color-text-secondary, #6b7280);
   font-size: 13px;
   font-style: italic;
+  cursor: pointer;
+  user-select: none;
+}
+
+.blocker-rail-placeholder:focus-visible {
+  outline: 2px solid var(--color-text-secondary, #6b7280);
+  outline-offset: 2px;
+}
+
+.blocker-rail-placeholder[data-collapsed="true"] {
+  min-height: 0;
+  padding: 10px 14px;
 }
 
 .blocker-rail-placeholder[hidden] {
   display: none;
 }
 
+.blocker-rail-placeholder__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .blocker-rail-placeholder__icon {
   font-style: normal;
   color: var(--color-text-secondary, #6b7280);
+}
+
+.blocker-rail-placeholder__toggle {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-style: normal;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.blocker-rail-placeholder:hover .blocker-rail-placeholder__toggle {
+  color: var(--color-text-primary, #111827);
+}
+
+.blocker-rail-placeholder__toggle-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.blocker-rail-placeholder__toggle-label::before {
+  content: "Hide";
+}
+
+.blocker-rail-placeholder[data-collapsed="true"] .blocker-rail-placeholder__toggle-label::before {
+  content: "Show";
+}
+
+.blocker-rail-placeholder__chevron {
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.blocker-rail-placeholder[data-collapsed="true"] .blocker-rail-placeholder__chevron {
+  transform: rotate(-90deg);
+}
+
+/* When collapsed, the placeholder is short — flow the toggle inline so it
+   sits next to the label instead of floating above it. */
+.blocker-rail-placeholder[data-collapsed="true"] .blocker-rail-placeholder__toggle {
+  position: static;
+  margin-left: auto;
 }
 
 /* ── Rail ─────────────────────────────────────────── */
@@ -53,6 +119,54 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.blocker-rail__header:focus-visible {
+  outline: 2px solid var(--blocker-card-fg);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.blocker-rail__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--blocker-card-fg-muted);
+}
+
+.blocker-rail__header:hover .blocker-rail__toggle {
+  color: var(--blocker-card-fg);
+}
+
+.blocker-rail__toggle-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.blocker-rail__toggle-label::before {
+  content: "Hide";
+}
+
+.blocker-rail[data-collapsed="true"] .blocker-rail__toggle-label::before {
+  content: "Show";
+}
+
+.blocker-rail__chevron {
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.blocker-rail[data-collapsed="true"] .blocker-rail__chevron {
+  transform: rotate(-90deg);
+}
+
+.blocker-rail[data-collapsed="true"] .blocker-rail__track {
+  display: none;
 }
 
 .blocker-rail__title {
