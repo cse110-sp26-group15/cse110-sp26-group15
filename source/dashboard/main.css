@@ -395,6 +395,137 @@ body {
   text-decoration: underline;
 }
 
+/* ── Check-ins section ─────────────────────────────── */
+.section-subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-left: 6px;
+}
+
+.checkin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkin-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.checkin-row-ai {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+.checkin-avatar {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.checkin-source {
+  width: 26px;
+  height: 18px;
+  border-radius: 4px;
+  background: #6d28d9;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.checkin-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checkin-headline {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkin-body {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkin-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.checkin-badge-on-track {
+  color: #15803d;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.checkin-badge-blocked {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.checkin-badge-in-progress {
+  color: #0e7490;
+  border-color: #a5f3fc;
+  background: #ecfeff;
+}
+
+.checkin-badge-running {
+  color: #15803d;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.checkin-badge-needs-review {
+  color: #b45309;
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.checkin-badge-default {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.checkin-time {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  min-width: 56px;
+  text-align: right;
+}
+
+.checkin-row-ai .checkin-time {
+  color: #6d28d9;
+}
+
 /* ── Tasks ─────────────────────────────────────────── */
 .section-header {
   display: flex;
