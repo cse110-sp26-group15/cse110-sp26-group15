@@ -48,9 +48,10 @@ function notifyChange(ctx, task, fields) {
   }
 }
 
-function buildPrioritySelect(task, currentPriority, iconEl, ctx) {
+function buildPrioritySelect(task, currentPriority, iconEl, textEl, ctx) {
   const select = document.createElement("select");
   select.className = "task-card__select task-card__select--priority";
+  select.setAttribute("aria-label", "Priority");
   ["urgent", "high", "medium", "low"].forEach((p) => {
     const opt = document.createElement("option");
     opt.value = p;
@@ -66,6 +67,7 @@ function buildPrioritySelect(task, currentPriority, iconEl, ctx) {
     });
     ctx.card.classList.add(`task-card--priority-${newPriority}`);
     iconEl.textContent = PRIORITY_ICONS[newPriority] ?? "";
+    if (textEl) textEl.textContent = capitalize(newPriority);
     notifyChange(ctx, task, { priority: newPriority });
   });
 
@@ -96,6 +98,102 @@ function buildStatusSelect(task, ctx) {
   });
 
   return select;
+}
+
+function buildBlockerControl(task, ctx) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "task-card__blocker-control";
+
+  const state = {
+    blocked: !!task.is_blocked,
+    reason: task.blocker_reason ?? "",
+  };
+
+  let render;
+
+  const renderBlocked = () => {
+    wrapper.innerHTML = "";
+    const chip = document.createElement("div");
+    chip.className = "task-card__blocker";
+
+    const icon = document.createElement("span");
+    icon.className = "task-card__blocker-icon";
+    icon.textContent = "⊘";
+    chip.appendChild(icon);
+
+    chip.appendChild(document.createTextNode(state.reason || "Blocked"));
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "task-card__blocker-remove";
+    remove.textContent = "✕";
+    remove.title = "Remove blocker";
+    remove.addEventListener("click", () => {
+      state.blocked = false;
+      state.reason = "";
+      render();
+      notifyChange(ctx, task, { is_blocked: false, blocker_reason: null });
+    });
+    chip.appendChild(remove);
+
+    wrapper.appendChild(chip);
+  };
+
+  const renderAdd = () => {
+    wrapper.innerHTML = "";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "task-card__blocker-add";
+    button.textContent = "+ Add blocker";
+    button.addEventListener("click", () => {
+      wrapper.innerHTML = "";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "task-card__blocker-input";
+      input.placeholder = "Why is this blocked?";
+      wrapper.appendChild(input);
+      input.focus();
+
+      let committed = false;
+      const submit = () => {
+        if (committed) return;
+        committed = true;
+        const v = input.value.trim();
+        if (v) {
+          state.blocked = true;
+          state.reason = v;
+          render();
+          notifyChange(ctx, task, { is_blocked: true, blocker_reason: v });
+        } else {
+          render();
+        }
+      };
+      const cancel = () => {
+        if (committed) return;
+        committed = true;
+        render();
+      };
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          submit();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          cancel();
+        }
+      });
+      input.addEventListener("blur", submit);
+    });
+    wrapper.appendChild(button);
+  };
+
+  render = () => {
+    if (state.blocked) renderBlocked();
+    else renderAdd();
+  };
+  render();
+  return wrapper;
 }
 
 function buildAssigneeSelect(task, members, avatarEl, pairFirstName, ctx) {
@@ -148,14 +246,25 @@ function buildBanner(task, projectType, ctx) {
   const icon = document.createElement("span");
   icon.className = "task-card__priority-icon";
   icon.textContent = PRIORITY_ICONS[priority] ?? "";
-  label.appendChild(icon);
 
   if (ctx?.interactive) {
-    label.appendChild(buildPrioritySelect(task, priority, icon, ctx));
+    const target = document.createElement("span");
+    target.className = "task-card__priority-target";
+    target.appendChild(icon);
+
+    const textEl = document.createElement("span");
+    textEl.className = "task-card__priority-text";
+    textEl.textContent = capitalize(priority);
+    target.appendChild(textEl);
+
+    target.appendChild(buildPrioritySelect(task, priority, icon, textEl, ctx));
+    label.appendChild(target);
+
     if (projectType === "scrum" && task.sprint) {
       label.appendChild(document.createTextNode(` · ${task.sprint}`));
     }
   } else {
+    label.appendChild(icon);
     let text = capitalize(priority);
     if (projectType === "scrum" && task.sprint) {
       text += ` · ${task.sprint}`;
@@ -190,7 +299,7 @@ function buildBanner(task, projectType, ctx) {
   return banner;
 }
 
-function buildBody(task, projectType) {
+function buildBody(task, projectType, ctx) {
   const body = document.createElement("div");
   body.className = "task-card__body";
 
@@ -199,7 +308,9 @@ function buildBody(task, projectType) {
   title.textContent = task.title ?? "";
   body.appendChild(title);
 
-  if (task.is_blocked) {
+  if (ctx?.interactive) {
+    body.appendChild(buildBlockerControl(task, ctx));
+  } else if (task.is_blocked) {
     const blocker = document.createElement("div");
     blocker.className = "task-card__blocker";
 
@@ -293,7 +404,7 @@ function buildFooter(task, projectType, ctx) {
 
   footer.appendChild(assignees);
 
-  if (ctx?.interactive && !task.is_blocked) {
+  if (ctx?.interactive) {
     footer.appendChild(buildStatusSelect(task, ctx));
   } else {
     const statusKey = task.is_blocked ? "blocked" : (task.status ?? "todo");
@@ -363,7 +474,7 @@ export function createTaskCard(task, projectType = "kanban", options = {}) {
   };
 
   card.appendChild(buildBanner(task, projectType, ctx));
-  card.appendChild(buildBody(task, projectType));
+  card.appendChild(buildBody(task, projectType, ctx));
   card.appendChild(buildFooter(task, projectType, ctx));
 
   return card;

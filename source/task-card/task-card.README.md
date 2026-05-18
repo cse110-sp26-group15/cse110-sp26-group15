@@ -47,7 +47,7 @@ Returns a detached `<article>` element. Append it wherever you want.
 | ---------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `compact`  | boolean                             | Hides the description preview (`task-card--compact`).                                                                                                                                                                                       |
 | `members`  | `{ user_id, full_name }[]`          | Required to enable the assignee dropdown.                                                                                                                                                                                                   |
-| `onChange` | `(taskId, fields) => void\|Promise` | When provided, status / priority / assignee become editable `<select>`s. Called with only the changed field — e.g. `{ status: "done" }`, `{ priority: "high" }`, `{ assigned_to: 4 }` (or `null` = unassigned). Wire this up to your PATCH. |
+| `onChange` | `(taskId, fields) => void\|Promise` | When provided, status / priority / assignee become editable `<select>`s and an "+ Add blocker" affordance appears in the body. Called with only the changed field — e.g. `{ status: "done" }`, `{ priority: "high" }`, `{ assigned_to: 4 }` (or `null` = unassigned), or `{ is_blocked: true, blocker_reason: "Waiting on API" }` / `{ is_blocked: false, blocker_reason: null }`. Wire this up to your PATCH. |
 
 If `onChange` is omitted the card renders read-only (existing behavior). If `onChange` is provided but `members` is not, status + priority become editable but the assignee stays static.
 
@@ -68,7 +68,7 @@ createTaskCard(task, "kanban", {
 });
 ```
 
-> Note: the current `/api/tasks/:taskId` PATCH accepts `status` and `assigned_to`. Priority changes update the card visually and fire `onChange`, but the field is not yet persisted in the schema.
+> Note: the current `/api/tasks/:taskId` PATCH accepts `status` and `assigned_to`. Priority and blocker changes update the card visually and fire `onChange`, but those fields are not yet persisted in the `tasks` schema.
 
 ## Task shape
 

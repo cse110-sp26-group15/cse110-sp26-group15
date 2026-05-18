@@ -304,22 +304,14 @@
   color: inherit;
   font: inherit;
   cursor: pointer;
-  padding: 0 12px 0 0;
+  padding: 0;
   margin: 0;
   outline: none;
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
-    linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-position:
-    right 4px top 50%,
-    right 1px top 50%;
-  background-size:
-    4px 4px,
-    4px 4px;
-  background-repeat: no-repeat;
+  transition: filter 0.12s ease;
 }
 
 .task-card__select:hover {
-  opacity: 0.85;
+  filter: brightness(0.9);
 }
 
 .task-card__select:focus-visible {
@@ -333,9 +325,42 @@
   background: var(--color-bg);
 }
 
-.task-card__select--priority {
+.task-card__priority-target {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  margin: -2px -8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.task-card__priority-target:hover,
+.task-card__priority-target:focus-within {
+  background-color: rgba(255, 255, 255, 0.55);
+}
+
+.task-card__priority-text {
   font-size: 11px;
   font-weight: 500;
+}
+
+.task-card__select--priority {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  padding: 0;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.task-card__select--priority:focus-visible {
+  outline: none;
 }
 
 .task-card__select--assignee {
@@ -346,5 +371,91 @@
 }
 
 .task-card__select--status {
-  padding-right: 14px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 500;
+  text-align: center;
+  text-align-last: center;
+}
+
+.task-card__select--status.task-card__status--todo {
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.task-card__select--status.task-card__status--in-progress {
+  background-color: var(--status-in-progress-bg);
+  color: var(--status-in-progress-fg);
+}
+
+.task-card__select--status.task-card__status--done {
+  background-color: var(--status-done-bg);
+  color: var(--status-done-fg);
+}
+
+/* ── Blocker control (interactive cards) ──────────── */
+.task-card__blocker-control {
+  display: flex;
+}
+
+.task-card__blocker-add {
+  background: none;
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.task-card__blocker-add:hover {
+  background: var(--blocker-bg);
+  color: var(--blocker-fg);
+  border-color: var(--blocker-border);
+  border-style: solid;
+}
+
+.task-card__blocker-input {
+  flex: 1;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--blocker-border);
+  background: var(--blocker-bg);
+  color: var(--blocker-fg);
+  box-sizing: border-box;
+}
+
+.task-card__blocker-input::placeholder {
+  color: var(--blocker-fg);
+  opacity: 0.55;
+}
+
+.task-card__blocker-input:focus {
+  outline: none;
+  border-color: var(--blocker-fg);
+}
+
+.task-card__blocker-remove {
+  margin-left: 6px;
+  background: none;
+  border: none;
+  color: var(--blocker-fg);
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.task-card__blocker-remove:hover {
+  opacity: 1;
 }
