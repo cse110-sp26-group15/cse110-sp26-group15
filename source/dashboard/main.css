@@ -526,6 +526,40 @@ body {
   color: #6d28d9;
 }
 
+/* ── Blocker banner ────────────────────────────────── */
+.blocker-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #b91c1c;
+}
+
+.blocker-banner.hidden {
+  display: none;
+}
+
+.blocker-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.blocker-summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b91c1c;
+  margin: 0;
+}
+
+.blocker-summary .blocker-mention {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
 /* ── Tasks ─────────────────────────────────────────── */
 .section-header {
   display: flex;

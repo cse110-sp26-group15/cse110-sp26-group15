@@ -372,17 +372,68 @@ async function loadCheckins() {
   renderCheckins(entries);
 }
 
+// ── Blockers (XP dashboard) ───────────────────────────
+/**
+ * Builds the inner text/HTML for the blocker banner summary line.
+ * Mentions the first blocker's reporter and helper (if present) and indicates
+ * the total open-blocker count, matching the mockup format:
+ *   "Blockers (N) · {reporter} blocked · tagged @{helper}"
+ * @param {object[]} blockers - Open blocker records from the dashboard payload.
+ * @returns {string} HTML-safe summary markup.
+ */
+function buildBlockerSummary(blockers) {
+  const count = blockers.length;
+  const first = blockers[0];
+  const reporter = escapeHtml(first?.reported_by?.full_name ?? "Someone");
+  const helper = first?.helper ? escapeHtml(first.helper) : null;
+  const helperPart = helper ? ` · tagged <span class="blocker-mention">@${helper}</span>` : "";
+  return `Blockers (${count}) · ${reporter} blocked${helperPart}`;
+}
+
+/**
+ * Renders the blocker summary banner above the dashboard. Hides the banner
+ * entirely when there are no open blockers.
+ * @param {object[]} blockers - Open blocker records from the dashboard payload.
+ * @returns {void}
+ */
+function renderBlockerSummary(blockers) {
+  const banner = document.getElementById("blocker-banner");
+  const summary = document.getElementById("blocker-summary");
+  if (!banner || !summary) return;
+
+  if (!Array.isArray(blockers) || blockers.length === 0) {
+    banner.classList.add("hidden");
+    summary.innerHTML = "";
+    return;
+  }
+
+  summary.innerHTML = buildBlockerSummary(blockers);
+  banner.classList.remove("hidden");
+}
+
+/**
+ * Fetches the dashboard payload and renders the blocker summary banner.
+ * @returns {Promise<void>}
+ */
+async function loadBlockers() {
+  const data = await fetchDashboard();
+  const blockers = data?.open_blockers ?? [];
+  renderBlockerSummary(blockers);
+}
+
 // Expose to task-form module
 window.getProjectMembers = () => projectMembers;
 window.createTask = createTask;
 window.loadTasks = loadTasks;
 window.renderPairs = renderPairs;
 window.loadCheckins = loadCheckins;
+window.loadBlockers = loadBlockers;
 
 // ── Init ──────────────────────────────────────────────
 /**
  * Bootstraps the dashboard: warms the member cache, populates the create-task
- * form, loads tasks, and (on XP pages only) loads the check-in feed.
+ * form, loads tasks, and (on XP pages only) loads the check-in feed and the
+ * open-blocker summary banner.
  * @returns {Promise<void>}
  */
 async function init() {
@@ -391,6 +442,9 @@ async function init() {
   await loadTasks();
   if (document.getElementById("checkin-list")) {
     await loadCheckins();
+  }
+  if (document.getElementById("blocker-banner")) {
+    await loadBlockers();
   }
 }
 
