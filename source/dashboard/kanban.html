@@ -5,30 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SitRep</title>
     <link rel="stylesheet" href="main.css" />
+    <link rel="stylesheet" href="../task-card/task-card.css" />
+    <link rel="stylesheet" href="../task-form/task-form.css" />
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar">
         <div class="sidebar-header">
           <div class="sidebar-logo">
-            <div class="logo-mark">A</div>
-            <div class="logo-text">Agile Style App</div>
+            <div class="logo-mark">S</div>
+            <div class="logo-text">SitRep</div>
           </div>
         </div>
-
         <nav class="sidebar-nav">
-          <a href="#" class="nav-item active"> Dashboard </a>
-          <a href="#" class="nav-item"> My Check-ins </a>
-          <a href="#" class="nav-item"> Team </a>
-          <a href="#" class="nav-item"> Weekly Report </a>
-          <a href="#" class="nav-item"> Settings </a>
+          <a href="#" class="nav-item active">Dashboard</a>
+          <a href="#" class="nav-item">My Check-ins</a>
+          <a href="#" class="nav-item">Team</a>
+          <a href="#" class="nav-item">Weekly Report</a>
+          <a href="#" class="nav-item">Settings</a>
         </nav>
-
         <div class="sidebar-footer">
           <div class="user-row">
-            <div class="avatar">U</div>
+            <div class="avatar" id="user-avatar">U</div>
             <div class="user-info">
-              <p class="user-name">Username</p>
+              <p class="user-name" id="user-name">Username</p>
             </div>
           </div>
         </div>
@@ -37,23 +37,48 @@
       <div class="main-content">
         <header class="topbar">
           <span class="topbar-title">Dashboard</span>
+          <button class="btn-primary" id="add-task-btn">+ Add Task</button>
         </header>
 
         <main class="content-area" id="page-content">
-          <div id="dashboard-view">
-            <div class="section-header">
-              <h2 class="section-title">Tasks</h2>
-              <button class="btn-primary" id="add-task-btn">+ Add Task</button>
+          <!-- Dashboard view -->
+          <div id="dashboard-view" class="page-view">
+            <div id="blockers-banner" class="blockers-banner hidden">
+              <span class="blockers-banner__icon">⚠</span>
+              <span class="blockers-banner__label">Blockers</span>
+              <div class="blockers-banner__list" id="blockers-list"></div>
             </div>
 
-            <div id="add-task-form" class="task-form hidden">
-              <input type="text" id="new-task-title" class="task-input" placeholder="Task title" />
-              <button class="btn-primary" id="submit-task-btn">Create</button>
-              <button class="btn-secondary" id="cancel-task-btn">Cancel</button>
-            </div>
+            <div class="kanban-board" id="kanban-board">
+              <div class="kanban-col" id="col-todo" data-status="todo">
+                <div class="kanban-col__header">
+                  <span class="kanban-col__title">To Do</span>
+                  <span class="kanban-col__count" id="count-todo">0</span>
+                </div>
+                <div class="kanban-col__cards" id="cards-todo">
+                  <p class="kanban-col__empty">No tasks yet</p>
+                </div>
+              </div>
 
-            <div id="task-list" class="task-list">
-              <p class="task-empty">Loading tasks...</p>
+              <div class="kanban-col" id="col-in-progress" data-status="in-progress">
+                <div class="kanban-col__header">
+                  <span class="kanban-col__title">In Progress</span>
+                  <span class="kanban-col__count" id="count-in-progress">0</span>
+                </div>
+                <div class="kanban-col__cards" id="cards-in-progress">
+                  <p class="kanban-col__empty">No tasks yet</p>
+                </div>
+              </div>
+
+              <div class="kanban-col" id="col-done" data-status="done">
+                <div class="kanban-col__header">
+                  <span class="kanban-col__title">Done</span>
+                  <span class="kanban-col__count" id="count-done">0</span>
+                </div>
+                <div class="kanban-col__cards" id="cards-done">
+                  <p class="kanban-col__empty">No tasks yet</p>
+                </div>
+              </div>
             </div>
           </div>
         </main>
