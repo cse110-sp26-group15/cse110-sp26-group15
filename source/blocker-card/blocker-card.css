@@ -1,6 +1,7 @@
 /* ── Blocker card tokens (scoped to the component subtree) ── */
 .blocker-rail,
 .blocker-card,
+.blocker-rail-placeholder,
 .task-card--blocker-highlight {
   --blocker-card-bg: #fef2f2;
   --blocker-card-border: #fecaca;
@@ -12,6 +13,31 @@
   --blocker-helper-fg: #15803d;
 
   --blocker-rail-count-bg: #b91c1c;
+}
+
+/* ── Placeholder (reserves space for other dashboards) ── */
+.blocker-rail-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 170px;
+  padding: 14px;
+  margin-bottom: 24px;
+  border: 1px dashed var(--color-border, #d1d5db);
+  border-radius: 8px;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.blocker-rail-placeholder[hidden] {
+  display: none;
+}
+
+.blocker-rail-placeholder__icon {
+  font-style: normal;
+  color: var(--color-text-secondary, #6b7280);
 }
 
 /* ── Rail ─────────────────────────────────────────── */

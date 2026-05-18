@@ -196,6 +196,11 @@ export async function mountBlockerRail({
     const nextRail = createBlockerRail(blockers, { onResolve });
     if (currentRail) currentRail.remove();
     currentRail = nextRail;
+
+    // Toggle the dashed placeholder dashboards use to reserve space.
+    const placeholder = container.querySelector("[data-blocker-placeholder]");
+    if (placeholder) placeholder.hidden = Boolean(nextRail);
+
     if (!nextRail) return;
 
     attachRailNavigation(nextRail, { findTask });
@@ -217,6 +222,8 @@ export async function mountBlockerRail({
       currentRail.remove();
       currentRail = null;
     }
+    const placeholder = container.querySelector("[data-blocker-placeholder]");
+    if (placeholder) placeholder.hidden = false;
     if (container.__blockerRailDestroy === destroy) {
       delete container.__blockerRailDestroy;
     }
@@ -230,8 +237,14 @@ export async function mountBlockerRail({
 // ── Auto-mount on the dashboard view only ─────────────
 async function autoMountIfDashboard() {
   const container = document.getElementById("dashboard-view");
-  const anchor = container?.querySelector(".section-header");
-  if (!container || !anchor) return;
+  if (!container) return;
+  // Anchor to the placeholder when present so the real rail lands in the
+  // same spot dashboard designers reserved space for; otherwise fall back
+  // to before the section header.
+  const anchor =
+    container.querySelector("[data-blocker-placeholder]") ??
+    container.querySelector(".section-header");
+  if (!anchor) return;
   try {
     await mountBlockerRail({ container, anchor });
   } catch (err) {
