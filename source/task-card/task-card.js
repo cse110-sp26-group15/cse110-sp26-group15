@@ -100,6 +100,187 @@ function buildStatusSelect(task, ctx) {
   return select;
 }
 
+function attachNumberCommit(input, ctx, task, fieldName, getLastValue, setLastValue) {
+  const commit = () => {
+    const raw = input.value.trim();
+    if (raw === "") {
+      input.value = getLastValue();
+      return;
+    }
+    const num = Number(raw);
+    if (!Number.isFinite(num) || num < 0) {
+      input.value = getLastValue();
+      return;
+    }
+    const normalized = String(num);
+    if (normalized !== getLastValue()) {
+      setLastValue(normalized);
+      input.value = normalized;
+      notifyChange(ctx, task, { [fieldName]: num });
+    } else {
+      input.value = normalized;
+    }
+  };
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      input.blur();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      input.value = getLastValue();
+      input.blur();
+    }
+  });
+  input.addEventListener("blur", commit);
+}
+
+function buildPointsInput(task, ctx) {
+  const input = document.createElement("input");
+  input.type = "number";
+  input.className = "task-card__points-input";
+  input.min = "0";
+  input.step = "1";
+  input.setAttribute("aria-label", "Story points");
+  input.value = String(task.story_points ?? "");
+
+  let lastValue = input.value;
+  attachNumberCommit(
+    input,
+    ctx,
+    task,
+    "story_points",
+    () => lastValue,
+    (v) => {
+      lastValue = v;
+    }
+  );
+
+  return input;
+}
+
+function buildHoursInput(task, ctx) {
+  const wrap = document.createElement("span");
+  wrap.className = "task-card__hours-edit";
+  wrap.appendChild(document.createTextNode("~"));
+
+  const input = document.createElement("input");
+  input.type = "number";
+  input.className = "task-card__hours-input";
+  input.min = "0";
+  input.step = "0.5";
+  input.setAttribute("aria-label", "Estimated hours");
+  input.value = String(task.estimate_hours ?? "");
+  wrap.appendChild(input);
+
+  wrap.appendChild(document.createTextNode("h"));
+
+  let lastValue = input.value;
+  attachNumberCommit(
+    input,
+    ctx,
+    task,
+    "estimate_hours",
+    () => lastValue,
+    (v) => {
+      lastValue = v;
+    }
+  );
+
+  return wrap;
+}
+
+function buildTagsControl(task, projectType, ctx) {
+  const tagRow = document.createElement("div");
+  tagRow.className = "task-card__tags";
+
+  if (projectType === "scrum" && task.story_type) {
+    const pill = document.createElement("span");
+    pill.className = "task-card__tag";
+    pill.textContent = task.story_type;
+    tagRow.appendChild(pill);
+  }
+
+  const tags = [...(task.tags ?? [])];
+
+  const render = () => {
+    [
+      ...tagRow.querySelectorAll(
+        ".task-card__tag--editable, .task-card__tag-add, .task-card__tag-input"
+      ),
+    ].forEach((el) => el.remove());
+
+    tags.forEach((tag, idx) => {
+      const pill = document.createElement("span");
+      pill.className = "task-card__tag task-card__tag--editable";
+      pill.appendChild(document.createTextNode(tag));
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "task-card__tag-remove";
+      remove.textContent = "×";
+      remove.title = `Remove "${tag}"`;
+      remove.addEventListener("click", () => {
+        tags.splice(idx, 1);
+        render();
+        notifyChange(ctx, task, { tags: [...tags] });
+      });
+      pill.appendChild(remove);
+
+      tagRow.appendChild(pill);
+    });
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "task-card__tag-add";
+    addBtn.textContent = "+ Add tag";
+    addBtn.addEventListener("click", () => {
+      addBtn.remove();
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "task-card__tag-input";
+      input.placeholder = "Tag";
+      input.maxLength = 24;
+      tagRow.appendChild(input);
+      input.focus();
+
+      let committed = false;
+      const submit = () => {
+        if (committed) return;
+        committed = true;
+        const v = input.value.trim();
+        if (v && !tags.includes(v)) {
+          tags.push(v);
+          render();
+          notifyChange(ctx, task, { tags: [...tags] });
+        } else {
+          render();
+        }
+      };
+      const cancel = () => {
+        if (committed) return;
+        committed = true;
+        render();
+      };
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          submit();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          cancel();
+        }
+      });
+      input.addEventListener("blur", submit);
+    });
+    tagRow.appendChild(addBtn);
+  };
+
+  render();
+  return tagRow;
+}
+
 function buildBlockerControl(task, ctx) {
   const wrapper = document.createElement("div");
   wrapper.className = "task-card__blocker-control";
@@ -196,23 +377,20 @@ function buildBlockerControl(task, ctx) {
   return wrapper;
 }
 
-function buildAssigneeSelect(task, members, avatarEl, pairFirstName, ctx) {
+function buildAssigneeSelect(task, members, avatarEl, ctx) {
   const select = document.createElement("select");
   select.className = "task-card__select task-card__select--assignee";
-
-  const formatLabel = (firstName) =>
-    pairFirstName ? `${firstName || "Unassigned"} & ${pairFirstName}` : firstName || "Unassigned";
+  select.setAttribute("aria-label", "Assignee");
 
   const unassigned = document.createElement("option");
   unassigned.value = "";
-  unassigned.textContent = formatLabel("Unassigned");
+  unassigned.textContent = "Unassigned";
   select.appendChild(unassigned);
 
   members.forEach((m) => {
     const opt = document.createElement("option");
     opt.value = String(m.user_id);
-    const first = (m.full_name ?? "").split(/\s+/)[0] || m.full_name || "";
-    opt.textContent = pairFirstName ? formatLabel(first) : m.full_name ?? "";
+    opt.textContent = m.full_name ?? "";
     select.appendChild(opt);
   });
 
@@ -227,8 +405,38 @@ function buildAssigneeSelect(task, members, avatarEl, pairFirstName, ctx) {
     const rawValue = e.target.value;
     const newId = rawValue === "" ? null : Number(rawValue);
     const newMember = newId == null ? null : members.find((m) => String(m.user_id) === rawValue);
-    avatarEl.textContent = initials(newMember?.full_name);
+    avatarEl.textContent = newMember ? initials(newMember.full_name) : "?";
+    avatarEl.classList.toggle("task-card__avatar--empty", !newMember);
     notifyChange(ctx, task, { assigned_to: newId });
+  });
+
+  return select;
+}
+
+function buildPairSelect(task, members, avatarEl, ctx) {
+  const select = document.createElement("select");
+  select.className = "task-card__select task-card__select--assignee";
+  select.setAttribute("aria-label", "Pair partner");
+
+  const unassigned = document.createElement("option");
+  unassigned.value = "";
+  unassigned.textContent = "No pair";
+  select.appendChild(unassigned);
+
+  members.forEach((m) => {
+    const opt = document.createElement("option");
+    opt.value = m.full_name ?? "";
+    opt.textContent = m.full_name ?? "";
+    select.appendChild(opt);
+  });
+
+  select.value = task.pair_assignee ?? "";
+
+  select.addEventListener("change", (e) => {
+    const v = e.target.value;
+    avatarEl.textContent = v ? initials(v) : "?";
+    avatarEl.classList.toggle("task-card__avatar--empty", !v);
+    notifyChange(ctx, task, { pair_assignee: v || null });
   });
 
   return select;
@@ -282,17 +490,25 @@ function buildBanner(task, projectType, ctx) {
   meta.appendChild(due);
 
   if (projectType === "scrum" && task.story_points != null) {
-    const points = document.createElement("span");
-    points.className = "task-card__points";
-    points.textContent = String(task.story_points);
-    meta.appendChild(points);
+    if (ctx?.interactive) {
+      meta.appendChild(buildPointsInput(task, ctx));
+    } else {
+      const points = document.createElement("span");
+      points.className = "task-card__points";
+      points.textContent = String(task.story_points);
+      meta.appendChild(points);
+    }
   }
 
   if (projectType === "xp" && task.estimate_hours != null) {
-    const hours = document.createElement("span");
-    hours.className = "task-card__hours";
-    hours.textContent = `~${task.estimate_hours}h`;
-    meta.appendChild(hours);
+    if (ctx?.interactive) {
+      meta.appendChild(buildHoursInput(task, ctx));
+    } else {
+      const hours = document.createElement("span");
+      hours.className = "task-card__hours";
+      hours.textContent = `~${task.estimate_hours}h`;
+      meta.appendChild(hours);
+    }
   }
 
   banner.appendChild(meta);
@@ -340,20 +556,24 @@ function buildBody(task, projectType, ctx) {
     description.addEventListener("click", toggle);
   }
 
-  const tags = [...(task.tags ?? [])];
-  if (projectType === "scrum" && task.story_type) {
-    tags.unshift(task.story_type);
-  }
-  if (tags.length > 0) {
-    const tagRow = document.createElement("div");
-    tagRow.className = "task-card__tags";
-    tags.forEach((tag) => {
-      const pill = document.createElement("span");
-      pill.className = "task-card__tag";
-      pill.textContent = tag;
-      tagRow.appendChild(pill);
-    });
-    body.appendChild(tagRow);
+  if (ctx?.interactive) {
+    body.appendChild(buildTagsControl(task, projectType, ctx));
+  } else {
+    const tags = [...(task.tags ?? [])];
+    if (projectType === "scrum" && task.story_type) {
+      tags.unshift(task.story_type);
+    }
+    if (tags.length > 0) {
+      const tagRow = document.createElement("div");
+      tagRow.className = "task-card__tags";
+      tags.forEach((tag) => {
+        const pill = document.createElement("span");
+        pill.className = "task-card__tag";
+        pill.textContent = tag;
+        tagRow.appendChild(pill);
+      });
+      body.appendChild(tagRow);
+    }
   }
 
   return body;
@@ -366,40 +586,95 @@ function buildFooter(task, projectType, ctx) {
   const assignees = document.createElement("div");
   assignees.className = "task-card__assignees";
 
-  const avatars = document.createElement("div");
-  avatars.className = "task-card__avatars";
-
-  const primary = document.createElement("span");
-  primary.className = "task-card__avatar";
-  primary.textContent = initials(task.full_name);
-  avatars.appendChild(primary);
-
-  let pairFirstName = null;
-  if (projectType === "xp" && task.pair_assignee) {
-    const pair = document.createElement("span");
-    pair.className = "task-card__avatar task-card__avatar--pair";
-    pair.textContent = initials(task.pair_assignee);
-    avatars.appendChild(pair);
-
-    const [pairFirst] = task.pair_assignee.split(/\s+/);
-    pairFirstName = pairFirst;
-  }
-
-  assignees.appendChild(avatars);
-
   const canEditAssignee = ctx?.interactive && Array.isArray(ctx.members);
-  if (canEditAssignee) {
-    assignees.appendChild(buildAssigneeSelect(task, ctx.members, primary, pairFirstName, ctx));
+  const isXpInteractive = projectType === "xp" && canEditAssignee;
+
+  if (isXpInteractive) {
+    assignees.classList.add("task-card__assignees--stacked");
+
+    const buildGroup = (avatarSource, ariaName, selectBuilder) => {
+      const group = document.createElement("div");
+      group.className = "task-card__assignee-group";
+
+      const avatar = document.createElement("span");
+      avatar.className = "task-card__avatar";
+      if (avatarSource) {
+        avatar.textContent = initials(avatarSource);
+      } else {
+        avatar.textContent = "?";
+        avatar.classList.add("task-card__avatar--empty");
+      }
+      group.appendChild(avatar);
+      const select = selectBuilder(avatar);
+      group.appendChild(select);
+      group.title = ariaName;
+      return { group, select };
+    };
+
+    const primary = buildGroup(task.full_name, "Assignee", (avatar) =>
+      buildAssigneeSelect(task, ctx.members, avatar, ctx)
+    );
+    const pair = buildGroup(task.pair_assignee, "Pair partner", (avatar) =>
+      buildPairSelect(task, ctx.members, avatar, ctx)
+    );
+
+    const syncDisabled = () => {
+      const primaryMember = ctx.members.find(
+        (m) => String(m.user_id) === primary.select.value
+      );
+      const pairMember = ctx.members.find((m) => m.full_name === pair.select.value);
+      const blockedNameForPair = primaryMember ? primaryMember.full_name : "";
+      const blockedIdForPrimary = pairMember ? String(pairMember.user_id) : "";
+
+      [...pair.select.options].forEach((opt) => {
+        opt.disabled = opt.value !== "" && opt.value === blockedNameForPair;
+      });
+      [...primary.select.options].forEach((opt) => {
+        opt.disabled = opt.value !== "" && opt.value === blockedIdForPrimary;
+      });
+    };
+
+    primary.select.addEventListener("change", syncDisabled);
+    pair.select.addEventListener("change", syncDisabled);
+    syncDisabled();
+
+    assignees.appendChild(primary.group);
+    assignees.appendChild(pair.group);
   } else {
-    let labelText = task.full_name ?? "Unassigned";
-    if (pairFirstName) {
-      const [primaryFirst] = (task.full_name ?? "").split(/\s+/);
-      labelText = `${primaryFirst || "Unassigned"} & ${pairFirstName}`;
+    const avatars = document.createElement("div");
+    avatars.className = "task-card__avatars";
+
+    const primary = document.createElement("span");
+    primary.className = "task-card__avatar";
+    primary.textContent = initials(task.full_name);
+    avatars.appendChild(primary);
+
+    let pairFirstName = null;
+    if (projectType === "xp" && task.pair_assignee) {
+      const pair = document.createElement("span");
+      pair.className = "task-card__avatar task-card__avatar--pair";
+      pair.textContent = initials(task.pair_assignee);
+      avatars.appendChild(pair);
+
+      const [pairFirst] = task.pair_assignee.split(/\s+/);
+      pairFirstName = pairFirst;
     }
-    const name = document.createElement("span");
-    name.className = "task-card__assignee-name";
-    name.textContent = labelText;
-    assignees.appendChild(name);
+
+    assignees.appendChild(avatars);
+
+    if (canEditAssignee) {
+      assignees.appendChild(buildAssigneeSelect(task, ctx.members, primary, ctx));
+    } else {
+      let labelText = task.full_name ?? "Unassigned";
+      if (pairFirstName) {
+        const [primaryFirst] = (task.full_name ?? "").split(/\s+/);
+        labelText = `${primaryFirst || "Unassigned"} & ${pairFirstName}`;
+      }
+      const name = document.createElement("span");
+      name.className = "task-card__assignee-name";
+      name.textContent = labelText;
+      assignees.appendChild(name);
+    }
   }
 
   footer.appendChild(assignees);

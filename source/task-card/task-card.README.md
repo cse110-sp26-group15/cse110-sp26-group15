@@ -47,7 +47,7 @@ Returns a detached `<article>` element. Append it wherever you want.
 | ---------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `compact`  | boolean                             | Hides the description preview (`task-card--compact`).                                                                                                                                                                                       |
 | `members`  | `{ user_id, full_name }[]`          | Required to enable the assignee dropdown.                                                                                                                                                                                                   |
-| `onChange` | `(taskId, fields) => void\|Promise` | When provided, status / priority / assignee become editable `<select>`s and an "+ Add blocker" affordance appears in the body. Called with only the changed field — e.g. `{ status: "done" }`, `{ priority: "high" }`, `{ assigned_to: 4 }` (or `null` = unassigned), or `{ is_blocked: true, blocker_reason: "Waiting on API" }` / `{ is_blocked: false, blocker_reason: null }`. Wire this up to your PATCH. |
+| `onChange` | `(taskId, fields) => void\|Promise` | When provided: status / priority / assignee become editable `<select>`s, scrum `story_points` / xp `estimate_hours` become editable number inputs, tags get add/remove affordances, an "+ Add blocker" affordance appears in the body, and XP cards render the primary assignee and pair partner as two independent selectors. Called with only the changed field — e.g. `{ status: "done" }`, `{ priority: "high" }`, `{ assigned_to: 4 }` (or `null` = unassigned), `{ pair_assignee: "Jordan M." }` (or `null` to clear), `{ story_points: 5 }`, `{ estimate_hours: 4 }`, `{ tags: ["bug", "auth"] }` (full replacement array), or `{ is_blocked: true, blocker_reason: "Waiting on API" }` / `{ is_blocked: false, blocker_reason: null }`. Wire this up to your PATCH. |
 
 If `onChange` is omitted the card renders read-only (existing behavior). If `onChange` is provided but `members` is not, status + priority become editable but the assignee stays static.
 
@@ -68,7 +68,7 @@ createTaskCard(task, "kanban", {
 });
 ```
 
-> Note: the current `/api/tasks/:taskId` PATCH accepts `status` and `assigned_to`. Priority and blocker changes update the card visually and fire `onChange`, but those fields are not yet persisted in the `tasks` schema.
+> Note: the current `/api/tasks/:taskId` PATCH accepts `status` and `assigned_to`. Priority, blocker, story-point, estimate-hours, and tag changes update the card visually and fire `onChange`, but those fields are not yet persisted in the `tasks` schema.
 
 ## Task shape
 
