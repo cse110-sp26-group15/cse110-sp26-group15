@@ -8,13 +8,7 @@
          after main so its newer `.task-card` rules win, and scrum.css
          layers on top for the page-specific tweaks. -->
     <link rel="stylesheet" href="main.css" />
-    <link rel="stylesheet" href="../task-card/task-card.css" />
-    <!-- task-form.css styles the create-task modal. We load it eagerly
-         because scrum.js imports task-form.js lazily on first click, and
-         its own self-init stylesheet injector won't fire if the import
-         happens after DOMContentLoaded. -->
-    <link rel="stylesheet" href="../task-form/task-form.css" />
-    <link rel="stylesheet" href="scrum.css" />
+    <link rel="stylesheet" href="../blocker-card/blocker-card.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -192,8 +186,8 @@
       </div>
     </div>
 
-    <!-- scrum.js is a module (it imports createTaskCard); type="module"
-         also defers the script automatically so DOM is ready on init. -->
-    <script type="module" src="scrum.js"></script>
+    <script src="main.js"></script>
+    <script type="module" src="../task-form/task-form.js"></script>
+    <script type="module" src="../blocker-card/blocker-card-init.js"></script>
   </body>
 </html>

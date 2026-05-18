@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blocker Card — Demo</title>
+    <link rel="stylesheet" href="../dashboard/main.css" />
+    <link rel="stylesheet" href="blocker-card.css" />
+    <style>
+      body {
+        background: var(--color-surface);
+        overflow: auto;
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .demo-page {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 32px 24px 64px;
+      }
+
+      .demo-page > h1 {
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 4px;
+      }
+
+      .demo-page > p {
+        font-size: 13px;
+        color: var(--color-text-secondary);
+        margin-bottom: 28px;
+      }
+
+      .demo-section {
+        margin-bottom: 32px;
+      }
+
+      .demo-section-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-text-secondary);
+        margin-bottom: 10px;
+      }
+
+      .demo-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 240px));
+        align-items: start;
+        gap: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="demo-page">
+      <h1>Blocker Card — All Variants</h1>
+      <p>
+        Same component (<code>createBlockerCard</code>) and rail (<code>createBlockerRail</code>)
+        rendered against the shape returned by <code>GET /api/blockers?general=true</code>.
+      </p>
+
+      <section class="demo-section" id="demo-rail">
+        <div class="demo-section-label">
+          Rail — live, with working Resolve button (in-memory store, resets on reload)
+        </div>
+      </section>
+
+      <section class="demo-section" id="demo-cards">
+        <div class="demo-section-label">
+          Single cards — visual reference only (no Resolve handler attached)
+        </div>
+        <div class="demo-grid"></div>
+      </section>
+    </div>
+
+    <script type="module" src="blocker-card-demo.js"></script>
+  </body>
+</html>

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SitRep</title>
     <link rel="stylesheet" href="main.css" />
+    <link rel="stylesheet" href="../blocker-card/blocker-card.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -40,21 +41,119 @@
         </header>
 
         <main class="content-area" id="page-content">
-          <div id="dashboard-view">
-            <div class="section-header">
-              <h2 class="section-title">Tasks</h2>
-              <button class="btn-primary" id="add-task-btn">+ Add Task</button>
-            </div>
+          <div id="dashboard-view" class="xp-dashboard">
+            <header class="xp-page-header">
+              <div class="xp-page-heading">
+                <h1 class="xp-page-title">Team Dashboard</h1>
+                <p class="xp-page-subtitle">XP Mode · Rapid check-ins active</p>
+              </div>
+            </header>
 
-            <div id="add-task-form" class="task-form hidden">
-              <input type="text" id="new-task-title" class="task-input" placeholder="Task title" />
-              <button class="btn-primary" id="submit-task-btn">Create</button>
-              <button class="btn-secondary" id="cancel-task-btn">Cancel</button>
-            </div>
+            <section
+              class="blocker-banner hidden"
+              id="blocker-banner"
+              role="alert"
+              aria-live="polite"
+            >
+              <span class="blocker-icon" aria-hidden="true">⚠</span>
+              <p class="blocker-summary" id="blocker-summary"></p>
+            </section>
 
-            <div id="task-list" class="task-list">
-              <p class="task-empty">Loading tasks...</p>
-            </div>
+            <section class="xp-section" id="assigned-tasks-section">
+              <div class="section-header">
+                <h2 class="section-title">Assigned Tasks</h2>
+                <button class="btn-primary" id="add-task-btn">+ Add Task</button>
+              </div>
+
+              <div id="add-task-form" class="task-form hidden">
+                <input
+                  type="text"
+                  id="new-task-title"
+                  class="task-input"
+                  placeholder="Task title"
+                />
+                <button class="btn-primary" id="submit-task-btn">Create</button>
+                <button class="btn-secondary" id="cancel-task-btn">Cancel</button>
+              </div>
+
+              <div id="task-list" class="task-list">
+                <p class="task-empty">Loading tasks...</p>
+              </div>
+            </section>
+
+            <section class="xp-section" id="pairing-section">
+              <div class="section-header">
+                <h2 class="section-title">Pair Programming / Agent Collaboration</h2>
+                <button class="btn-link" id="new-pair-btn">+ new pair</button>
+              </div>
+
+              <div id="pair-list" class="pair-grid">
+                <article class="pair-card">
+                  <div class="pair-card-header">
+                    <span class="pair-card-title">Pair Session A</span>
+                  </div>
+                  <div class="pair-card-body">
+                    <div class="pair-member">
+                      <div class="avatar pair-avatar">W</div>
+                      <div class="pair-member-info">
+                        <p class="pair-member-name">Wayne</p>
+                        <p class="pair-member-role">driving</p>
+                      </div>
+                    </div>
+                    <span class="pair-arrow" aria-hidden="true">⇄</span>
+                    <div class="pair-member">
+                      <div class="avatar pair-avatar">A</div>
+                      <div class="pair-member-info">
+                        <p class="pair-member-name">Alex</p>
+                        <p class="pair-member-role">navigating</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pair-card-footer">
+                    <p class="pair-meta">active · last check-in 12m ago</p>
+                  </div>
+                </article>
+
+                <article class="pair-card pair-card-ai">
+                  <div class="pair-card-header">
+                    <span class="pair-card-title">Pair Session B · Human + AI</span>
+                  </div>
+                  <div class="pair-card-body">
+                    <div class="pair-member">
+                      <div class="avatar pair-avatar">J</div>
+                      <div class="pair-member-info">
+                        <p class="pair-member-name">Jordan</p>
+                        <p class="pair-member-role">driving</p>
+                      </div>
+                    </div>
+                    <span class="pair-arrow" aria-hidden="true">⇄</span>
+                    <div class="pair-member">
+                      <div class="avatar pair-avatar pair-avatar-ai">AI</div>
+                      <div class="pair-member-info">
+                        <p class="pair-member-name">Agent-02</p>
+                        <p class="pair-member-role">co-pilot</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pair-card-footer">
+                    <p class="pair-meta">active · agent last commit 3m ago</p>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <section class="xp-section" id="checkins-section">
+              <div class="section-header">
+                <h2 class="section-title">
+                  Rapid Check-ins
+                  <span class="section-subtitle">· lightweight, anytime updates</span>
+                </h2>
+              </div>
+
+              <div id="checkin-list" class="checkin-list">
+                <p class="task-empty">Loading check-ins...</p>
+              </div>
+            </section>
           </div>
         </main>
       </div>
@@ -62,5 +161,6 @@
 
     <script src="main.js"></script>
     <script type="module" src="../task-form/task-form.js"></script>
+    <script type="module" src="../blocker-card/blocker-card-init.js"></script>
   </body>
 </html>
