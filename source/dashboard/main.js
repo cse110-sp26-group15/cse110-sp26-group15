@@ -1,4 +1,5 @@
 import { mockTasks, mockMembers } from "./mock-data.js";
+import { createTaskCard } from "../task-card/task-card.js";
 
 // ── Navigation ────────────────────────────────────────
 document.querySelectorAll(".nav-item").forEach((item) => {
@@ -80,22 +81,23 @@ async function fetchMembers() {
  * @param {number|null} assignedTo - Member user_id to assign, or null/undefined for unassigned.
  * @returns {Promise<object>} The created task record returned by the API.
  */
-async function createTask(title, assignedTo) {
-  // TODO: swap back to real API when deploying
-  // const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`, {
-  //   method: "POST",
-  //   headers: { "Content-Type": "application/json" },
-  //   body: JSON.stringify({ title, assigned_to: assignedTo || null }),
-  // });
-  // return res.json();
-  const member = mockMembers.find((m) => m.user_id === assignedTo) ?? null;
+  async function createTask(data) {
+  const member = mockMembers.find((m) => m.user_id === data.assigned_to) ?? null;
+
   const newTask = {
     task_id: Date.now(),
-    title,
-    status: "todo",
-    user_id: assignedTo ?? null,
+    title: data.title,
+    description: data.description ?? "",
+    status: data.status ?? "todo",
+    user_id: data.assigned_to ?? null,
     full_name: member?.full_name ?? null,
+    priority: data.priority ?? "low",
+    due_date: data.due_date ?? null,
+    tags: data.tags ?? [],
+    is_blocked: data.is_blocked ?? false,
+    blocker_reason: data.blocker_reason ?? "",
   };
+
   mockTasksLocal.push(newTask);
   return { task: newTask };
 }
@@ -188,35 +190,36 @@ function renderBoard(tasks) {
     }
 
     for (const task of colTasks) {
-      const card = document.createElement("div");
-      card.className = "task-card";
-      card.dataset.taskId = task.task_id;
+        const card = createTaskCard(task, "kanban");
+
+        card.setAttribute("draggable", "true");
+
+        card.addEventListener("dragstart", (e) => {
+          e.dataTransfer.setData("text/plain", String(task.task_id));
+          card.classList.add("task-card--dragging");
+        });
+
+        card.addEventListener("dragend", () => {
+          card.classList.remove("task-card--dragging");
+        });
+
+        container.appendChild(card);
+      }
+  }
+}
+
+function renderTaskCards(tasks, projectType, columnIds) {
+  for (const status of Object.keys(columnIds)) {
+    const container = document.getElementById(columnIds[status]);
+    if (!container) continue;
+
+    container.innerHTML = "";
+
+    const colTasks = tasks.filter((task) => task.status === status);
+
+    for (const task of colTasks) {
+      const card = createTaskCard(task, projectType);
       card.setAttribute("draggable", "true");
-      card.innerHTML = `
-        <span class="task-title">${task.title}</span>
-        <div class="task-meta">
-          <select class="assignee-select" data-task-id="${task.task_id}">
-            ${buildAssigneeOptions(task.user_id)}
-          </select>
-          <button class="btn-delete" data-task-id="${task.task_id}">Delete</button>
-        </div>`;
-
-      card.querySelector(".assignee-select").addEventListener("change", async (e) => {
-        const userId = e.target.value ? Number(e.target.value) : null;
-        await updateTask(task.task_id, { assigned_to: userId });
-      });
-
-      card.querySelector(".btn-delete").addEventListener("click", async () => {
-        await deleteTask(task.task_id);
-        loadTasks();
-      });
-
-      card.addEventListener("dragstart", (e) => {
-        e.dataTransfer.setData("text/plain", String(task.task_id));
-        card.classList.add("task-card--dragging");
-      });
-      card.addEventListener("dragend", () => card.classList.remove("task-card--dragging"));
-
       container.appendChild(card);
     }
   }
