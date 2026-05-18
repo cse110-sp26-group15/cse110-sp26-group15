@@ -3,34 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SitRep</title>
+    <title>SitRep — Scrum Dashboard</title>
+    <!-- main.css → task-card.css → scrum.css : task-card needs to load
+         after main so its newer `.task-card` rules win, and scrum.css
+         layers on top for the page-specific tweaks. -->
     <link rel="stylesheet" href="main.css" />
+    <link rel="stylesheet" href="../task-card/task-card.css" />
+    <!-- task-form.css styles the create-task modal. We load it eagerly
+         because scrum.js imports task-form.js lazily on first click, and
+         its own self-init stylesheet injector won't fire if the import
+         happens after DOMContentLoaded. -->
+    <link rel="stylesheet" href="../task-form/task-form.css" />
+    <link rel="stylesheet" href="scrum.css" />
   </head>
   <body>
     <div class="app-shell">
+      <!-- ── Sidebar ──────────────────────────────────── -->
       <aside class="sidebar">
         <div class="sidebar-header">
-          <div class="sidebar-logo">
-            <div class="logo-mark">A</div>
-            <div class="logo-text">Agile Style App</div>
-          </div>
+          <!-- Clicking the logo takes the user back to project setup
+               (the main entry-point after login). -->
+          <a href="../project-setup/index.html" class="sidebar-logo">
+            <div class="logo-mark">S</div>
+            <div class="logo-text">SitRep</div>
+          </a>
         </div>
 
         <nav class="sidebar-nav">
-          <a href="#" class="nav-item active"> Dashboard </a>
-          <a href="#" class="nav-item"> My Check-ins </a>
-          <a href="#" class="nav-item"> Team </a>
-          <a href="#" class="nav-item"> Weekly Report </a>
-          <a href="#" class="nav-item"> Settings </a>
+          <a href="scrum.html" class="nav-item active">Dashboard</a>
+          <a href="#" class="nav-item" data-nav="check-ins">My Check-ins</a>
+          <a href="#" class="nav-item" data-nav="team">Team</a>
+          <a href="#" class="nav-item" data-nav="weekly-report">Weekly Report</a>
+          <a href="#" class="nav-item" data-nav="settings">Settings</a>
         </nav>
 
         <div class="sidebar-footer">
-          <div class="user-row">
+          <!-- Footer doubles as a "logout" affordance — clicking returns
+               to the login screen. -->
+          <a href="../login/index.html" class="user-row">
             <div class="avatar">U</div>
             <div class="user-info">
               <p class="user-name">Username</p>
+              <p class="user-role">Sign out</p>
             </div>
-          </div>
+          </a>
         </div>
       </aside>
 
@@ -40,27 +56,144 @@
         </header>
 
         <main class="content-area" id="page-content">
-          <div id="dashboard-view">
-            <div class="section-header">
-              <h2 class="section-title">Tasks</h2>
-              <button class="btn-primary" id="add-task-btn">+ Add Task</button>
+          <div id="scrum-view">
+            <!-- ── Sprint header ─────────────────────────────── -->
+            <div class="sprint-header">
+              <div class="sprint-header-text">
+                <h1 class="sprint-title">Team Dashboard</h1>
+                <!-- Sprint meta line — populated from sprintState in scrum.js. -->
+                <p class="sprint-meta" id="sprint-meta">Sprint — · loading…</p>
+              </div>
+              <div class="sprint-header-actions">
+                <!-- Toggle the sprint configuration panel below the header. -->
+                <button class="btn-secondary" id="edit-sprint-btn" type="button">
+                  Edit sprint
+                </button>
+                <button class="btn-primary btn-checkin" id="checkin-today-btn" type="button">
+                  + Check in today
+                </button>
+              </div>
             </div>
 
-            <div id="add-task-form" class="task-form hidden">
-              <input type="text" id="new-task-title" class="task-input" placeholder="Task title" />
-              <button class="btn-primary" id="submit-task-btn">Create</button>
-              <button class="btn-secondary" id="cancel-task-btn">Cancel</button>
-            </div>
+            <!-- ── Sprint picker (sprint # + date range) ─────── -->
+            <!-- Collapsed by default; opened via "Edit sprint". Lets the
+                 user override sprint metadata without an API. Selection is
+                 persisted to localStorage so it survives reloads. -->
+            <section class="sprint-picker hidden" id="sprint-picker">
+              <div class="sprint-picker-row">
+                <label class="sprint-picker-field">
+                  <span>Sprint #</span>
+                  <input
+                    type="number"
+                    id="sprint-number-input"
+                    class="sprint-picker-input"
+                    min="1"
+                    step="1"
+                  />
+                </label>
+                <label class="sprint-picker-field">
+                  <span>Start date</span>
+                  <input type="date" id="sprint-start-input" class="sprint-picker-input" />
+                </label>
+                <label class="sprint-picker-field">
+                  <span>End date</span>
+                  <input type="date" id="sprint-end-input" class="sprint-picker-input" />
+                </label>
+                <div class="sprint-picker-buttons">
+                  <button class="btn-primary" id="save-sprint-btn" type="button">Save</button>
+                  <button class="btn-secondary" id="cancel-sprint-btn" type="button">Cancel</button>
+                </div>
+              </div>
+              <!-- Inline error/help — surfaces invalid date ranges, etc. -->
+              <p class="sprint-picker-error" id="sprint-picker-error" hidden></p>
+            </section>
 
-            <div id="task-list" class="task-list">
-              <p class="task-empty">Loading tasks...</p>
-            </div>
+            <!-- ── Blockers panel ────────────────────────────── -->
+            <section class="blockers-panel" id="blockers-panel">
+              <header class="blockers-header">
+                <span class="blockers-title" id="blockers-title">⚠ Blockers (0)</span>
+              </header>
+              <div class="blockers-list" id="blockers-list">
+                <p class="muted-small">Loading blockers…</p>
+              </div>
+            </section>
+
+            <!-- ── Sprint progress ───────────────────────────── -->
+            <section class="panel sprint-progress-panel">
+              <header class="panel-header">
+                <h2 class="panel-title" id="sprint-progress-title">Sprint Progress</h2>
+              </header>
+              <div class="sprint-progress-row">
+                <div class="progress-bar" aria-label="Sprint progress">
+                  <div class="progress-bar-fill" id="sprint-progress-fill" style="width: 0%"></div>
+                </div>
+                <div class="progress-meta">
+                  <span id="sprint-progress-text">0 / 0 tasks</span>
+                  <!-- Current day of the sprint (e.g. "Day 3 of 7"); hidden
+                       until a valid date range is set. -->
+                  <span class="sprint-day-badge" id="sprint-day-badge" hidden></span>
+                  <span class="progress-status" id="sprint-progress-status">on track</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- ── Daily standup / check-ins ─────────────────── -->
+            <section class="panel">
+              <header class="panel-header">
+                <h2 class="panel-title">Daily Standup</h2>
+                <a href="#" class="panel-link">View history</a>
+              </header>
+              <div class="checkin-grid" id="checkin-grid">
+                <p class="muted-small">Loading check-ins…</p>
+              </div>
+            </section>
+
+            <!-- ── Sprint Tasks (list ⇄ kanban toggle) ───────── -->
+            <section class="panel">
+              <header class="panel-header">
+                <h2 class="panel-title">Sprint Tasks</h2>
+                <div class="panel-header-actions">
+                  <!-- View toggle: swaps between flat list and kanban
+                       columns. The active state mirrors viewMode in JS. -->
+                  <div class="view-toggle" role="group" aria-label="Task view">
+                    <button
+                      class="view-toggle-btn active"
+                      data-view="list"
+                      id="view-toggle-list"
+                      type="button"
+                    >
+                      List
+                    </button>
+                    <button
+                      class="view-toggle-btn"
+                      data-view="kanban"
+                      id="view-toggle-kanban"
+                      type="button"
+                    >
+                      Kanban
+                    </button>
+                  </div>
+                  <button class="btn-primary" id="add-task-btn" type="button">+ Add Task</button>
+                </div>
+              </header>
+
+              <!-- Two view containers — only one is visible at a time.
+                   Task creation is handled by the openTaskModal modal from
+                   ../task-form/task-form.js (wired up in scrum.js). -->
+              <div id="task-list" class="task-list">
+                <p class="task-empty">Loading tasks…</p>
+              </div>
+              <div id="kanban-board" class="kanban-board hidden">
+                <p class="task-empty">Loading tasks…</p>
+              </div>
+            </section>
           </div>
         </main>
       </div>
     </div>
 
-    <script src="main.js"></script>
-    <script type="module" src="../task-form/task-form.js"></script>
+    <!-- scrum.js is a module (it imports createTaskCard); type="module"
+         also defers the script automatically so DOM is ready on init. -->
+    <script type="module" src="scrum.js"></script>
   </body>
 </html>
