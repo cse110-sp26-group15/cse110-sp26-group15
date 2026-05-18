@@ -240,6 +240,41 @@ body {
   color: var(--color-text-muted);
 }
 
+/* ── XP Dashboard ──────────────────────────────────── */
+.xp-dashboard {
+  max-width: 1100px;
+}
+
+.xp-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.xp-page-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.xp-page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.xp-page-subtitle {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.xp-section {
+  margin-bottom: 28px;
+}
+
 /* ── Tasks ─────────────────────────────────────────── */
 .section-header {
   display: flex;

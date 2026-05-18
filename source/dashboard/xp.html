@@ -40,21 +40,35 @@
         </header>
 
         <main class="content-area" id="page-content">
-          <div id="dashboard-view">
-            <div class="section-header">
-              <h2 class="section-title">Tasks</h2>
-              <button class="btn-primary" id="add-task-btn">+ Add Task</button>
-            </div>
+          <div id="dashboard-view" class="xp-dashboard">
+            <header class="xp-page-header">
+              <div class="xp-page-heading">
+                <h1 class="xp-page-title">Team Dashboard</h1>
+                <p class="xp-page-subtitle">XP Mode · Rapid check-ins active</p>
+              </div>
+            </header>
 
-            <div id="add-task-form" class="task-form hidden">
-              <input type="text" id="new-task-title" class="task-input" placeholder="Task title" />
-              <button class="btn-primary" id="submit-task-btn">Create</button>
-              <button class="btn-secondary" id="cancel-task-btn">Cancel</button>
-            </div>
+            <section class="xp-section" id="assigned-tasks-section">
+              <div class="section-header">
+                <h2 class="section-title">Assigned Tasks</h2>
+                <button class="btn-primary" id="add-task-btn">+ Add Task</button>
+              </div>
 
-            <div id="task-list" class="task-list">
-              <p class="task-empty">Loading tasks...</p>
-            </div>
+              <div id="add-task-form" class="task-form hidden">
+                <input
+                  type="text"
+                  id="new-task-title"
+                  class="task-input"
+                  placeholder="Task title"
+                />
+                <button class="btn-primary" id="submit-task-btn">Create</button>
+                <button class="btn-secondary" id="cancel-task-btn">Cancel</button>
+              </div>
+
+              <div id="task-list" class="task-list">
+                <p class="task-empty">Loading tasks...</p>
+              </div>
+            </section>
           </div>
         </main>
       </div>
