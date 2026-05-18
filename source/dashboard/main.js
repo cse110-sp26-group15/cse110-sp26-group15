@@ -81,7 +81,7 @@ async function fetchMembers() {
  * @param {number|null} assignedTo - Member user_id to assign, or null/undefined for unassigned.
  * @returns {Promise<object>} The created task record returned by the API.
  */
-  async function createTask(data) {
+async function createTask(data) {
   const member = mockMembers.find((m) => m.user_id === data.assigned_to) ?? null;
 
   const newTask = {
@@ -126,13 +126,13 @@ async function updateTask(taskId, fields) {
  * @param {number|string} taskId - Task identifier.
  * @returns {Promise<object>} API response body.
  */
-async function deleteTask(taskId) {
-  // TODO: swap back to real API when deploying
-  // const res = await fetch(`/api/projects/${PROJECT_ID}/tasks/${taskId}`, { method: "DELETE" });
-  // return res.json();
-  mockTasksLocal = mockTasksLocal.filter((t) => String(t.task_id) !== String(taskId));
-  return { success: true };
-}
+// async function deleteTask(taskId) {
+//   // TODO: swap back to real API when deploying
+//   // const res = await fetch(`/api/projects/${PROJECT_ID}/tasks/${taskId}`, { method: "DELETE" });
+//   // return res.json();
+//   mockTasksLocal = mockTasksLocal.filter((t) => String(t.task_id) !== String(taskId));
+//   return { success: true };
+// }
 
 // ── Members cache ─────────────────────────────────────
 let projectMembers = [];
@@ -190,40 +190,40 @@ function renderBoard(tasks) {
     }
 
     for (const task of colTasks) {
-        const card = createTaskCard(task, "kanban");
+      const card = createTaskCard(task, "kanban");
 
-        card.setAttribute("draggable", "true");
-
-        card.addEventListener("dragstart", (e) => {
-          e.dataTransfer.setData("text/plain", String(task.task_id));
-          card.classList.add("task-card--dragging");
-        });
-
-        card.addEventListener("dragend", () => {
-          card.classList.remove("task-card--dragging");
-        });
-
-        container.appendChild(card);
-      }
-  }
-}
-
-function renderTaskCards(tasks, projectType, columnIds) {
-  for (const status of Object.keys(columnIds)) {
-    const container = document.getElementById(columnIds[status]);
-    if (!container) continue;
-
-    container.innerHTML = "";
-
-    const colTasks = tasks.filter((task) => task.status === status);
-
-    for (const task of colTasks) {
-      const card = createTaskCard(task, projectType);
       card.setAttribute("draggable", "true");
+
+      card.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", String(task.task_id));
+        card.classList.add("task-card--dragging");
+      });
+
+      card.addEventListener("dragend", () => {
+        card.classList.remove("task-card--dragging");
+      });
+
       container.appendChild(card);
     }
   }
 }
+
+// function renderTaskCards(tasks, projectType, columnIds) {
+//   for (const status of Object.keys(columnIds)) {
+//     const container = document.getElementById(columnIds[status]);
+//     if (!container) continue;
+
+//     container.innerHTML = "";
+
+//     const colTasks = tasks.filter((task) => task.status === status);
+
+//     for (const task of colTasks) {
+//       const card = createTaskCard(task, projectType);
+//       card.setAttribute("draggable", "true");
+//       container.appendChild(card);
+//     }
+//   }
+// }
 
 // ── Blocker banner ────────────────────────────────────
 async function refreshBlockerBanner() {
