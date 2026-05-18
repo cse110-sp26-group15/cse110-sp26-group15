@@ -163,65 +163,6 @@ function populateCreateFormAssignees() {
   sel.innerHTML = buildAssigneeOptions(null);
 }
 
-// ── Task UI (original flat list renderer — kept for reference) ─
-function renderTasks(tasks) {
-  const list = document.getElementById("task-list");
-  if (!list) return;
-
-  if (tasks.length === 0) {
-    list.innerHTML = `<p class="task-empty">No tasks yet. Add one above.</p>`;
-    return;
-  }
-
-  list.innerHTML = tasks
-    .map(
-      (t) => `
-    <div class="task-card" data-task-id="${t.task_id}">
-      <span class="task-title">${t.title}</span>
-      <div class="task-meta">
-        <select class="assignee-select" data-task-id="${t.task_id}">
-          ${buildAssigneeOptions(t.user_id)}
-        </select>
-        <select class="status-select status-${t.status}" data-task-id="${t.task_id}">
-          <option value="todo" ${t.status === "todo" ? "selected" : ""}>Todo</option>
-          <option value="in-progress" ${t.status === "in-progress" ? "selected" : ""}>In Progress</option>
-          <option value="done" ${t.status === "done" ? "selected" : ""}>Done</option>
-        </select>
-        <button class="btn-delete" data-task-id="${t.task_id}">Delete</button>
-      </div>
-    </div>`
-    )
-    .join("");
-
-  // Status change handler
-  list.querySelectorAll(".status-select").forEach((sel) => {
-    sel.addEventListener("change", async (e) => {
-      const taskId = e.target.dataset.taskId;
-      const newStatus = e.target.value;
-      e.target.className = `status-select status-${newStatus}`;
-      await updateTask(taskId, { status: newStatus });
-    });
-  });
-
-  // Assignee change handler
-  list.querySelectorAll(".assignee-select").forEach((sel) => {
-    sel.addEventListener("change", async (e) => {
-      const taskId = e.target.dataset.taskId;
-      const userId = e.target.value ? Number(e.target.value) : null;
-      await updateTask(taskId, { assigned_to: userId });
-    });
-  });
-
-  // Delete handler
-  list.querySelectorAll(".btn-delete").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
-      const taskId = e.target.dataset.taskId;
-      await deleteTask(taskId);
-      loadTasks();
-    });
-  });
-}
-
 // ── Board rendering (kanban) ──────────────────────────
 function renderBoard(tasks) {
   const groups = { todo: [], "in-progress": [], done: [] };
