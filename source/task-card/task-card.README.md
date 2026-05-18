@@ -33,13 +33,42 @@ Live demo: open `source/task-card-demo.html`.
 createTaskCard(task, projectType?, options?) → HTMLElement
 ```
 
-| Param         | Type                              | Default    | Notes                                         |
-| ------------- | --------------------------------- | ---------- | --------------------------------------------- |
-| `task`        | object                            | _required_ | See **Task shape** below                      |
-| `projectType` | `"kanban"` \| `"scrum"` \| `"xp"` | `"kanban"` | Controls which conditional fields render      |
-| `options`     | `{ compact?: boolean }`           | `{}`       | `compact: true` hides the description preview |
+| Param         | Type                              | Default    | Notes                                    |
+| ------------- | --------------------------------- | ---------- | ---------------------------------------- |
+| `task`        | object                            | _required_ | See **Task shape** below                 |
+| `projectType` | `"kanban"` \| `"scrum"` \| `"xp"` | `"kanban"` | Controls which conditional fields render |
+| `options`     | object                            | `{}`       | See **Options** below                    |
 
 Returns a detached `<article>` element. Append it wherever you want.
+
+### Options
+
+| Key        | Type                                | Notes                                                                                                                                                                                                                                       |
+| ---------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compact`  | boolean                             | Hides the description preview (`task-card--compact`).                                                                                                                                                                                       |
+| `members`  | `{ user_id, full_name }[]`          | Required to enable the assignee dropdown.                                                                                                                                                                                                   |
+| `onChange` | `(taskId, fields) => void\|Promise` | When provided, status / priority / assignee become editable `<select>`s. Called with only the changed field — e.g. `{ status: "done" }`, `{ priority: "high" }`, `{ assigned_to: 4 }` (or `null` = unassigned). Wire this up to your PATCH. |
+
+If `onChange` is omitted the card renders read-only (existing behavior). If `onChange` is provided but `members` is not, status + priority become editable but the assignee stays static.
+
+### Interactive example
+
+```js
+createTaskCard(task, "kanban", {
+  members: [
+    { user_id: 1, full_name: "Alex K." },
+    { user_id: 2, full_name: "Jordan M." },
+  ],
+  onChange: (taskId, fields) =>
+    fetch(`/api/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fields),
+    }),
+});
+```
+
+> Note: the current `/api/tasks/:taskId` PATCH accepts `status` and `assigned_to`. Priority changes update the card visually and fire `onChange`, but the field is not yet persisted in the schema.
 
 ## Task shape
 

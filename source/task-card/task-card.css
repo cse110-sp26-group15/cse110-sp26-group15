@@ -293,3 +293,58 @@
   background: var(--blocker-bg);
   color: var(--blocker-fg);
 }
+
+/* ── Editable selects (interactive cards) ─────────── */
+.task-card__select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0 12px 0 0;
+  margin: 0;
+  outline: none;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    right 4px top 50%,
+    right 1px top 50%;
+  background-size:
+    4px 4px,
+    4px 4px;
+  background-repeat: no-repeat;
+}
+
+.task-card__select:hover {
+  opacity: 0.85;
+}
+
+.task-card__select:focus-visible {
+  outline: 2px solid var(--color-accent, #1d4ed8);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.task-card__select option {
+  color: var(--color-text-primary);
+  background: var(--color-bg);
+}
+
+.task-card__select--priority {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.task-card__select--assignee {
+  font-size: 12px;
+  color: var(--color-text-primary);
+  max-width: 140px;
+  text-overflow: ellipsis;
+}
+
+.task-card__select--status {
+  padding-right: 14px;
+}

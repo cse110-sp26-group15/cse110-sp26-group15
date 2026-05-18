@@ -36,8 +36,108 @@ function capitalize(word) {
   return word[0].toUpperCase() + word.slice(1);
 }
 
+function notifyChange(ctx, task, fields) {
+  if (!ctx?.onChange) return;
+  try {
+    const result = ctx.onChange(task.task_id, fields);
+    if (result && typeof result.catch === "function") {
+      result.catch((err) => console.error("Task card onChange failed:", err));
+    }
+  } catch (err) {
+    console.error("Task card onChange threw:", err);
+  }
+}
+
+function buildPrioritySelect(task, currentPriority, iconEl, ctx) {
+  const select = document.createElement("select");
+  select.className = "task-card__select task-card__select--priority";
+  ["urgent", "high", "medium", "low"].forEach((p) => {
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = capitalize(p);
+    if (p === currentPriority) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  select.addEventListener("change", (e) => {
+    const newPriority = e.target.value;
+    [...ctx.card.classList].forEach((c) => {
+      if (c.startsWith("task-card--priority-")) ctx.card.classList.remove(c);
+    });
+    ctx.card.classList.add(`task-card--priority-${newPriority}`);
+    iconEl.textContent = PRIORITY_ICONS[newPriority] ?? "";
+    notifyChange(ctx, task, { priority: newPriority });
+  });
+
+  return select;
+}
+
+function buildStatusSelect(task, ctx) {
+  const select = document.createElement("select");
+  const currentStatus = task.status ?? "todo";
+  select.className = `task-card__select task-card__select--status task-card__status task-card__status--${currentStatus}`;
+
+  Object.entries(STATUS_LABELS).forEach(([value, labelText]) => {
+    if (value === "blocked") return;
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = labelText;
+    if (value === currentStatus) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  select.addEventListener("change", (e) => {
+    const newStatus = e.target.value;
+    [...select.classList].forEach((c) => {
+      if (c.startsWith("task-card__status--")) select.classList.remove(c);
+    });
+    select.classList.add(`task-card__status--${newStatus}`);
+    notifyChange(ctx, task, { status: newStatus });
+  });
+
+  return select;
+}
+
+function buildAssigneeSelect(task, members, avatarEl, pairFirstName, ctx) {
+  const select = document.createElement("select");
+  select.className = "task-card__select task-card__select--assignee";
+
+  const formatLabel = (firstName) =>
+    pairFirstName ? `${firstName || "Unassigned"} & ${pairFirstName}` : firstName || "Unassigned";
+
+  const unassigned = document.createElement("option");
+  unassigned.value = "";
+  unassigned.textContent = formatLabel("Unassigned");
+  select.appendChild(unassigned);
+
+  members.forEach((m) => {
+    const opt = document.createElement("option");
+    opt.value = String(m.user_id);
+    const first = (m.full_name ?? "").split(/\s+/)[0] || m.full_name || "";
+    opt.textContent = pairFirstName ? formatLabel(first) : m.full_name ?? "";
+    select.appendChild(opt);
+  });
+
+  let currentId = task.assigned_to != null ? String(task.assigned_to) : "";
+  if (currentId === "" && task.full_name) {
+    const match = members.find((m) => m.full_name === task.full_name);
+    if (match) currentId = String(match.user_id);
+  }
+  select.value = currentId;
+
+  select.addEventListener("change", (e) => {
+    const rawValue = e.target.value;
+    const newId = rawValue === "" ? null : Number(rawValue);
+    const newMember = newId == null ? null : members.find((m) => String(m.user_id) === rawValue);
+    avatarEl.textContent = initials(newMember?.full_name);
+    notifyChange(ctx, task, { assigned_to: newId });
+  });
+
+  return select;
+}
+
 // ── Sections ──────────────────────────────────────────
-function buildBanner(task, projectType) {
+function buildBanner(task, projectType, ctx) {
   const priority = task.priority ?? "low";
   const banner = document.createElement("div");
   banner.className = "task-card__banner";
@@ -50,11 +150,18 @@ function buildBanner(task, projectType) {
   icon.textContent = PRIORITY_ICONS[priority] ?? "";
   label.appendChild(icon);
 
-  let text = capitalize(priority);
-  if (projectType === "scrum" && task.sprint) {
-    text += ` · ${task.sprint}`;
+  if (ctx?.interactive) {
+    label.appendChild(buildPrioritySelect(task, priority, icon, ctx));
+    if (projectType === "scrum" && task.sprint) {
+      label.appendChild(document.createTextNode(` · ${task.sprint}`));
+    }
+  } else {
+    let text = capitalize(priority);
+    if (projectType === "scrum" && task.sprint) {
+      text += ` · ${task.sprint}`;
+    }
+    label.appendChild(document.createTextNode(text));
   }
-  label.appendChild(document.createTextNode(text));
   banner.appendChild(label);
 
   const meta = document.createElement("div");
@@ -141,7 +248,7 @@ function buildBody(task, projectType) {
   return body;
 }
 
-function buildFooter(task, projectType) {
+function buildFooter(task, projectType, ctx) {
   const footer = document.createElement("div");
   footer.className = "task-card__footer";
 
@@ -156,32 +263,45 @@ function buildFooter(task, projectType) {
   primary.textContent = initials(task.full_name);
   avatars.appendChild(primary);
 
-  let label = task.full_name ?? "Unassigned";
+  let pairFirstName = null;
   if (projectType === "xp" && task.pair_assignee) {
     const pair = document.createElement("span");
     pair.className = "task-card__avatar task-card__avatar--pair";
     pair.textContent = initials(task.pair_assignee);
     avatars.appendChild(pair);
 
-    const [primaryFirst] = (task.full_name ?? "").split(/\s+/);
     const [pairFirst] = task.pair_assignee.split(/\s+/);
-    label = `${primaryFirst || "Unassigned"} & ${pairFirst}`;
+    pairFirstName = pairFirst;
   }
 
   assignees.appendChild(avatars);
 
-  const name = document.createElement("span");
-  name.className = "task-card__assignee-name";
-  name.textContent = label;
-  assignees.appendChild(name);
+  const canEditAssignee = ctx?.interactive && Array.isArray(ctx.members);
+  if (canEditAssignee) {
+    assignees.appendChild(buildAssigneeSelect(task, ctx.members, primary, pairFirstName, ctx));
+  } else {
+    let labelText = task.full_name ?? "Unassigned";
+    if (pairFirstName) {
+      const [primaryFirst] = (task.full_name ?? "").split(/\s+/);
+      labelText = `${primaryFirst || "Unassigned"} & ${pairFirstName}`;
+    }
+    const name = document.createElement("span");
+    name.className = "task-card__assignee-name";
+    name.textContent = labelText;
+    assignees.appendChild(name);
+  }
 
   footer.appendChild(assignees);
 
-  const statusKey = task.is_blocked ? "blocked" : (task.status ?? "todo");
-  const status = document.createElement("span");
-  status.className = `task-card__status task-card__status--${statusKey}`;
-  status.textContent = STATUS_LABELS[statusKey] ?? statusKey;
-  footer.appendChild(status);
+  if (ctx?.interactive && !task.is_blocked) {
+    footer.appendChild(buildStatusSelect(task, ctx));
+  } else {
+    const statusKey = task.is_blocked ? "blocked" : (task.status ?? "todo");
+    const status = document.createElement("span");
+    status.className = `task-card__status task-card__status--${statusKey}`;
+    status.textContent = STATUS_LABELS[statusKey] ?? statusKey;
+    footer.appendChild(status);
+  }
 
   return footer;
 }
@@ -216,19 +336,35 @@ function buildFooter(task, projectType) {
  * @param {object}  [options]
  * @param {boolean} [options.compact=false]     Adds `task-card--compact`
  *        (hides description preview — useful for dense kanban columns).
+ * @param {Array<{user_id: number|string, full_name: string}>} [options.members]
+ *        When provided alongside `onChange`, the assignee becomes an editable
+ *        `<select>` populated from this list.
+ * @param {(taskId: number|string, fields: object) => void|Promise<void>} [options.onChange]
+ *        Called when the user changes status, priority, or assignee.
+ *        `fields` contains only the changed key, e.g. `{ status: "done" }`,
+ *        `{ priority: "high" }`, or `{ assigned_to: 4 }` (null = unassigned).
+ *        Pass this to make the card interactive; omit to render read-only.
  *
  * @returns {HTMLElement} A detached <article> ready to be appended.
  */
-export function createTaskCard(task, projectType = "kanban", { compact = false } = {}) {
+export function createTaskCard(task, projectType = "kanban", options = {}) {
+  const { compact = false, members = null, onChange = null } = options;
   const priority = task.priority ?? "low";
   const card = document.createElement("article");
   card.className = `task-card task-card--priority-${priority} task-card--${projectType}`;
   if (compact) card.classList.add("task-card--compact");
   card.dataset.taskId = task.task_id;
 
-  card.appendChild(buildBanner(task, projectType));
+  const ctx = {
+    card,
+    members,
+    onChange,
+    interactive: typeof onChange === "function",
+  };
+
+  card.appendChild(buildBanner(task, projectType, ctx));
   card.appendChild(buildBody(task, projectType));
-  card.appendChild(buildFooter(task, projectType));
+  card.appendChild(buildFooter(task, projectType, ctx));
 
   return card;
 }
