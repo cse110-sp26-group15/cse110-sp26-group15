@@ -134,10 +134,70 @@ async function loadTasks() {
   renderTasks(tasks);
 }
 
+// ── Pair sessions (XP dashboard) ──────────────────────
+// Static placeholder cards live in xp.html. When the pairing API lands
+// (expected: GET /api/projects/:id/pairs → { pairs: [...] }), call
+// window.renderPairs(pairs) to replace the placeholders. Expected pair
+// shape: { pair_id, title, is_ai_pair, status_text, driver: { full_name,
+// role }, partner: { full_name, role, is_agent } }
+function initialsFor(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/);
+  return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
+function renderPairs(pairs) {
+  const list = document.getElementById("pair-list");
+  if (!list || !Array.isArray(pairs) || pairs.length === 0) return;
+
+  list.innerHTML = pairs
+    .map((p) => {
+      const isAI = p.is_ai_pair || p.partner?.is_agent;
+      const driver = p.driver ?? {};
+      const partner = p.partner ?? {};
+      const driverName = driver.full_name ?? "—";
+      const partnerName = partner.full_name ?? "—";
+      const driverRole = driver.role ?? "driving";
+      const partnerRole = partner.role ?? (isAI ? "co-pilot" : "navigating");
+      const baseTitle = p.title ?? "Pair Session";
+      const title = isAI ? `${baseTitle} · Human + AI` : baseTitle;
+      const meta = p.status_text ?? "active";
+
+      return `
+      <article class="pair-card${isAI ? " pair-card-ai" : ""}" data-pair-id="${p.pair_id ?? ""}">
+        <div class="pair-card-header">
+          <span class="pair-card-title">${title}</span>
+        </div>
+        <div class="pair-card-body">
+          <div class="pair-member">
+            <div class="avatar pair-avatar">${initialsFor(driverName)}</div>
+            <div class="pair-member-info">
+              <p class="pair-member-name">${driverName}</p>
+              <p class="pair-member-role">${driverRole}</p>
+            </div>
+          </div>
+          <span class="pair-arrow" aria-hidden="true">⇄</span>
+          <div class="pair-member">
+            <div class="avatar pair-avatar${isAI ? " pair-avatar-ai" : ""}">${isAI ? "AI" : initialsFor(partnerName)}</div>
+            <div class="pair-member-info">
+              <p class="pair-member-name">${partnerName}</p>
+              <p class="pair-member-role">${partnerRole}</p>
+            </div>
+          </div>
+        </div>
+        <div class="pair-card-footer">
+          <p class="pair-meta">${meta}</p>
+        </div>
+      </article>`;
+    })
+    .join("");
+}
+
 // Expose to task-form module
 window.getProjectMembers = () => projectMembers;
 window.createTask = createTask;
 window.loadTasks = loadTasks;
+window.renderPairs = renderPairs;
 
 // ── Init ──────────────────────────────────────────────
 async function init() {
