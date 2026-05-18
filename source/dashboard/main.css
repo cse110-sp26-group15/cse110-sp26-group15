@@ -240,6 +240,326 @@ body {
   color: var(--color-text-muted);
 }
 
+/* ── XP Dashboard ──────────────────────────────────── */
+.xp-dashboard {
+  max-width: 1100px;
+}
+
+.xp-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.xp-page-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.xp-page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.xp-page-subtitle {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.xp-section {
+  margin-bottom: 28px;
+}
+
+/* ── Pairing section ───────────────────────────────── */
+.pair-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.pair-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pair-card-ai {
+  border-color: #c4b5fd;
+  background: #f5f3ff;
+}
+
+.pair-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pair-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6d28d9;
+}
+
+.pair-card-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pair-member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pair-avatar {
+  width: 32px;
+  height: 32px;
+  background: #e5e5e3;
+  color: #525252;
+  font-size: 12px;
+}
+
+.pair-avatar-ai {
+  background: #6d28d9;
+  color: #fff;
+  font-size: 10px;
+}
+
+.pair-member-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pair-member-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pair-member-role {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.pair-arrow {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.pair-card-footer {
+  border-top: 1px solid var(--color-border);
+  padding-top: 8px;
+}
+
+.pair-card-ai .pair-card-footer {
+  border-top-color: #ddd6fe;
+}
+
+.pair-meta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.pair-card-ai .pair-meta {
+  color: #6d28d9;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #6d28d9;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Check-ins section ─────────────────────────────── */
+.section-subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-left: 6px;
+}
+
+.checkin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkin-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.checkin-row-ai {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+.checkin-avatar {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.checkin-source {
+  width: 26px;
+  height: 18px;
+  border-radius: 4px;
+  background: #6d28d9;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.checkin-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checkin-headline {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkin-body {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkin-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.checkin-badge-on-track {
+  color: #15803d;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.checkin-badge-blocked {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.checkin-badge-in-progress {
+  color: #0e7490;
+  border-color: #a5f3fc;
+  background: #ecfeff;
+}
+
+.checkin-badge-running {
+  color: #15803d;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.checkin-badge-needs-review {
+  color: #b45309;
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.checkin-badge-default {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+.checkin-time {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  min-width: 56px;
+  text-align: right;
+}
+
+.checkin-row-ai .checkin-time {
+  color: #6d28d9;
+}
+
+/* ── Blocker banner ────────────────────────────────── */
+.blocker-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #b91c1c;
+}
+
+.blocker-banner.hidden {
+  display: none;
+}
+
+.blocker-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.blocker-summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b91c1c;
+  margin: 0;
+}
+
+.blocker-summary .blocker-mention {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
 /* ── Tasks ─────────────────────────────────────────── */
 .section-header {
   display: flex;
