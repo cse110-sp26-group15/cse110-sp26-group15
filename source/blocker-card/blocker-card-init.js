@@ -5,6 +5,7 @@ import {
   mapApiBlocker,
   matchTaskByName,
   normalizeTaskName,
+  wireCollapseToggle,
 } from "./blocker-card.js";
 
 const DEFAULT_API_URL = "/api/blockers?general=true";
@@ -187,7 +188,7 @@ export async function mountBlockerRail({
     let blockers;
     try {
       const apiRows = await fetchBlockers();
-      blockers = (apiRows ?? []).map(mapApiBlocker);
+      blockers = (apiRows ?? []).map(mapApiBlocker).filter(Boolean);
     } catch (err) {
       console.warn("[blocker-rail] refresh failed", err);
       blockers = [];
@@ -236,42 +237,15 @@ export async function mountBlockerRail({
 }
 
 // ── Placeholder collapse toggle ───────────────────────
-// Shares the "blocker-rail:collapsed" localStorage key with createBlockerRail
-// so toggling either state stays consistent when the rail appears/disappears.
+// Uses wireCollapseToggle to share the collapsed-state localStorage key with
+// createBlockerRail so toggling either side stays consistent when the rail
+// appears/disappears.
 function setupPlaceholderToggle(placeholder) {
   placeholder.setAttribute("role", "button");
   placeholder.setAttribute("tabindex", "0");
   placeholder.setAttribute("aria-expanded", "true");
   placeholder.setAttribute("aria-label", "Toggle blockers section");
-
-  function setCollapsed(collapsed) {
-    placeholder.dataset.collapsed = String(collapsed);
-    placeholder.setAttribute("aria-expanded", String(!collapsed));
-    try {
-      localStorage.setItem("blocker-rail:collapsed", String(collapsed));
-    } catch {
-      /* localStorage unavailable */
-    }
-  }
-
-  placeholder.addEventListener("click", () => {
-    setCollapsed(placeholder.dataset.collapsed !== "true");
-  });
-  placeholder.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      setCollapsed(placeholder.dataset.collapsed !== "true");
-    }
-  });
-
-  try {
-    if (localStorage.getItem("blocker-rail:collapsed") === "true") {
-      placeholder.dataset.collapsed = "true";
-      placeholder.setAttribute("aria-expanded", "false");
-    }
-  } catch {
-    /* localStorage unavailable */
-  }
+  wireCollapseToggle({ trigger: placeholder });
 }
 
 // ── Auto-mount on the dashboard view only ─────────────

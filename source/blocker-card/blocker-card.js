@@ -1,4 +1,46 @@
 // ── Blocker Card Component ────────────────────────────
+const COLLAPSE_STORAGE_KEY = "blocker-rail:collapsed";
+
+/**
+ * Wire click + Enter/Space toggling on `trigger` that flips a `data-collapsed`
+ * flag on `stateEl` (defaults to the trigger), keeps `aria-expanded` on the
+ * trigger in sync, and persists the collapsed state to localStorage under a
+ * shared key so the rail and its placeholder stay consistent across renders.
+ *
+ * @param {object} options
+ * @param {HTMLElement} options.trigger  Element that receives click/keydown.
+ * @param {HTMLElement} [options.stateEl=trigger]  Element that carries `data-collapsed` (used by CSS).
+ */
+export function wireCollapseToggle({ trigger, stateEl = trigger }) {
+  function setCollapsed(collapsed) {
+    stateEl.dataset.collapsed = String(collapsed);
+    trigger.setAttribute("aria-expanded", String(!collapsed));
+    try {
+      localStorage.setItem(COLLAPSE_STORAGE_KEY, String(collapsed));
+    } catch {
+      /* localStorage unavailable — silently skip persistence */
+    }
+  }
+
+  trigger.addEventListener("click", () => {
+    setCollapsed(stateEl.dataset.collapsed !== "true");
+  });
+  trigger.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setCollapsed(stateEl.dataset.collapsed !== "true");
+    }
+  });
+
+  try {
+    if (localStorage.getItem(COLLAPSE_STORAGE_KEY) === "true") {
+      setCollapsed(true);
+    }
+  } catch {
+    /* localStorage unavailable */
+  }
+}
+
 function initials(name) {
   if (!name) return "?";
   return name
@@ -253,34 +295,7 @@ export function createBlockerRail(blockers, { onResolve } = {}) {
 
   // Persist across the recreate-on-refresh that mountBlockerRail does, so
   // resolving a blocker doesn't re-expand a section the user collapsed.
-  function setCollapsed(collapsed) {
-    rail.dataset.collapsed = String(collapsed);
-    header.setAttribute("aria-expanded", String(!collapsed));
-    try {
-      localStorage.setItem("blocker-rail:collapsed", String(collapsed));
-    } catch {
-      /* localStorage unavailable — silently skip persistence */
-    }
-  }
-
-  header.addEventListener("click", () => {
-    setCollapsed(rail.dataset.collapsed !== "true");
-  });
-  header.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      setCollapsed(rail.dataset.collapsed !== "true");
-    }
-  });
-
-  try {
-    if (localStorage.getItem("blocker-rail:collapsed") === "true") {
-      rail.dataset.collapsed = "true";
-      header.setAttribute("aria-expanded", "false");
-    }
-  } catch {
-    /* localStorage unavailable */
-  }
+  wireCollapseToggle({ trigger: header, stateEl: rail });
 
   return rail;
 }
@@ -343,6 +358,7 @@ export function createBlockerPlaceholder() {
  * @returns {object} A blocker object ready for createBlockerCard.
  */
 export function mapApiBlocker(apiRow) {
+  if (!apiRow || typeof apiRow !== "object") return null;
   const rawReporter = apiRow.reported_by;
   const reportedBy =
     rawReporter && typeof rawReporter === "object"

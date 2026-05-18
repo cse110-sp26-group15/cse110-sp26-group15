@@ -6,14 +6,19 @@ Live demo: open `source/blocker-card/blocker-card-demo.html` via `npm run dev:pa
 
 ## Quick start (drop-in on the dashboard)
 
-Already wired. `source/dashboard/main.html` loads:
+Already wired on all four dashboard pages — `main.html`, `kanban.html`, `scrum.html`, `xp.html` — each of which loads:
 
 ```html
 <link rel="stylesheet" href="../blocker-card/blocker-card.css" />
 <script type="module" src="../blocker-card/blocker-card-init.js"></script>
 ```
 
-`blocker-card-init.js` auto-mounts a rail into `#dashboard-view`, before `.section-header`, on any page where those two selectors exist. On other pages it does nothing — no errors, no side effects.
+On any page with `#dashboard-view`, `blocker-card-init.js`:
+
+1. Creates a collapsible **"No current blockers" placeholder** (see [Placeholder & empty state](#placeholder--empty-state)) and inserts it immediately after `.section-header`.
+2. Fetches `/api/blockers?general=true`. If there are active blockers, it builds a rail and inserts it at the same anchor — the placeholder is hidden while the rail is visible.
+
+On pages without `#dashboard-view`, it does nothing — no errors, no side effects.
 
 ## Quick start (manual mount on another page)
 
@@ -67,7 +72,11 @@ Pure DOM builder. Use only if you want a single card outside a rail.
 
 ### `createBlockerRail(blockers) → HTMLElement | null`
 
-Pure DOM builder. Returns `null` when `blockers` is empty so callers can hide the rail entirely.
+Pure DOM builder. Returns `null` when `blockers` is empty so callers can hide the rail entirely. The rail is collapsible — see [Collapsible behavior](#collapsible-behavior).
+
+### `createBlockerPlaceholder() → HTMLElement`
+
+Pure DOM builder for the dashed "No current blockers" empty-state. `mountBlockerRail`'s auto-mount calls this when a dashboard doesn't author one inline. Use directly only if you need to drop the placeholder somewhere other than the auto-mount location.
 
 ### `attachRailNavigation(rail, { findTask }) → void`
 
@@ -75,10 +84,14 @@ Attach click + Enter/Space activation. Call manually if you used `createBlockerR
 
 ### Pure helpers (also exported)
 
-- `mapApiBlocker(apiRow)` — adapt one row from `/api/blockers` to the card shape.
+- `mapApiBlocker(apiRow)` — adapt one row from `/api/blockers` to the card shape. Returns `null` for non-object rows so callers can `.filter(Boolean)` a malformed API response without crashing the render.
 - `filterActiveBlockers(blockers)` — drop resolved entries.
 - `normalizeTaskName(str)` — same trim/lowercase rule used by `matchTaskByName`.
 - `matchTaskByName(taskName, tasks)` — name-based task lookup (see caveat below).
+
+### Collapse wiring (also exported)
+
+- `wireCollapseToggle({ trigger, stateEl })` — attach click + Enter/Space toggling that flips `data-collapsed` on `stateEl` (defaults to `trigger`), keeps `aria-expanded` on the trigger in sync, and persists state to the shared `"blocker-rail:collapsed"` localStorage key. Used internally by `createBlockerRail` and the placeholder; export is exposed so any future blocker-adjacent surface can stay consistent with the same collapse contract.
 
 ## Blocker shape
 
@@ -87,11 +100,43 @@ Attach click + Enter/Space activation. Call manually if you used `createBlockerR
   task: string | null; // task name; renders the footer when present
   blocked: boolean; // true → "BLOCKED", false → "RESOLVED" (and dimmed)
   helper: string | null; // helper name; renders the "Can help" row when present
-  description: string; // main card body text (2-line clamp)
+  reportedBy: string | null; // who needs help; renders inline in the banner when present
+  description: string; // main card body text (2-line clamp, scrollable on hover)
 }
 ```
 
-This is exactly the shape `mapApiBlocker` produces from a `/api/blockers?general=true` row, so most callers won't construct it by hand.
+This is exactly the shape `mapApiBlocker` produces from a `/api/blockers?general=true` row, so most callers won't construct it by hand. `mapApiBlocker` also handles both the string and `{user_id, full_name}` object shapes for `reported_by` from the API.
+
+## Placeholder & empty state
+
+When there are no active blockers, dashboards still show a dashed-outline placeholder reading **"✓ No current blockers"**. It doubles as a reserved-space marker so teammates designing other dashboard UI can see where the rail will land.
+
+```
+┌──────────────────────────────────────────────────┐
+│ ✓  No current blockers              HIDE  ▾      │
+│                                                  │
+│           (dashed border, ~170 px tall)          │
+└──────────────────────────────────────────────────┘
+```
+
+- **Auto-created** by `mountBlockerRail` if no `[data-blocker-placeholder]` element already exists in the container. Inserted right after `.section-header`.
+- **Hidden** (`hidden` attribute) whenever the rail has visible cards. Re-shown when the rail returns no active blockers, the fetch fails, or `destroy()` is called.
+- **Opt out of auto-creation** by authoring your own placeholder inline:
+  ```html
+  <div class="blocker-rail-placeholder" data-blocker-placeholder>
+    <!-- your custom content -->
+  </div>
+  ```
+  The init script will use yours instead of creating one, but `setupPlaceholderToggle` still wires up the collapse behavior.
+
+## Collapsible behavior
+
+Both the rail header and the placeholder are click/keyboard-toggleable: click anywhere in the header (or focus it and press Enter/Space) to hide the card track, leaving just the title + count badge (or the empty-state line). A "SHOW / HIDE" label and rotating chevron indicate state.
+
+- **State persists** in `localStorage` under the key `"blocker-rail:collapsed"` (`"true"` or `"false"`).
+- **Shared** between the rail and placeholder — collapsing one carries over when the other becomes visible. A user who prefers "compact" sees compact in both states.
+- **Survives refreshes** triggered by `blockers:changed` (the rail is recreated on every refresh; the new instance reads the saved state before being inserted, so there's no flash).
+- **Surviving across pages** is intentional — switching from `main.html` to `kanban.html` keeps the user's preference. If you want per-page state instead, scope the key to include the page name.
 
 ## Resolving blockers
 
@@ -139,8 +184,9 @@ Clicking a card's task footer **does not navigate to the task**. The current beh
 ## Accessibility
 
 - Footer has `role="button"`, `tabIndex=0`, and `aria-label="Open task: <name>"`.
-- `:focus-visible` shows a 2 px red outline.
-- The decorative `›` arrow is `aria-hidden`.
+- Rail header and placeholder both have `role="button"`, `tabIndex=0`, `aria-expanded`, and a descriptive `aria-label` for the collapse toggle.
+- `:focus-visible` shows a 2 px red outline (or gray, on the placeholder).
+- Decorative glyphs (`›`, `▾`, `⚠`, `✓`) are `aria-hidden`.
 - Missing-state changes are announced via a visually-hidden `role="status"` live region appended to the rail.
 
 ## Styling
@@ -175,10 +221,10 @@ Cards are a fixed `240px` so they line up cleanly in the scroll rail. The rail u
 
 ## Files
 
-- `blocker-card.js` — DOM builders + pure helpers.
-- `blocker-card-init.js` — `mountBlockerRail` factory, `attachRailNavigation` (click/keyboard behavior), and auto-mount on dashboard.
+- `blocker-card.js` — DOM builders (`createBlockerCard`, `createBlockerRail`, `createBlockerPlaceholder`), pure helpers (`mapApiBlocker`, `filterActiveBlockers`, `normalizeTaskName`, `matchTaskByName`), and the shared `wireCollapseToggle` collapse helper.
+- `blocker-card-init.js` — `mountBlockerRail` factory, `attachRailNavigation` (footer click/keyboard behavior), placeholder auto-creation + toggle wiring (via `wireCollapseToggle`), and auto-mount on dashboards.
 - `blocker-card.css` — styles + scoped tokens.
-- `blocker-card-demo.html` + `blocker-card-demo.js` — live demo (rail + standalone cards).
+- `blocker-card-demo.html` + `blocker-card-demo.js` — live demo (rail with working in-memory Resolve + standalone cards).
 
 ## Tests
 
