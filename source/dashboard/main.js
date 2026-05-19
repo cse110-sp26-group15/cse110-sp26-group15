@@ -1,9 +1,15 @@
-import { mockTasks, mockMembers } from "./mock-data.js";
-import { createTaskCard } from "../task-card/task-card.js";
+import { mockTasks, mockMembers, mockCheckins } from "./mock-data.js";
+import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
+
 
 // ── Navigation ────────────────────────────────────────
 document.querySelectorAll(".nav-item").forEach((item) => {
   item.addEventListener("click", (e) => {
+    const href = item.getAttribute("href");
+    // Real links (e.g. ../check-in/check-in.html) navigate normally.
+    // Only intercept in-page tabs (href="#").
+    if (href && href !== "#") return;
+
     e.preventDefault();
     document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
     item.classList.add("active");
@@ -166,6 +172,9 @@ function populateCreateFormAssignees() {
 }
 
 // ── Board rendering (kanban) ──────────────────────────
+let draggingCard = null;
+
+// ── Board rendering (kanban) ──────────────────────────
 function renderBoard(tasks) {
   const groups = { todo: [], "in-progress": [], done: [] };
   for (const task of tasks) {
@@ -193,14 +202,15 @@ function renderBoard(tasks) {
       const card = createTaskCard(task, "kanban");
 
       card.setAttribute("draggable", "true");
-
       card.addEventListener("dragstart", (e) => {
         e.dataTransfer.setData("text/plain", String(task.task_id));
         card.classList.add("task-card--dragging");
+        draggingCard = card;
       });
 
       card.addEventListener("dragend", () => {
         card.classList.remove("task-card--dragging");
+        draggingCard = null;
       });
 
       container.appendChild(card);
@@ -316,13 +326,18 @@ function renderPairs(pairs) {
  * @returns {Promise<object|null>} The dashboard payload, or null on failure.
  */
 async function fetchDashboard() {
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/dashboard`);
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
+  // TODO: swap back to real API when deploying
+  // try {
+  //   const res = await fetch(`/api/projects/${PROJECT_ID}/dashboard`);
+  //   if (!res.ok) return null;
+  //   return res.json();
+  // } catch {
+  //   return null;
+  // }
+  return {
+    checkins: { entries: mockCheckins },
+    open_blockers: [],
+  };
 }
 
 /**
@@ -485,6 +500,20 @@ window.renderPairs = renderPairs;
 window.loadCheckins = loadCheckins;
 window.loadBlockers = loadBlockers;
 
+function moveCardTo(card, destZone, srcZone, srcStatus, destStatus) {
+  destZone.querySelector(".kanban-col__empty")?.remove();
+  destZone.appendChild(card);
+  setTaskCardStatus(card, destStatus);   // ← new line
+  if (srcZone.children.length === 0) {
+    srcZone.innerHTML = `<p class="kanban-col__empty">No tasks yet</p>`;
+  }
+  const srcCount = document.getElementById(`count-${srcStatus}`);
+  const destCount = document.getElementById(`count-${destStatus}`);
+  if (srcCount) srcCount.textContent = String(Number(srcCount.textContent || "0") - 1);
+  if (destCount) destCount.textContent = String(Number(destCount.textContent || "0") + 1);
+}
+
+
 // ── Drop zones (init once) ────────────────────────────
 document.querySelectorAll(".kanban-col__cards").forEach((zone) => {
   zone.addEventListener("dragover", (e) => {
@@ -499,9 +528,21 @@ document.querySelectorAll(".kanban-col__cards").forEach((zone) => {
     zone.classList.remove("kanban-col__cards--over");
     const taskId = e.dataTransfer.getData("text/plain");
     const newStatus = zone.closest(".kanban-col")?.dataset.status;
-    if (!taskId || !newStatus) return;
-    await updateTask(taskId, { status: newStatus });
-    loadTasks();
+    if (!taskId || !newStatus || !draggingCard) return;
+
+    const card = draggingCard;
+    const oldZone = card.parentElement;
+    const oldStatus = oldZone?.closest(".kanban-col")?.dataset.status;
+    if (!oldZone || !oldStatus || oldStatus === newStatus) return;
+
+    moveCardTo(card, zone, oldZone, oldStatus, newStatus);
+
+    try {
+      const result = await updateTask(taskId, { status: newStatus });
+      if (!result?.task) throw new Error("update failed");
+    } catch {
+      moveCardTo(card, oldZone, zone, newStatus, oldStatus);
+    }
   });
 });
 
