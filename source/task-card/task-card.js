@@ -619,9 +619,7 @@ function buildFooter(task, projectType, ctx) {
     );
 
     const syncDisabled = () => {
-      const primaryMember = ctx.members.find(
-        (m) => String(m.user_id) === primary.select.value
-      );
+      const primaryMember = ctx.members.find((m) => String(m.user_id) === primary.select.value);
       const pairMember = ctx.members.find((m) => m.full_name === pair.select.value);
       const blockedNameForPair = primaryMember ? primaryMember.full_name : "";
       const blockedIdForPrimary = pairMember ? String(pairMember.user_id) : "";
