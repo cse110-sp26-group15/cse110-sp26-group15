@@ -926,9 +926,8 @@
         height: 36px;
         border-radius: var(--radius-full);
         background: var(--color-accent);
-        transition:
-          left var(--motion-duration, var(--duration-normal))
-            var(--motion-ease, var(--ease-default));
+        transition: left var(--motion-duration, var(--duration-normal))
+          var(--motion-ease, var(--ease-default));
       }
       .motion-ball.moved {
         left: calc(100% - 36px - var(--space-xs));
@@ -971,10 +970,7 @@
       /* --- 14. Mini Kanban board (consumes --kanban-column-min) --- */
       .kanban-board {
         display: grid;
-        grid-template-columns: repeat(
-          auto-fill,
-          minmax(var(--kanban-column-min), 1fr)
-        );
+        grid-template-columns: repeat(auto-fill, minmax(var(--kanban-column-min), 1fr));
         gap: var(--space-md);
       }
       .kanban-column {
@@ -1584,8 +1580,8 @@
       <section class="section" aria-labelledby="sec-buttons">
         <h2 id="sec-buttons" class="section-title">Buttons</h2>
         <p class="section-description">
-          All variants × sizes × states. Hover/focus a button to see the motion + focus tokens
-          in action.
+          All variants × sizes × states. Hover/focus a button to see the motion + focus tokens in
+          action.
         </p>
 
         <h3 class="subsection-title">Variants</h3>
@@ -1632,12 +1628,12 @@
       <section class="section" aria-labelledby="sec-forms">
         <h2 id="sec-forms" class="section-title">Form Fields</h2>
         <p class="section-description">
-          Inputs use <code class="font-mono">--color-border-strong</code> at rest and the
-          documented outline + box-shadow focus pattern. Error state swaps the border to
+          Inputs use <code class="font-mono">--color-border-strong</code> at rest and the documented
+          outline + box-shadow focus pattern. Error state swaps the border to
           <code class="font-mono">--color-error</code>.
         </p>
 
-        <form class="form-demo" onsubmit="event.preventDefault();">
+        <form class="form-demo" onsubmit="event.preventDefault()">
           <div class="field">
             <label class="field-label" for="sg-name">Task title</label>
             <input
@@ -1676,9 +1672,7 @@
           </div>
 
           <div class="demo-row">
-            <label class="field-inline">
-              <input type="checkbox" checked /> Notify watchers
-            </label>
+            <label class="field-inline"> <input type="checkbox" checked /> Notify watchers </label>
             <label class="field-inline">
               <input type="checkbox" /> Block release on completion
             </label>
@@ -1703,16 +1697,16 @@
       <section class="section" aria-labelledby="sec-alerts">
         <h2 id="sec-alerts" class="section-title">Alerts &amp; Banners</h2>
         <p class="section-description">
-          The four status colors paired with their AA-safe on-muted text tokens. Border-left
-          uses the solid status color for a visual accent.
+          The four status colors paired with their AA-safe on-muted text tokens. Border-left uses
+          the solid status color for a visual accent.
         </p>
 
         <div class="grid" style="gap: var(--space-sm)">
           <div class="alert alert-info" role="status">
             <p class="alert-title">New theme tokens available</p>
             <p class="alert-body">
-              Pull from <code class="font-mono">main</code> to pick up the V3 accent-muted
-              token and the on-fill foreground pairings.
+              Pull from <code class="font-mono">main</code> to pick up the V3 accent-muted token and
+              the on-fill foreground pairings.
             </p>
           </div>
           <div class="alert alert-success" role="status">
@@ -1763,17 +1757,32 @@
 
         <h3 class="subsection-title">Dot indicators</h3>
         <div class="demo-row">
-          <span><span class="badge-dot" style="background: var(--color-success)"></span> Online</span>
-          <span><span class="badge-dot" style="background: var(--color-warning-bg)"></span> Idle</span>
-          <span><span class="badge-dot" style="background: var(--color-error)"></span> Offline</span>
-          <span><span class="badge-dot" style="background: var(--color-text-subtle)"></span> Unknown</span>
+          <span
+            ><span class="badge-dot" style="background: var(--color-success)"></span> Online</span
+          >
+          <span
+            ><span class="badge-dot" style="background: var(--color-warning-bg)"></span> Idle</span
+          >
+          <span
+            ><span class="badge-dot" style="background: var(--color-error)"></span> Offline</span
+          >
+          <span
+            ><span class="badge-dot" style="background: var(--color-text-subtle)"></span>
+            Unknown</span
+          >
         </div>
 
         <h3 class="subsection-title">Count badges</h3>
         <div class="demo-row">
-          <span class="font-mono" style="font-size: var(--text-sm)">Notifications <span class="badge-count">3</span></span>
-          <span class="font-mono" style="font-size: var(--text-sm)">Inbox <span class="badge-count">12</span></span>
-          <span class="font-mono" style="font-size: var(--text-sm)">Errors <span class="badge-count">99+</span></span>
+          <span class="font-mono" style="font-size: var(--text-sm)"
+            >Notifications <span class="badge-count">3</span></span
+          >
+          <span class="font-mono" style="font-size: var(--text-sm)"
+            >Inbox <span class="badge-count">12</span></span
+          >
+          <span class="font-mono" style="font-size: var(--text-sm)"
+            >Errors <span class="badge-count">99+</span></span
+          >
         </div>
       </section>
 
@@ -1787,9 +1796,8 @@
           <code class="font-mono">--color-text-on-inverse</code> at
           <code class="font-mono">--z-tooltip</code>. Menu sits at
           <code class="font-mono">--z-dropdown</code>. Modal pairs
-          <code class="font-mono">--z-overlay</code> with
-          <code class="font-mono">--z-modal</code>. Toasts sit at
-          <code class="font-mono">--z-toast</code>.
+          <code class="font-mono">--z-overlay</code> with <code class="font-mono">--z-modal</code>.
+          Toasts sit at <code class="font-mono">--z-toast</code>.
         </p>
 
         <h3 class="subsection-title">Tooltip &amp; dropdown menu</h3>
@@ -1811,9 +1819,7 @@
 
         <h3 class="subsection-title">Modal</h3>
         <div class="demo-row">
-          <button id="sg-open-modal" class="btn btn-primary" type="button">
-            Open modal
-          </button>
+          <button id="sg-open-modal" class="btn btn-primary" type="button">Open modal</button>
         </div>
         <div class="modal-stage" id="sg-modal-stage">
           <div class="modal-overlay" id="sg-modal-overlay"></div>
@@ -1826,34 +1832,26 @@
           >
             <h3 id="sg-modal-title" class="modal-title">Delete this task?</h3>
             <p class="modal-body">
-              This will permanently remove the task and any attached blockers. This
-              action cannot be undone.
+              This will permanently remove the task and any attached blockers. This action cannot be
+              undone.
             </p>
             <div class="modal-footer">
-              <button id="sg-modal-cancel" class="btn btn-ghost" type="button">
-                Cancel
-              </button>
-              <button id="sg-modal-confirm" class="btn btn-danger" type="button">
-                Delete
-              </button>
+              <button id="sg-modal-cancel" class="btn btn-ghost" type="button">Cancel</button>
+              <button id="sg-modal-confirm" class="btn btn-danger" type="button">Delete</button>
             </div>
           </div>
         </div>
 
         <h3 class="subsection-title">Toast notifications</h3>
         <div class="demo-row">
-          <button class="btn btn-secondary" type="button" data-toast="info">
-            Trigger info
-          </button>
+          <button class="btn btn-secondary" type="button" data-toast="info">Trigger info</button>
           <button class="btn btn-secondary" type="button" data-toast="success">
             Trigger success
           </button>
           <button class="btn btn-secondary" type="button" data-toast="warning">
             Trigger warning
           </button>
-          <button class="btn btn-secondary" type="button" data-toast="error">
-            Trigger error
-          </button>
+          <button class="btn btn-secondary" type="button" data-toast="error">Trigger error</button>
         </div>
         <div class="toast-stage">
           <div class="toast-stack" id="sg-toast-stack" aria-live="polite"></div>
@@ -1871,8 +1869,8 @@
       <section class="section" aria-labelledby="sec-zindex">
         <h2 id="sec-zindex" class="section-title">Z-Index Stack</h2>
         <p class="section-description">
-          Each card sits at its named z-index. Lower-numbered layers are physically
-          underneath higher ones.
+          Each card sits at its named z-index. Lower-numbered layers are physically underneath
+          higher ones.
         </p>
 
         <div class="z-stage" aria-hidden="true">
@@ -1987,8 +1985,8 @@
       <section class="section" aria-labelledby="sec-kanban">
         <h2 id="sec-kanban" class="section-title">Mini Kanban Board</h2>
         <p class="section-description">
-          A realistic layout exercising <code class="font-mono">--kanban-column-min</code>,
-          surface tokens, shadow-xs cards, and the status tag set.
+          A realistic layout exercising <code class="font-mono">--kanban-column-min</code>, surface
+          tokens, shadow-xs cards, and the status tag set.
         </p>
 
         <div class="kanban-board">
