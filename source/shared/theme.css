@@ -21,8 +21,9 @@
    NAMING CONVENTIONS
    ------------------------------------------------------------
    --<category>-<role>-<modifier?>
-     category : color | font | text | space | radius | shadow |
-                duration | ease | focus | container | z
+     category : color | font | text | space | margin | padding |
+                radius | shadow | duration | ease | focus |
+                container | z
      role     : primary | secondary | bg | surface | sm | md...
      modifier : hover | muted | inverse | subtle |
                 on-* (guaranteed-contrast foreground)
@@ -75,6 +76,21 @@
      brand accent. Use --color-accent for color emphasis.
    • Re-tuned --color-text-on-secondary-muted in both themes
      so it sits on the new neutral muted bg with ≥7:1 contrast.
+   • Split the muted / subtle contract so the two tiers are
+     visibly distinct again:
+       –  --color-text-muted is the AA-safe live-text tier
+          (helper text, captions, metadata). Light bumped
+          42% → 38% for a ~6:1 ratio and clearer separation.
+       –  --color-text-subtle is now explicitly DECORATIVE
+          ONLY — placeholders, disabled controls, decorative
+          dividers/dots. It does NOT meet AA for live text by
+          design; never paint real content with it. Light
+          lifted 40% → 56% to restore the visible step down
+          from muted.
+   • Restored --margin-* / --padding-* aliases (removed in
+     V2) as thin pass-throughs to --space-*. They exist for
+     project-spec compliance; --space-* remains canonical and
+     is preferred in new code.
    ============================================================ */
 
 /* ============================================================
@@ -134,8 +150,11 @@
      use the matching --color-text-on-* token below.
      ========================================================== */
   --color-text: hsl(222, 47%, 11%);
-  --color-text-muted: hsl(215, 16%, 42%); /* AA on white & bg-subtle */
-  --color-text-subtle: hsl(215, 14%, 40%); /* AA on white (was 64% → 2.6:1) */
+  --color-text-muted: hsl(215, 16%, 38%); /* AA live-text tier (~6:1 on white) */
+  /* --color-text-subtle is DECORATIVE ONLY — placeholders,
+     disabled controls, decorative dividers/dots. Sub-AA by
+     design (~3.6:1). NEVER use it for live text content. */
+  --color-text-subtle: hsl(215, 14%, 56%);
   --color-text-inverse: hsl(0, 0%, 100%);
   --color-text-link: var(--color-primary);
 
@@ -209,8 +228,11 @@
   /* ==========================================================
      SPACING  —  single source (8pt grid, 4px base step)
      ----------------------------------------------------------
-     V2 removes the --margin-* / --padding-* aliases. Use the
-     --space-* scale directly for any spacing intent.
+     --space-* is the canonical scale. Prefer it in new code.
+     The --margin-* / --padding-* aliases below are restored in
+     V4 for project-spec compliance and are thin pass-throughs
+     to --space-*. They exist so spec-required tokens are
+     discoverable; you do not need to use them in new code.
      ========================================================== */
   --space-2xs: 0.25rem; /*  4px */
   --space-xs: 0.5rem; /*  8px */
@@ -220,6 +242,26 @@
   --space-xl: 2rem; /* 32px */
   --space-2xl: 3rem; /* 48px */
   --space-3xl: 4rem; /* 64px */
+
+  /* --- Standard margin aliases (vertical rhythm between blocks) --- */
+  --margin-2xs: var(--space-2xs);
+  --margin-xs: var(--space-xs);
+  --margin-sm: var(--space-sm);
+  --margin-md: var(--space-md);
+  --margin-lg: var(--space-lg);
+  --margin-xl: var(--space-xl);
+  --margin-2xl: var(--space-2xl);
+  --margin-3xl: var(--space-3xl);
+
+  /* --- Standard padding aliases (interior space of containers) --- */
+  --padding-2xs: var(--space-2xs);
+  --padding-xs: var(--space-xs);
+  --padding-sm: var(--space-sm);
+  --padding-md: var(--space-md);
+  --padding-lg: var(--space-lg);
+  --padding-xl: var(--space-xl);
+  --padding-2xl: var(--space-2xl);
+  --padding-3xl: var(--space-3xl);
 
   /* ==========================================================
      RADIUS
@@ -362,7 +404,8 @@
 
   /* --- Text --- */
   --color-text: hsl(210, 20%, 96%);
-  --color-text-muted: hsl(215, 16%, 70%);
+  --color-text-muted: hsl(215, 16%, 70%); /* AA live-text tier */
+  /* DECORATIVE ONLY in dark mode too — sub-AA by design. */
   --color-text-subtle: hsl(215, 14%, 55%);
   --color-text-inverse: hsl(222, 47%, 11%);
 
