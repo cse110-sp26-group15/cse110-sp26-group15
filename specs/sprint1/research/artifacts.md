@@ -137,6 +137,7 @@ After researching modern productivity and collaboration applications such as Not
 - Status: 4
 
 ### Centralized Theme File Research
+
 - You should name variables in your file as so --color-error, it shouldn't be something like --color-red, because its
   better to name your variables after what they are used for not just a generic color
 - If you are designing a centralized css file for a non javascript heavy framework then just attach everything to the :root
