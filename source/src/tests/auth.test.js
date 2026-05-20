@@ -5,41 +5,41 @@ import { describe, expect, it } from "vitest";
 // Run with: npm test
 
 // Mock environment for testing
-const mockEnv = {
-  DB: {
-    prepare: (sql) => ({
-      bind: function (...args) {
-        this.args = args;
-        return this;
-      },
-      first: async function () {
-        // Mock database responses
-        if (
-          this.args &&
-          this.args[0] === "arivera@ucsd.edu" &&
-          this.args[1] === "TestPassword123"
-        ) {
-          return {
-            user_id: 1,
-            email: "arivera@ucsd.edu",
-            full_name: "Alex Rivera",
-            password_hash: await bcryptjs.hash("TestPassword123", 10),
-            is_active: 1,
-          };
-        }
-        return null;
-      },
-      all: async function () {
-        return { results: [] };
-      },
-      run: async function () {
-        return {
-          meta: { last_row_id: 999 },
-        };
-      },
-    }),
-  },
-};
+// const mockEnv = {
+//   DB: {
+//     prepare: (sql) => ({
+//       bind: function (...args) {
+//         this.args = args;
+//         return this;
+//       },
+//       first: async function () {
+//         // Mock database responses
+//         if (
+//           this.args &&
+//           this.args[0] === "arivera@ucsd.edu" &&
+//           this.args[1] === "TestPassword123"
+//         ) {
+//           return {
+//             user_id: 1,
+//             email: "arivera@ucsd.edu",
+//             full_name: "Alex Rivera",
+//             password_hash: await bcryptjs.hash("TestPassword123", 10),
+//             is_active: 1,
+//           };
+//         }
+//         return null;
+//       },
+//       all: async function () {
+//         return { results: [] };
+//       },
+//       run: async function () {
+//         return {
+//           meta: { last_row_id: 999 },
+//         };
+//       },
+//     }),
+//   },
+// };
 
 describe("Auth API Tests", () => {
   describe("Login Endpoint", () => {
