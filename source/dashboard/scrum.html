@@ -4,9 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SitRep — Scrum Dashboard</title>
-    <!-- main.css → task-card.css → scrum.css : task-card needs to load
+    <!-- theme.css first so its design tokens cascade into every
+         page-specific stylesheet below.
+         main.css → task-card.css → scrum.css : task-card needs to load
          after main so its newer `.task-card` rules win, and scrum.css
          layers on top for the page-specific tweaks. -->
+    <link rel="stylesheet" href="../shared/theme.css" />
     <link rel="stylesheet" href="main.css" />
     <link rel="stylesheet" href="../task-card/task-card.css" />
     <link rel="stylesheet" href="scrum.css" />

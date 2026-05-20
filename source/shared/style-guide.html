@@ -202,8 +202,8 @@
       align-items: center;
       justify-content: center;
       background: var(--color-primary-muted);
-      color: var(--color-primary);
-      border: 1px dashed var(--color-primary);
+      color: var(--color-text-on-primary-muted);
+      border: 1px dashed var(--color-text-on-primary-muted);
       border-radius: var(--radius-sm);
       font-family: var(--font-mono);
       font-size: var(--text-xs);
@@ -274,7 +274,7 @@
       gap: var(--space-2xs);
       box-shadow: var(--shadow-xs);
     }
-    .demo-sidebar h4 {
+    .demo-sidebar h3 {
       margin: 0 0 var(--space-xs) 0;
       font-size: var(--text-xs);
       text-transform: uppercase;
@@ -484,6 +484,13 @@
           <div class="swatch-meta">
             <span class="swatch-name">--color-accent</span>
             <span class="swatch-hint">hover → --color-accent-hover</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background: var(--color-accent-muted);"></div>
+          <div class="swatch-meta">
+            <span class="swatch-name">--color-accent-muted</span>
+            <span class="swatch-hint">pair text with --color-text-on-accent-muted</span>
           </div>
         </div>
       </div>
@@ -878,7 +885,7 @@
       <div class="demo-app">
         <!-- Sidebar nav uses --color-bg-surface, radius, and primary states -->
         <nav class="demo-sidebar" aria-label="Sidebar">
-          <h4>Workspace</h4>
+          <h3>Workspace</h3>
           <a href="#" class="nav-item active">Dashboard</a>
           <a href="#" class="nav-item">My Tasks</a>
           <a href="#" class="nav-item">Kanban</a>

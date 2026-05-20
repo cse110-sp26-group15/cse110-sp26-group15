@@ -1,5 +1,5 @@
 /* ============================================================
-   theme.css — Centralized Design System  (V2)
+   theme.css — Centralized Design System  (V3)
    ============================================================
    Single source of truth for color, typography, spacing,
    radius, elevation, motion, focus, layout, and z-index
@@ -49,6 +49,21 @@
      --kanban-column-min).
    • Added a complete z-index scale.
    • Honors prefers-reduced-motion at the bottom of the file.
+
+   ------------------------------------------------------------
+   V3 CHANGES (from V2)
+   ------------------------------------------------------------
+   • Added --color-accent-muted and --color-text-on-accent-muted
+     to both themes, completing the brand muted/on-muted set.
+   • Dark-mode --color-accent shifted from cyan (184°) toward
+     teal-green (165°) so it visually separates from the dark
+     primary blue (217°).
+   • Fixed dark-mode --color-text-on-error: now dark navy to
+     match the other on-fill tokens in dark mode.
+   • Light --color-text-subtle darkened (64% → 40%) to clear
+     WCAG AA on white (previously failing at ~2.6:1).
+   • Light --color-text-muted darkened (47% → 42%) so muted
+     copy passes AA even on --color-bg-subtle (was 4.49:1).
    ============================================================ */
 
 
@@ -70,6 +85,7 @@
 
   --color-accent:           hsl(184, 78%, 45%);
   --color-accent-hover:     hsl(184, 78%, 38%);
+  --color-accent-muted:     hsl(184, 78%, 92%);
 
   /* ==========================================================
      COLOR — STATUS
@@ -105,8 +121,8 @@
      use the matching --color-text-on-* token below.
      ========================================================== */
   --color-text:             hsl(222, 47%, 11%);
-  --color-text-muted:       hsl(215, 16%, 47%);
-  --color-text-subtle:      hsl(215, 14%, 64%);
+  --color-text-muted:       hsl(215, 16%, 42%);   /* AA on white & bg-subtle */
+  --color-text-subtle:      hsl(215, 14%, 40%);   /* AA on white (was 64% → 2.6:1) */
   --color-text-inverse:     hsl(0, 0%, 100%);
   --color-text-link:        var(--color-primary);
 
@@ -125,6 +141,7 @@
   /* Muted (tinted) fills → deep brand/status hue for AA */
   --color-text-on-primary-muted:     hsl(221, 83%, 28%);
   --color-text-on-secondary-muted:   hsl(258, 70%, 32%);
+  --color-text-on-accent-muted:      hsl(184, 78%, 22%);
   --color-text-on-success-muted:     hsl(142, 71%, 22%);
   --color-text-on-warning-muted:     var(--color-warning-text);
   --color-text-on-error-muted:       hsl(0, 72%, 30%);
@@ -318,9 +335,11 @@
   --color-secondary-hover:  hsl(258, 80%, 78%);
   --color-secondary-muted:  hsl(258, 50%, 24%);
 
-  /* --- Brand: accent --- */
-  --color-accent:           hsl(184, 70%, 55%);
-  --color-accent-hover:     hsl(184, 70%, 62%);
+  /* --- Brand: accent — shifted toward teal-green to visually
+         separate from the dark primary blue (217°) --- */
+  --color-accent:           hsl(165, 68%, 55%);
+  --color-accent-hover:     hsl(165, 68%, 62%);
+  --color-accent-muted:     hsl(165, 50%, 22%);
 
   /* --- Status --- */
   --color-success:          hsl(142, 65%, 55%);
@@ -351,12 +370,13 @@
   --color-text-on-secondary:         hsl(222, 47%, 11%);
   --color-text-on-accent:            hsl(222, 47%, 11%);
   --color-text-on-success:           hsl(222, 47%, 11%);
-  --color-text-on-error:             hsl(0, 0%, 100%);
+  --color-text-on-error:             hsl(222, 47%, 11%);   /* matches the other on-fills */
   --color-text-on-inverse:           hsl(222, 47%, 11%);
 
   /* Muted fills are deep tints — use a light tint of the hue */
   --color-text-on-primary-muted:     hsl(217, 91%, 85%);
   --color-text-on-secondary-muted:   hsl(258, 80%, 88%);
+  --color-text-on-accent-muted:      hsl(165, 65%, 85%);
   --color-text-on-success-muted:     hsl(142, 65%, 80%);
   --color-text-on-warning-muted:     var(--color-warning-text);
   --color-text-on-error-muted:       hsl(0, 78%, 88%);
