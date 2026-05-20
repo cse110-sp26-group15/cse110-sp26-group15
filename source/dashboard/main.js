@@ -1,7 +1,6 @@
 import { mockTasks, mockMembers, mockCheckins } from "./mock-data.js";
 import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
 
-
 // ── Navigation ────────────────────────────────────────
 document.querySelectorAll(".nav-item").forEach((item) => {
   item.addEventListener("click", (e) => {
@@ -52,7 +51,7 @@ function switchView(label) {
 }
 
 // ── Task API ──────────────────────────────────────────
-const PROJECT_ID = 1; // TODO: replace with actual logged-in project context
+const _PROJECT_ID = 1; // TODO: replace with actual logged-in project context
 
 // ── Mock data (swap out for real API calls when deploying) ────
 let mockTasksLocal = [...mockTasks];
@@ -503,7 +502,7 @@ window.loadBlockers = loadBlockers;
 function moveCardTo(card, destZone, srcZone, srcStatus, destStatus) {
   destZone.querySelector(".kanban-col__empty")?.remove();
   destZone.appendChild(card);
-  setTaskCardStatus(card, destStatus);   // ← new line
+  setTaskCardStatus(card, destStatus); // ← new line
   if (srcZone.children.length === 0) {
     srcZone.innerHTML = `<p class="kanban-col__empty">No tasks yet</p>`;
   }
@@ -512,7 +511,6 @@ function moveCardTo(card, destZone, srcZone, srcStatus, destStatus) {
   if (srcCount) srcCount.textContent = String(Number(srcCount.textContent || "0") - 1);
   if (destCount) destCount.textContent = String(Number(destCount.textContent || "0") + 1);
 }
-
 
 // ── Drop zones (init once) ────────────────────────────
 document.querySelectorAll(".kanban-col__cards").forEach((zone) => {
