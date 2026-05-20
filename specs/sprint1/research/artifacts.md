@@ -135,3 +135,14 @@ After researching modern productivity and collaboration applications such as Not
 - Category/Type: 5
 - Who is assigned/: 3
 - Status: 4
+
+### Centralized Theme File Research
+- You should name variables in your file as so --color-error, it shouldn't be something like --color-red, because its
+  better to name your variables after what they are used for not just a generic color
+- If you are designing a centralized css file for a non javascript heavy framework then just attach everything to the :root
+- You should use css variables in order to be able to use these choices across your website
+- Make sure to make the theme file the first stylesheet you link in your theme.css so that it loads your variables before
+  applying it to other stylesheets
+- HSL separates a color's core hue from its brightness, making the code much easier for
+  developers to read and manipulate. This allows you to programmatically calculate hover states, transparencies, and dark mode
+  themes on the fly without having to hardcode dozens of rigid Hex codes.

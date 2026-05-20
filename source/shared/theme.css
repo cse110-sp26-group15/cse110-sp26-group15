@@ -1,0 +1,274 @@
+/* ============================================================
+   theme.css — Centralized Design System
+   ============================================================
+   Single source of truth for colors, typography, spacing,
+   radii, and elevation across the Task Manager application.
+
+   ------------------------------------------------------------
+   IMPORT INSTRUCTIONS
+   ------------------------------------------------------------
+   Add the following <link> tag to the <head> of every page,
+   BEFORE any page-specific stylesheet so its tokens cascade
+   into them and page styles can still override when needed:
+
+     <link rel="stylesheet" href="../shared/theme.css">
+
+   Adjust the relative path (../, ../../) based on the page's
+   depth relative to source/shared/.
+
+   ------------------------------------------------------------
+   NAMING CONVENTIONS
+   ------------------------------------------------------------
+   --<category>-<role>-<modifier?>
+     category : color | font | text | space | margin |
+                padding | radius | shadow
+     role     : primary | secondary | bg | surface | sm | md...
+     modifier : hover | muted | inverse | subtle (optional)
+
+   Examples:
+     --color-primary           (base brand color)
+     --color-primary-hover     (interactive variant)
+     --space-md                (8pt grid spacing token)
+     --text-lg                 (body text size)
+     --radius-sm               (border-radius token)
+     --shadow-md               (elevation token)
+   ============================================================ */
+
+
+/* ============================================================
+   :root  —  LIGHT MODE (default)
+   ============================================================ */
+:root {
+
+  /* ==========================================================
+     COLOR VARIABLES
+     ----------------------------------------------------------
+     HSL is used throughout so colors can be programmatically
+     adjusted (e.g. tweak the L channel via calc() for hover
+     states without redefining the entire palette).
+     ========================================================== */
+
+  /* --- Brand: primary --- */
+  --color-primary:          hsl(221, 83%, 53%);   /* Actions, links, focus rings */
+  --color-primary-hover:    hsl(221, 83%, 45%);
+  --color-primary-muted:    hsl(221, 83%, 92%);   /* Tints, selected bg */
+
+  /* --- Brand: secondary --- */
+  --color-secondary:        hsl(258, 70%, 60%);   /* Supporting brand accents */
+  --color-secondary-hover:  hsl(258, 70%, 52%);
+  --color-secondary-muted:  hsl(258, 70%, 93%);
+
+  /* --- Brand: accent --- */
+  --color-accent:           hsl(184, 78%, 45%);   /* Tags, highlights */
+  --color-accent-hover:     hsl(184, 78%, 38%);
+
+  /* --- Status: success --- */
+  --color-success:          hsl(142, 71%, 40%);
+  --color-success-muted:    hsl(142, 71%, 92%);
+
+  /* --- Status: warning --- */
+  --color-warning:          hsl(38, 92%, 50%);
+  --color-warning-muted:    hsl(38, 92%, 93%);
+
+  /* --- Status: error / danger --- */
+  --color-error:            hsl(0, 72%, 51%);
+  --color-error-muted:      hsl(0, 72%, 94%);
+
+  /* --- Background colors --- */
+  --color-bg:               hsl(0, 0%, 100%);     /* Page background */
+  --color-bg-subtle:        hsl(210, 20%, 98%);   /* Alt rows, sidebars */
+  --color-bg-surface:       hsl(0, 0%, 100%);     /* Cards, modals */
+  --color-bg-inverse:       hsl(222, 47%, 11%);   /* Tooltips, dark chips */
+
+  /* --- Text colors --- */
+  --color-text:             hsl(222, 47%, 11%);   /* Default body text */
+  --color-text-muted:       hsl(215, 16%, 47%);   /* Captions, helper text */
+  --color-text-subtle:      hsl(215, 14%, 64%);   /* Placeholders, disabled */
+  --color-text-inverse:     hsl(0, 0%, 100%);     /* Text on dark surfaces */
+  --color-text-link:        var(--color-primary);
+
+  /* --- Border colors --- */
+  --color-border:           hsl(214, 20%, 88%);   /* Default dividers */
+  --color-border-strong:    hsl(214, 16%, 72%);   /* Inputs, emphasis */
+  --color-border-subtle:    hsl(214, 24%, 94%);   /* Hairlines */
+  --color-border-focus:     var(--color-primary); /* Focus outlines */
+
+
+  /* ==========================================================
+     TYPOGRAPHY VARIABLES
+     ----------------------------------------------------------
+     Type scale is rem-based on a 16px root size (1rem = 16px).
+     ========================================================== */
+
+  /* --- Font families --- */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular,
+               Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  /* --- Body / utility text sizes (modular scale ~1.125) --- */
+  --text-xs:   0.75rem;     /* 12px — meta, captions */
+  --text-sm:   0.875rem;    /* 14px — secondary body */
+  --text-base: 1rem;        /* 16px — default body */
+  --text-lg:   1.125rem;    /* 18px — emphasized body */
+
+  /* --- Heading sizes (h6 → h1) --- */
+  --text-h6:   1rem;        /* 16px */
+  --text-h5:   1.125rem;    /* 18px */
+  --text-h4:   1.25rem;     /* 20px */
+  --text-h3:   1.5rem;      /* 24px */
+  --text-h2:   1.875rem;    /* 30px */
+  --text-h1:   2.25rem;     /* 36px */
+
+  /* --- Font weights --- */
+  --font-weight-light:    300;
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* --- Line heights (unitless: scales with font-size) --- */
+  --line-height-tight:    1.2;    /* Headings */
+  --line-height-snug:     1.375;
+  --line-height-normal:   1.5;    /* Body */
+  --line-height-relaxed:  1.75;   /* Long-form prose */
+
+
+  /* ==========================================================
+     SPACING SYSTEM
+     ----------------------------------------------------------
+     Strict 8pt grid (4px base step). Use --space-* tokens
+     directly, or the --margin-* / --padding-* aliases below
+     when you want the intent to be clear at the call site.
+     ========================================================== */
+
+  /* --- Core scale: XS → XL (plus 2xs / 2xl / 3xl extras) --- */
+  --space-2xs: 0.25rem;     /*  4px */
+  --space-xs:  0.5rem;      /*  8px */
+  --space-sm:  0.75rem;     /* 12px */
+  --space-md:  1rem;        /* 16px */
+  --space-lg:  1.5rem;      /* 24px */
+  --space-xl:  2rem;        /* 32px */
+  --space-2xl: 3rem;        /* 48px */
+  --space-3xl: 4rem;        /* 64px */
+
+  /* --- Standard margin aliases (vertical rhythm between blocks) --- */
+  --margin-xs: var(--space-xs);
+  --margin-sm: var(--space-sm);
+  --margin-md: var(--space-md);
+  --margin-lg: var(--space-lg);
+  --margin-xl: var(--space-xl);
+
+  /* --- Standard padding aliases (interior space of containers) --- */
+  --padding-xs: var(--space-xs);
+  --padding-sm: var(--space-sm);
+  --padding-md: var(--space-md);
+  --padding-lg: var(--space-lg);
+  --padding-xl: var(--space-xl);
+
+
+  /* ==========================================================
+     RADIUS
+     ========================================================== */
+  --radius-none: 0;
+  --radius-sm:   0.25rem;   /*  4px — chips, small inputs */
+  --radius-md:   0.5rem;    /*  8px — buttons, cards */
+  --radius-lg:   0.75rem;   /* 12px — modals, panels */
+  --radius-xl:   1rem;      /* 16px — hero surfaces */
+  --radius-full: 9999px;    /* Pills, avatars */
+
+
+  /* ==========================================================
+     SHADOWS / ELEVATION
+     ----------------------------------------------------------
+     Layered shadows pair an ambient layer with a direct
+     layer for more natural depth. Higher numbers sit
+     higher off the page.
+     ========================================================== */
+  --shadow-xs: 0 1px 2px 0 hsla(222, 47%, 11%, 0.05);
+
+  --shadow-sm: 0 1px 3px 0  hsla(222, 47%, 11%, 0.08),
+               0 1px 2px -1px hsla(222, 47%, 11%, 0.08);
+
+  --shadow-md: 0 4px 6px -1px hsla(222, 47%, 11%, 0.10),
+               0 2px 4px -2px hsla(222, 47%, 11%, 0.08);
+
+  --shadow-lg: 0 10px 15px -3px hsla(222, 47%, 11%, 0.10),
+               0 4px 6px -4px  hsla(222, 47%, 11%, 0.08);
+
+  --shadow-xl: 0 20px 25px -5px hsla(222, 47%, 11%, 0.12),
+               0 8px 10px -6px  hsla(222, 47%, 11%, 0.08);
+
+  --shadow-focus: 0 0 0 3px hsla(221, 83%, 53%, 0.35);
+}
+
+
+/* ============================================================
+   [data-theme="dark"]  —  DARK MODE
+   ------------------------------------------------------------
+   Activate by setting data-theme="dark" on <html> or <body>:
+       <html data-theme="dark">
+   Only tokens whose value changes between themes are
+   redeclared. Typography, spacing, and radius tokens inherit
+   from :root unchanged.
+   ============================================================ */
+[data-theme="dark"] {
+
+  /* --- Brand: primary (lighter for contrast on dark bg) --- */
+  --color-primary:          hsl(217, 91%, 65%);
+  --color-primary-hover:    hsl(217, 91%, 72%);
+  --color-primary-muted:    hsl(217, 60%, 22%);
+
+  /* --- Brand: secondary --- */
+  --color-secondary:        hsl(258, 80%, 72%);
+  --color-secondary-hover:  hsl(258, 80%, 78%);
+  --color-secondary-muted:  hsl(258, 50%, 24%);
+
+  /* --- Brand: accent --- */
+  --color-accent:           hsl(184, 70%, 55%);
+  --color-accent-hover:     hsl(184, 70%, 62%);
+
+  /* --- Status colors --- */
+  --color-success:          hsl(142, 65%, 55%);
+  --color-success-muted:    hsl(142, 40%, 20%);
+
+  --color-warning:          hsl(38, 92%, 60%);
+  --color-warning-muted:    hsl(38, 50%, 22%);
+
+  --color-error:            hsl(0, 78%, 65%);
+  --color-error-muted:      hsl(0, 50%, 24%);
+
+  /* --- Backgrounds --- */
+  --color-bg:               hsl(222, 47%, 8%);
+  --color-bg-subtle:        hsl(222, 40%, 12%);
+  --color-bg-surface:       hsl(222, 35%, 15%);
+  --color-bg-inverse:       hsl(0, 0%, 100%);
+
+  /* --- Text --- */
+  --color-text:             hsl(210, 20%, 96%);
+  --color-text-muted:       hsl(215, 16%, 70%);
+  --color-text-subtle:      hsl(215, 14%, 55%);
+  --color-text-inverse:     hsl(222, 47%, 11%);
+
+  /* --- Borders --- */
+  --color-border:           hsl(222, 25%, 22%);
+  --color-border-strong:    hsl(222, 20%, 38%);
+  --color-border-subtle:    hsl(222, 30%, 16%);
+
+  /* --- Shadows: deeper and darker on dark surfaces --- */
+  --shadow-xs: 0 1px 2px 0 hsla(0, 0%, 0%, 0.30);
+
+  --shadow-sm: 0 1px 3px 0  hsla(0, 0%, 0%, 0.40),
+               0 1px 2px -1px hsla(0, 0%, 0%, 0.30);
+
+  --shadow-md: 0 4px 6px -1px hsla(0, 0%, 0%, 0.45),
+               0 2px 4px -2px hsla(0, 0%, 0%, 0.35);
+
+  --shadow-lg: 0 10px 15px -3px hsla(0, 0%, 0%, 0.50),
+               0 4px 6px -4px  hsla(0, 0%, 0%, 0.40);
+
+  --shadow-xl: 0 20px 25px -5px hsla(0, 0%, 0%, 0.55),
+               0 8px 10px -6px  hsla(0, 0%, 0%, 0.40);
+
+  --shadow-focus: 0 0 0 3px hsla(217, 91%, 65%, 0.45);
+}
