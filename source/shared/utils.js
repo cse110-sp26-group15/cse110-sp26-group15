@@ -49,53 +49,39 @@ export function navigateTo(path) {
 // ── API helpers ─────────────────────────────────────────
 
 /**
- * TODO: Replace mock with real backend when API is ready.
- * POST /api/login
+ * POST /api/auth/login
  */
-export async function apiLogin({ email }) {
-  // Mock: simulate network delay
-  await mockDelay(600);
-
-  // TODO: Remove mock and uncomment fetch below
-  /*
-  const res = await fetch("/api/login", {
+export async function apiLogin({ email, password }) {
+  const res = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, password }),
   });
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Login failed");
+    throw new Error(err.error || "Login failed");
   }
-  return res.json();
-  */
 
-  // Mock success – any email accepted
-  return { token: "mock-token-login", user: { email } };
+  return res.json();
 }
 
 /**
- * TODO: Replace mock with real backend when API is ready.
- * POST /api/signup
+ * POST /api/auth/signup
  */
-export async function apiSignup({ email }) {
-  await mockDelay(600);
-
-  // TODO: Remove mock and uncomment fetch below
-  /*
-  const res = await fetch("/api/signup", {
+export async function apiSignup({ email, password }) {
+  const res = await fetch("/api/auth/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, password }),
   });
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Signup failed");
+    throw new Error(err.error || "Signup failed");
   }
-  return res.json();
-  */
 
-  return { token: "mock-token-signup", user: { email } };
+  return res.json();
 }
 
 /**
@@ -127,13 +113,15 @@ export async function apiCreateProject({ name, workflow, members }) {
 
 // ── Token helpers ───────────────────────────────────────
 
-export function saveToken(token) {
-  // TODO: Use httpOnly cookie via backend for production
-  sessionStorage.setItem("sitrep_token", token);
+export function saveToken() {
+  // Token is automatically set as httpOnly cookie by server
+  // Client no longer needs to store it
 }
 
 export function getToken() {
-  return sessionStorage.getItem("sitrep_token");
+  // Token is automatically sent by browser in httpOnly cookie
+  // Client cannot access it (by design for security)
+  return null;
 }
 
 // ── Internal ─────────────────────────────────────────────
