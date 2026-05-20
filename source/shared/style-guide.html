@@ -469,6 +469,557 @@
           grid-template-columns: 1fr;
         }
       }
+
+      /* ============================================================
+         EXTENDED COMPONENT DEMOS  (sections 7–14)
+         ------------------------------------------------------------
+         Below: buttons, form fields, alerts, tags/badges, overlays
+         (tooltip / menu / modal / toast), z-index visualizer,
+         motion playground, mini kanban. Each consumes only theme
+         tokens — no hard-coded colors, sizes, shadows, or motion.
+         ============================================================ */
+
+      /* --- Layout helper shared by all extended demos --- */
+      .demo-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+      }
+
+      /* --- 7. Buttons gallery --- */
+      .btn-accent {
+        background: var(--color-accent);
+        color: var(--color-text-on-accent);
+        border-color: var(--color-accent);
+      }
+      .btn-accent:hover {
+        background: var(--color-accent-hover);
+        border-color: var(--color-accent-hover);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--color-text);
+        border-color: transparent;
+      }
+      .btn-ghost:hover {
+        background: var(--color-bg-subtle);
+      }
+      .btn-danger {
+        background: var(--color-error);
+        color: var(--color-text-on-error);
+        border-color: var(--color-error);
+      }
+      .btn-danger:hover {
+        filter: brightness(0.92);
+      }
+      .btn-sm {
+        padding: var(--space-2xs) var(--space-sm);
+        font-size: var(--text-xs);
+      }
+      .btn-lg {
+        padding: var(--space-sm) var(--space-lg);
+        font-size: var(--text-base);
+      }
+      .btn[disabled],
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* --- 8. Form fields --- */
+      .form-demo {
+        display: grid;
+        gap: var(--space-md);
+        max-width: var(--container-sm);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+      }
+      .field-label {
+        font-size: var(--text-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text);
+      }
+      .field-control {
+        font-family: var(--font-sans);
+        font-size: var(--text-sm);
+        color: var(--color-text);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        padding: var(--space-xs) var(--space-sm);
+        transition:
+          border-color var(--duration-fast) var(--ease-default),
+          box-shadow var(--duration-fast) var(--ease-default);
+      }
+      .field-control::placeholder {
+        color: var(--color-text-subtle);
+      }
+      .field-control:focus-visible {
+        outline: var(--focus-outline-width) solid var(--color-border-focus);
+        outline-offset: var(--focus-outline-offset);
+        box-shadow: var(--shadow-focus);
+        border-color: var(--color-border-focus);
+      }
+      textarea.field-control {
+        min-height: 6rem;
+        resize: vertical;
+      }
+      .field-help {
+        font-size: var(--text-xs);
+        color: var(--color-text-subtle);
+      }
+      .field[data-state="error"] .field-control {
+        border-color: var(--color-error);
+      }
+      .field[data-state="error"] .field-help {
+        color: var(--color-error);
+      }
+      .field-inline {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        font-size: var(--text-sm);
+        color: var(--color-text);
+      }
+      .field-inline input[type="checkbox"],
+      .field-inline input[type="radio"] {
+        accent-color: var(--color-primary);
+        width: 1rem;
+        height: 1rem;
+      }
+
+      /* --- 9. Alerts / banners --- */
+      .alert {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        border-left: 4px solid;
+        font-size: var(--text-sm);
+      }
+      .alert-title {
+        font-weight: var(--font-weight-semibold);
+        margin: 0;
+      }
+      .alert-body {
+        margin: 0;
+      }
+      .alert-info {
+        background: var(--color-primary-muted);
+        color: var(--color-text-on-primary-muted);
+        border-left-color: var(--color-primary);
+      }
+      .alert-success {
+        background: var(--color-success-muted);
+        color: var(--color-text-on-success-muted);
+        border-left-color: var(--color-success);
+      }
+      .alert-warning {
+        background: var(--color-warning-muted);
+        color: var(--color-text-on-warning-muted);
+        border-left-color: var(--color-warning-bg);
+      }
+      .alert-error {
+        background: var(--color-error-muted);
+        color: var(--color-text-on-error-muted);
+        border-left-color: var(--color-error);
+      }
+
+      /* --- 10. Tag variants & badges --- */
+      .tag-neutral {
+        background: var(--color-bg-subtle);
+        color: var(--color-text-muted);
+      }
+      .tag-primary {
+        background: var(--color-primary-muted);
+        color: var(--color-text-on-primary-muted);
+      }
+      .tag-secondary {
+        background: var(--color-secondary-muted);
+        color: var(--color-text-on-secondary-muted);
+      }
+      .tag-accent {
+        background: var(--color-accent-muted);
+        color: var(--color-text-on-accent-muted);
+      }
+      .badge-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: var(--radius-full);
+        margin-right: var(--space-2xs);
+        vertical-align: middle;
+      }
+      .badge-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.25rem;
+        height: 1.25rem;
+        padding: 0 var(--space-2xs);
+        border-radius: var(--radius-full);
+        background: var(--color-error);
+        color: var(--color-text-on-error);
+        font-size: var(--text-xs);
+        font-weight: var(--font-weight-semibold);
+        line-height: 1;
+      }
+
+      /* --- 11. Overlays: tooltip + dropdown menu --- */
+      .popover-stage {
+        position: relative;
+        min-height: 200px;
+        padding: var(--space-2xl);
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        display: flex;
+        gap: var(--space-2xl);
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .tooltip-target {
+        position: relative;
+        display: inline-block;
+      }
+      .tooltip {
+        position: absolute;
+        bottom: calc(100% + var(--space-xs));
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        background: var(--color-bg-inverse);
+        color: var(--color-text-on-inverse);
+        padding: var(--space-2xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-size: var(--text-xs);
+        box-shadow: var(--shadow-lg);
+        z-index: var(--z-tooltip);
+      }
+      .menu {
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-2xs);
+        min-width: 200px;
+        box-shadow: var(--shadow-lg);
+        z-index: var(--z-dropdown);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .menu-item {
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-size: var(--text-sm);
+        color: var(--color-text);
+        cursor: pointer;
+        transition: background-color var(--duration-fast) var(--ease-default);
+      }
+      .menu-item:hover {
+        background: var(--color-primary-muted);
+        color: var(--color-text-on-primary-muted);
+      }
+      .menu-item.danger:hover {
+        background: var(--color-error-muted);
+        color: var(--color-text-on-error-muted);
+      }
+      .menu-divider {
+        height: 1px;
+        background: var(--color-border-subtle);
+        margin: var(--space-2xs) 0;
+      }
+
+      /* --- 11b. Modal --- */
+      .modal-stage {
+        position: relative;
+        min-height: 320px;
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+      .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: hsla(222, 47%, 11%, 0.55);
+        z-index: var(--z-overlay);
+        display: none;
+        animation: sg-fade-in var(--duration-normal) var(--ease-out);
+      }
+      .modal-overlay[data-open="true"] {
+        display: block;
+      }
+      .modal {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(420px, calc(100% - var(--space-xl)));
+        background: var(--color-bg-surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
+        padding: var(--space-lg);
+        z-index: var(--z-modal);
+        display: none;
+        animation: sg-pop-in var(--duration-normal) var(--ease-out);
+      }
+      .modal[data-open="true"] {
+        display: block;
+      }
+      .modal-title {
+        margin: 0 0 var(--space-xs);
+        font-size: var(--text-h5);
+        font-weight: var(--font-weight-semibold);
+      }
+      .modal-body {
+        margin: 0 0 var(--space-lg);
+        color: var(--color-text-muted);
+        font-size: var(--text-sm);
+      }
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-xs);
+      }
+      @keyframes sg-fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes sg-pop-in {
+        from {
+          opacity: 0;
+          transform: translate(-50%, -48%) scale(0.96);
+        }
+        to {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+      }
+
+      /* --- 11c. Toast notifications --- */
+      .toast-stage {
+        position: relative;
+        min-height: 280px;
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-md);
+        overflow: hidden;
+      }
+      .toast-stack {
+        position: absolute;
+        right: var(--space-md);
+        bottom: var(--space-md);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        z-index: var(--z-toast);
+        max-width: 320px;
+      }
+      .toast {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-sm) var(--space-md);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
+        border-left: 4px solid var(--color-primary);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        font-size: var(--text-sm);
+        animation: sg-slide-in var(--duration-normal) var(--ease-out);
+      }
+      .toast-success {
+        border-left-color: var(--color-success);
+      }
+      .toast-warning {
+        border-left-color: var(--color-warning-bg);
+      }
+      .toast-error {
+        border-left-color: var(--color-error);
+      }
+      .toast-title {
+        margin: 0;
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text);
+      }
+      .toast-body {
+        margin: 0;
+        color: var(--color-text-muted);
+        font-size: var(--text-xs);
+      }
+      @keyframes sg-slide-in {
+        from {
+          opacity: 0;
+          transform: translateX(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* --- 12. Z-index stack visualizer --- */
+      .z-stage {
+        position: relative;
+        height: 360px;
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+      }
+      .z-layer {
+        position: absolute;
+        width: 220px;
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
+        box-shadow: var(--shadow-md);
+        color: var(--color-text);
+      }
+      .z-layer strong {
+        display: block;
+        font-size: var(--text-sm);
+        font-weight: var(--font-weight-semibold);
+        margin-bottom: var(--space-2xs);
+      }
+      .z-layer code {
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+      }
+
+      /* --- 13. Motion playground --- */
+      .motion-stage {
+        display: grid;
+        gap: var(--space-md);
+        padding: var(--space-md);
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+      }
+      .motion-track {
+        position: relative;
+        height: 56px;
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+      }
+      .motion-ball {
+        position: absolute;
+        top: 50%;
+        left: var(--space-xs);
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-full);
+        background: var(--color-accent);
+        transition:
+          left var(--motion-duration, var(--duration-normal))
+            var(--motion-ease, var(--ease-default));
+      }
+      .motion-ball.moved {
+        left: calc(100% - 36px - var(--space-xs));
+      }
+      .motion-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        align-items: center;
+      }
+      .motion-controls strong {
+        font-size: var(--text-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-text-muted);
+        margin-right: var(--space-xs);
+      }
+      .motion-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--space-2xs) var(--space-sm);
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-full);
+        color: var(--color-text);
+        cursor: pointer;
+        transition: all var(--duration-fast) var(--ease-default);
+      }
+      .motion-chip:hover {
+        border-color: var(--color-primary);
+      }
+      .motion-chip[aria-pressed="true"] {
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
+        border-color: var(--color-primary);
+      }
+
+      /* --- 14. Mini Kanban board (consumes --kanban-column-min) --- */
+      .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(
+          auto-fill,
+          minmax(var(--kanban-column-min), 1fr)
+        );
+        gap: var(--space-md);
+      }
+      .kanban-column {
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-lg);
+        padding: var(--space-sm);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        min-height: 320px;
+      }
+      .kanban-col-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-2xs) var(--space-xs);
+        font-size: var(--text-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-muted);
+      }
+      .kanban-card {
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-md);
+        padding: var(--space-sm) var(--space-md);
+        box-shadow: var(--shadow-xs);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        font-size: var(--text-sm);
+      }
+      .kanban-card-title {
+        margin: 0;
+        font-size: var(--text-sm);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text);
+      }
+      .kanban-card-meta {
+        margin: 0;
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+      }
     </style>
   </head>
 
@@ -1026,6 +1577,492 @@
           </div>
         </div>
       </section>
+
+      <!-- =========================================================
+         7. BUTTONS GALLERY
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-buttons">
+        <h2 id="sec-buttons" class="section-title">Buttons</h2>
+        <p class="section-description">
+          All variants × sizes × states. Hover/focus a button to see the motion + focus tokens
+          in action.
+        </p>
+
+        <h3 class="subsection-title">Variants</h3>
+        <div class="demo-row">
+          <button class="btn btn-primary" type="button">Primary</button>
+          <button class="btn btn-secondary" type="button">Secondary</button>
+          <button class="btn btn-accent" type="button">Accent</button>
+          <button class="btn btn-ghost" type="button">Ghost</button>
+          <button class="btn btn-danger" type="button">Danger</button>
+        </div>
+
+        <h3 class="subsection-title">Sizes</h3>
+        <div class="demo-row">
+          <button class="btn btn-primary btn-sm" type="button">Small</button>
+          <button class="btn btn-primary" type="button">Default</button>
+          <button class="btn btn-primary btn-lg" type="button">Large</button>
+        </div>
+
+        <h3 class="subsection-title">States</h3>
+        <div class="demo-row">
+          <button class="btn btn-primary" type="button">Default</button>
+          <button class="btn btn-primary" type="button" disabled>Disabled</button>
+          <button class="btn btn-secondary" type="button">Default</button>
+          <button class="btn btn-secondary" type="button" disabled>Disabled</button>
+        </div>
+
+        <h3 class="subsection-title">With icon</h3>
+        <div class="demo-row">
+          <button class="btn btn-primary" type="button">
+            <span aria-hidden="true">+</span> Add task
+          </button>
+          <button class="btn btn-secondary" type="button">
+            <span aria-hidden="true">↻</span> Refresh
+          </button>
+          <button class="btn btn-danger" type="button">
+            <span aria-hidden="true">🗑</span> Delete
+          </button>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         8. FORM FIELDS
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-forms">
+        <h2 id="sec-forms" class="section-title">Form Fields</h2>
+        <p class="section-description">
+          Inputs use <code class="font-mono">--color-border-strong</code> at rest and the
+          documented outline + box-shadow focus pattern. Error state swaps the border to
+          <code class="font-mono">--color-error</code>.
+        </p>
+
+        <form class="form-demo" onsubmit="event.preventDefault();">
+          <div class="field">
+            <label class="field-label" for="sg-name">Task title</label>
+            <input
+              id="sg-name"
+              class="field-control"
+              type="text"
+              placeholder="e.g. Finalize design tokens"
+            />
+            <span class="field-help">Shown on the card and in lists.</span>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="sg-desc">Description</label>
+            <textarea
+              id="sg-desc"
+              class="field-control"
+              placeholder="What needs to happen?"
+            ></textarea>
+            <span class="field-help">Markdown is supported.</span>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="sg-priority">Priority</label>
+            <select id="sg-priority" class="field-control">
+              <option>Low</option>
+              <option selected>Normal</option>
+              <option>High</option>
+              <option>Urgent</option>
+            </select>
+          </div>
+
+          <div class="field" data-state="error">
+            <label class="field-label" for="sg-due">Due date</label>
+            <input id="sg-due" class="field-control" type="date" />
+            <span class="field-help">Due date must be in the future.</span>
+          </div>
+
+          <div class="demo-row">
+            <label class="field-inline">
+              <input type="checkbox" checked /> Notify watchers
+            </label>
+            <label class="field-inline">
+              <input type="checkbox" /> Block release on completion
+            </label>
+          </div>
+
+          <div class="demo-row">
+            <label class="field-inline"><input type="radio" name="sg-view" checked /> Kanban</label>
+            <label class="field-inline"><input type="radio" name="sg-view" /> List</label>
+            <label class="field-inline"><input type="radio" name="sg-view" /> Calendar</label>
+          </div>
+
+          <div class="demo-row">
+            <button class="btn btn-primary" type="submit">Save task</button>
+            <button class="btn btn-ghost" type="button">Cancel</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- =========================================================
+         9. ALERTS / BANNERS
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-alerts">
+        <h2 id="sec-alerts" class="section-title">Alerts &amp; Banners</h2>
+        <p class="section-description">
+          The four status colors paired with their AA-safe on-muted text tokens. Border-left
+          uses the solid status color for a visual accent.
+        </p>
+
+        <div class="grid" style="gap: var(--space-sm)">
+          <div class="alert alert-info" role="status">
+            <p class="alert-title">New theme tokens available</p>
+            <p class="alert-body">
+              Pull from <code class="font-mono">main</code> to pick up the V3 accent-muted
+              token and the on-fill foreground pairings.
+            </p>
+          </div>
+          <div class="alert alert-success" role="status">
+            <p class="alert-title">Sprint goal complete</p>
+            <p class="alert-body">All 12 story points landed before the cutoff. Nice work.</p>
+          </div>
+          <div class="alert alert-warning" role="status">
+            <p class="alert-title">Merge freeze starts Thursday</p>
+            <p class="alert-body">
+              Mobile is cutting a release branch — non-critical PRs will be deferred.
+            </p>
+          </div>
+          <div class="alert alert-error" role="alert">
+            <p class="alert-title">Failed to save</p>
+            <p class="alert-body">
+              The server returned 503. Your draft is preserved locally — try again in a moment.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         10. TAGS & BADGES
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-tags">
+        <h2 id="sec-tags" class="section-title">Tags &amp; Badges</h2>
+        <p class="section-description">
+          Inline status &amp; categorization chips. Each variant uses its
+          <code class="font-mono">--color-*-muted</code> background with the matching
+          <code class="font-mono">--color-text-on-*-muted</code> foreground.
+        </p>
+
+        <h3 class="subsection-title">Status tags</h3>
+        <div class="demo-row">
+          <span class="tag tag-success">Done</span>
+          <span class="tag tag-warning">In review</span>
+          <span class="tag tag-error">Blocked</span>
+          <span class="tag tag-neutral">Backlog</span>
+        </div>
+
+        <h3 class="subsection-title">Brand / category tags</h3>
+        <div class="demo-row">
+          <span class="tag tag-primary">Frontend</span>
+          <span class="tag tag-secondary">Backend</span>
+          <span class="tag tag-accent">Design</span>
+          <span class="tag tag-neutral">Docs</span>
+        </div>
+
+        <h3 class="subsection-title">Dot indicators</h3>
+        <div class="demo-row">
+          <span><span class="badge-dot" style="background: var(--color-success)"></span> Online</span>
+          <span><span class="badge-dot" style="background: var(--color-warning-bg)"></span> Idle</span>
+          <span><span class="badge-dot" style="background: var(--color-error)"></span> Offline</span>
+          <span><span class="badge-dot" style="background: var(--color-text-subtle)"></span> Unknown</span>
+        </div>
+
+        <h3 class="subsection-title">Count badges</h3>
+        <div class="demo-row">
+          <span class="font-mono" style="font-size: var(--text-sm)">Notifications <span class="badge-count">3</span></span>
+          <span class="font-mono" style="font-size: var(--text-sm)">Inbox <span class="badge-count">12</span></span>
+          <span class="font-mono" style="font-size: var(--text-sm)">Errors <span class="badge-count">99+</span></span>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         11. OVERLAYS — Tooltip, Menu, Modal, Toast
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-overlays">
+        <h2 id="sec-overlays" class="section-title">Overlays</h2>
+        <p class="section-description">
+          Tooltip uses <code class="font-mono">--color-bg-inverse</code> +
+          <code class="font-mono">--color-text-on-inverse</code> at
+          <code class="font-mono">--z-tooltip</code>. Menu sits at
+          <code class="font-mono">--z-dropdown</code>. Modal pairs
+          <code class="font-mono">--z-overlay</code> with
+          <code class="font-mono">--z-modal</code>. Toasts sit at
+          <code class="font-mono">--z-toast</code>.
+        </p>
+
+        <h3 class="subsection-title">Tooltip &amp; dropdown menu</h3>
+        <div class="popover-stage">
+          <div class="tooltip-target">
+            <button class="btn btn-secondary" type="button">Hover me</button>
+            <span class="tooltip" role="tooltip">Always visible in this demo</span>
+          </div>
+
+          <div class="menu" role="menu" aria-label="Task actions">
+            <div class="menu-item" role="menuitem">Open task</div>
+            <div class="menu-item" role="menuitem">Duplicate</div>
+            <div class="menu-item" role="menuitem">Move to…</div>
+            <div class="menu-divider" role="separator"></div>
+            <div class="menu-item" role="menuitem">Archive</div>
+            <div class="menu-item danger" role="menuitem">Delete</div>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">Modal</h3>
+        <div class="demo-row">
+          <button id="sg-open-modal" class="btn btn-primary" type="button">
+            Open modal
+          </button>
+        </div>
+        <div class="modal-stage" id="sg-modal-stage">
+          <div class="modal-overlay" id="sg-modal-overlay"></div>
+          <div
+            class="modal"
+            id="sg-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sg-modal-title"
+          >
+            <h3 id="sg-modal-title" class="modal-title">Delete this task?</h3>
+            <p class="modal-body">
+              This will permanently remove the task and any attached blockers. This
+              action cannot be undone.
+            </p>
+            <div class="modal-footer">
+              <button id="sg-modal-cancel" class="btn btn-ghost" type="button">
+                Cancel
+              </button>
+              <button id="sg-modal-confirm" class="btn btn-danger" type="button">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">Toast notifications</h3>
+        <div class="demo-row">
+          <button class="btn btn-secondary" type="button" data-toast="info">
+            Trigger info
+          </button>
+          <button class="btn btn-secondary" type="button" data-toast="success">
+            Trigger success
+          </button>
+          <button class="btn btn-secondary" type="button" data-toast="warning">
+            Trigger warning
+          </button>
+          <button class="btn btn-secondary" type="button" data-toast="error">
+            Trigger error
+          </button>
+        </div>
+        <div class="toast-stage">
+          <div class="toast-stack" id="sg-toast-stack" aria-live="polite"></div>
+          <p class="body-sm" style="margin: 0; color: var(--color-text-muted)">
+            Toasts dock to the bottom-right of this stage. New ones slide in using
+            <code class="font-mono">--duration-normal</code> +
+            <code class="font-mono">--ease-out</code>.
+          </p>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         12. Z-INDEX STACK VISUALIZER
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-zindex">
+        <h2 id="sec-zindex" class="section-title">Z-Index Stack</h2>
+        <p class="section-description">
+          Each card sits at its named z-index. Lower-numbered layers are physically
+          underneath higher ones.
+        </p>
+
+        <div class="z-stage" aria-hidden="true">
+          <div class="z-layer" style="z-index: var(--z-base); top: 16px; left: 16px">
+            <strong>--z-base</strong><code>0</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-dropdown); top: 48px; left: 56px">
+            <strong>--z-dropdown</strong><code>1000</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-sticky); top: 80px; left: 96px">
+            <strong>--z-sticky</strong><code>1100</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-overlay); top: 112px; left: 136px">
+            <strong>--z-overlay</strong><code>1200</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-modal); top: 144px; left: 176px">
+            <strong>--z-modal</strong><code>1300</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-popover); top: 176px; left: 216px">
+            <strong>--z-popover</strong><code>1400</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-toast); top: 208px; left: 256px">
+            <strong>--z-toast</strong><code>1500</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-tooltip); top: 240px; left: 296px">
+            <strong>--z-tooltip</strong><code>1600</code>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         13. MOTION PLAYGROUND
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-motion">
+        <h2 id="sec-motion" class="section-title">Motion Playground</h2>
+        <p class="section-description">
+          Pick a duration + easing, then click <em>Play</em>. The ball uses the
+          <code class="font-mono">--duration-*</code> and <code class="font-mono">--ease-*</code>
+          tokens directly. If your OS has reduced-motion enabled, every duration collapses to 1ms.
+        </p>
+
+        <div class="motion-stage">
+          <div class="motion-track" aria-hidden="true">
+            <div id="sg-motion-ball" class="motion-ball"></div>
+          </div>
+
+          <div class="motion-controls" role="group" aria-label="Duration">
+            <strong>Duration</strong>
+            <button
+              class="motion-chip"
+              type="button"
+              data-motion-duration="var(--duration-fast)"
+              aria-pressed="false"
+            >
+              --duration-fast
+            </button>
+            <button
+              class="motion-chip"
+              type="button"
+              data-motion-duration="var(--duration-normal)"
+              aria-pressed="true"
+            >
+              --duration-normal
+            </button>
+            <button
+              class="motion-chip"
+              type="button"
+              data-motion-duration="var(--duration-slow)"
+              aria-pressed="false"
+            >
+              --duration-slow
+            </button>
+          </div>
+
+          <div class="motion-controls" role="group" aria-label="Easing">
+            <strong>Easing</strong>
+            <button
+              class="motion-chip"
+              type="button"
+              data-motion-ease="var(--ease-default)"
+              aria-pressed="true"
+            >
+              --ease-default
+            </button>
+            <button
+              class="motion-chip"
+              type="button"
+              data-motion-ease="var(--ease-in)"
+              aria-pressed="false"
+            >
+              --ease-in
+            </button>
+            <button
+              class="motion-chip"
+              type="button"
+              data-motion-ease="var(--ease-out)"
+              aria-pressed="false"
+            >
+              --ease-out
+            </button>
+          </div>
+
+          <div class="motion-controls">
+            <button id="sg-motion-play" class="btn btn-primary" type="button">Play</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         14. MINI KANBAN BOARD (consumes --kanban-column-min)
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-kanban">
+        <h2 id="sec-kanban" class="section-title">Mini Kanban Board</h2>
+        <p class="section-description">
+          A realistic layout exercising <code class="font-mono">--kanban-column-min</code>,
+          surface tokens, shadow-xs cards, and the status tag set.
+        </p>
+
+        <div class="kanban-board">
+          <div class="kanban-column">
+            <div class="kanban-col-head">
+              <span>To do</span>
+              <span class="tag tag-neutral">3</span>
+            </div>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Audit auth redirects</h3>
+              <p class="kanban-card-meta">Auth team · 2 pts</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-primary">Frontend</span>
+              </div>
+            </article>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Migrate to V3 tokens</h3>
+              <p class="kanban-card-meta">Design system · 5 pts</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-accent">Design</span>
+              </div>
+            </article>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Refactor dashboard layout</h3>
+              <p class="kanban-card-meta">Web team · 3 pts</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-primary">Frontend</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="kanban-column">
+            <div class="kanban-col-head">
+              <span>In progress</span>
+              <span class="tag tag-neutral">2</span>
+            </div>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Wire dark-mode toggle</h3>
+              <p class="kanban-card-meta">Nav team · 1 pt</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-warning">In review</span>
+              </div>
+            </article>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Style-guide V3 polish</h3>
+              <p class="kanban-card-meta">Thomas · 2 pts</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-accent">Design</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="kanban-column">
+            <div class="kanban-col-head">
+              <span>Done</span>
+              <span class="tag tag-neutral">2</span>
+            </div>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Finalize design tokens</h3>
+              <p class="kanban-card-meta">Thomas · 5 pts</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-success">Done</span>
+              </div>
+            </article>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Import theme.css into all pages</h3>
+              <p class="kanban-card-meta">Thomas · 1 pt</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-success">Done</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
     </main>
 
     <script>
@@ -1052,6 +2089,85 @@
 
         // Default to light on first paint.
         applyTheme(root.getAttribute("data-theme") || "light");
+      })();
+
+      /* ============================================================
+         Extended demo handlers — modal, toast, motion playground.
+         Each is wrapped in its own IIFE so they stay independent.
+         ============================================================ */
+
+      // --- Modal open/close ---
+      (function () {
+        const openBtn = document.getElementById("sg-open-modal");
+        const overlay = document.getElementById("sg-modal-overlay");
+        const modal = document.getElementById("sg-modal");
+        const cancelBtn = document.getElementById("sg-modal-cancel");
+        const confirmBtn = document.getElementById("sg-modal-confirm");
+        if (!openBtn || !overlay || !modal) return;
+
+        function setOpen(open) {
+          const value = open ? "true" : "false";
+          overlay.setAttribute("data-open", value);
+          modal.setAttribute("data-open", value);
+        }
+        openBtn.addEventListener("click", () => setOpen(true));
+        overlay.addEventListener("click", () => setOpen(false));
+        cancelBtn.addEventListener("click", () => setOpen(false));
+        confirmBtn.addEventListener("click", () => setOpen(false));
+      })();
+
+      // --- Toast stack ---
+      (function () {
+        const stack = document.getElementById("sg-toast-stack");
+        if (!stack) return;
+
+        const COPY = {
+          info: { title: "Heads up", body: "This is an informational toast." },
+          success: { title: "Saved", body: "Your changes have been saved." },
+          warning: { title: "Heads up", body: "Merge freeze starts Thursday." },
+          error: { title: "Save failed", body: "We couldn't reach the server." },
+        };
+
+        document.querySelectorAll("[data-toast]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const variant = btn.getAttribute("data-toast") || "info";
+            const copy = COPY[variant] || COPY.info;
+            const toast = document.createElement("div");
+            toast.className = "toast toast-" + variant;
+            toast.innerHTML =
+              '<p class="toast-title">' +
+              copy.title +
+              '</p><p class="toast-body">' +
+              copy.body +
+              "</p>";
+            stack.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+          });
+        });
+      })();
+
+      // --- Motion playground ---
+      (function () {
+        const ball = document.getElementById("sg-motion-ball");
+        const playBtn = document.getElementById("sg-motion-play");
+        if (!ball || !playBtn) return;
+
+        function bindGroup(attr, cssVar) {
+          const chips = document.querySelectorAll("[" + attr + "]");
+          chips.forEach((chip) => {
+            chip.addEventListener("click", () => {
+              chips.forEach((c) => c.setAttribute("aria-pressed", "false"));
+              chip.setAttribute("aria-pressed", "true");
+              ball.style.setProperty(cssVar, chip.getAttribute(attr));
+            });
+          });
+        }
+        bindGroup("data-motion-duration", "--motion-duration");
+        bindGroup("data-motion-ease", "--motion-ease");
+
+        playBtn.addEventListener("click", () => {
+          ball.classList.toggle("moved");
+        });
       })();
     </script>
   </body>
