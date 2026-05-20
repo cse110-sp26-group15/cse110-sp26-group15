@@ -27,3 +27,36 @@ export const mockMembers = [
   { user_id: 2, full_name: "Alex K." },
   { user_id: 3, full_name: "Jordan L." },
 ];
+
+export const mockCheckins = [
+  {
+    checkin_id: 101,
+    user: { user_id: 1, full_name: "Wayne D." },
+    work_done: "Reviewed the kanban drop-handler refactor and merged it.",
+    work_planned: "Start the check-in form scaffolding this afternoon.",
+    status_mood: "on-track",
+    checkin_date: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
+  },
+  {
+    checkin_id: 102,
+    user: { user_id: 1, full_name: "Wayne D." },
+    work_done: "Wired the task-card component into the kanban board.",
+    status_mood: "in-progress",
+    checkin_date: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+  },
+  {
+    checkin_id: 103,
+    user: { user_id: 1, full_name: "Wayne D." },
+    work_done: "Hit auth issues wiring up the dashboard API contract.",
+    work_planned: "Pair with Alex tomorrow to unblock.",
+    status_mood: "blocked",
+    checkin_date: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
+  },
+  {
+    checkin_id: 104,
+    user: { user_id: 1, full_name: "Wayne D." },
+    work_done: "Set up repo structure and wrote the README.",
+    status_mood: "on-track",
+    checkin_date: new Date(Date.now() - 1000 * 60 * 60 * 50).toISOString(),
+  },
+];
