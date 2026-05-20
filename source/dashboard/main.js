@@ -51,7 +51,7 @@ function switchView(label) {
 }
 
 // ── Task API ──────────────────────────────────────────
-const _PROJECT_ID = 1; // TODO: replace with actual logged-in project context
+//const _PROJECT_ID = 1; // TODO: replace with actual logged-in project context
 
 // ── Mock data (swap out for real API calls when deploying) ────
 let mockTasksLocal = [...mockTasks];
