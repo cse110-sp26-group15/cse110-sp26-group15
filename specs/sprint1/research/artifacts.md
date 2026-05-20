@@ -146,3 +146,4 @@ After researching modern productivity and collaboration applications such as Not
 - HSL separates a color's core hue from its brightness, making the code much easier for
   developers to read and manipulate. This allows you to programmatically calculate hover states, transparencies, and dark mode
   themes on the fly without having to hardcode dozens of rigid Hex codes.
+- Spacing should be designed in grids of 8px

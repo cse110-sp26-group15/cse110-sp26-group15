@@ -94,24 +94,21 @@
       display: inline-flex;
       align-items: center;
       gap: var(--space-xs);
-      padding: var(--padding-xs) var(--padding-md);
+      padding: var(--space-xs) var(--space-md);
       font-family: var(--font-sans);
       font-size: var(--text-sm);
       font-weight: var(--font-weight-medium);
-      color: var(--color-text-inverse);
+      color: var(--color-text-on-primary);
       background: var(--color-primary);
       border: 1px solid var(--color-primary);
       border-radius: var(--radius-md);
       cursor: pointer;
-      transition: background-color 150ms ease, border-color 150ms ease;
+      transition: background-color var(--duration-fast) var(--ease-default),
+                  border-color var(--duration-fast) var(--ease-default);
     }
     .theme-toggle:hover {
       background: var(--color-primary-hover);
       border-color: var(--color-primary-hover);
-    }
-    .theme-toggle:focus-visible {
-      outline: none;
-      box-shadow: var(--shadow-focus);
     }
 
     /* --- Grids --- */
@@ -138,7 +135,7 @@
       transition: background-color 200ms ease;
     }
     .swatch-meta {
-      padding: var(--padding-sm) var(--padding-md);
+      padding: var(--space-sm) var(--space-md);
       display: flex;
       flex-direction: column;
       gap: var(--space-2xs);
@@ -162,7 +159,7 @@
       grid-template-columns: 140px 1fr;
       align-items: baseline;
       gap: var(--space-md);
-      padding: var(--padding-sm) 0;
+      padding: var(--space-sm) 0;
       border-bottom: 1px solid var(--color-border-subtle);
     }
     .type-label {
@@ -193,7 +190,7 @@
       grid-template-columns: 140px 1fr;
       align-items: center;
       gap: var(--space-md);
-      padding: var(--padding-xs) 0;
+      padding: var(--space-xs) 0;
     }
     .space-bar {
       height: 24px;
@@ -218,7 +215,7 @@
       flex-direction: column;
       align-items: center;
       gap: var(--space-sm);
-      padding: var(--padding-md);
+      padding: var(--space-md);
       background: var(--color-bg-surface);
       border: 1px solid var(--color-border-subtle);
       border-radius: var(--radius-md);
@@ -245,7 +242,7 @@
       flex-direction: column;
       align-items: center;
       gap: var(--space-sm);
-      padding: var(--padding-lg);
+      padding: var(--space-lg);
       background: var(--color-bg-subtle);
       border-radius: var(--radius-md);
     }
@@ -261,7 +258,7 @@
       display: grid;
       grid-template-columns: 220px 1fr;
       gap: var(--space-lg);
-      padding: var(--padding-lg);
+      padding: var(--space-lg);
       background: var(--color-bg-subtle);
       border: 1px solid var(--color-border);
       border-radius: var(--radius-lg);
@@ -271,7 +268,7 @@
       background: var(--color-bg-surface);
       border: 1px solid var(--color-border-subtle);
       border-radius: var(--radius-md);
-      padding: var(--padding-md);
+      padding: var(--space-md);
       display: flex;
       flex-direction: column;
       gap: var(--space-2xs);
@@ -287,20 +284,21 @@
     }
     .nav-item {
       display: block;
-      padding: var(--padding-xs) var(--padding-sm);
+      padding: var(--space-xs) var(--space-sm);
       border-radius: var(--radius-sm);
       color: var(--color-text);
       text-decoration: none;
       font-size: var(--text-sm);
-      transition: background-color 120ms ease, color 120ms ease;
+      transition: background-color var(--duration-fast) var(--ease-default),
+                  color var(--duration-fast) var(--ease-default);
     }
     .nav-item:hover {
       background: var(--color-primary-muted);
-      color: var(--color-primary);
+      color: var(--color-text-on-primary-muted);
     }
     .nav-item.active {
       background: var(--color-primary);
-      color: var(--color-text-inverse);
+      color: var(--color-text-on-primary);
     }
 
     .demo-board {
@@ -312,7 +310,7 @@
       background: var(--color-bg-surface);
       border: 1px solid var(--color-border-subtle);
       border-radius: var(--radius-lg);
-      padding: var(--padding-lg);
+      padding: var(--space-lg);
       box-shadow: var(--shadow-md);
       display: flex;
       flex-direction: column;
@@ -350,27 +348,29 @@
       border-radius: var(--radius-full);
       line-height: 1;
     }
-    .tag-success { background: var(--color-success-muted); color: var(--color-success); }
-    .tag-warning { background: var(--color-warning-muted); color: var(--color-warning); }
-    .tag-error   { background: var(--color-error-muted);   color: var(--color-error); }
+    .tag-success { background: var(--color-success-muted); color: var(--color-text-on-success-muted); }
+    .tag-warning { background: var(--color-warning-muted); color: var(--color-text-on-warning-muted); }
+    .tag-error   { background: var(--color-error-muted);   color: var(--color-text-on-error-muted); }
 
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: var(--space-2xs);
-      padding: var(--padding-xs) var(--padding-md);
+      padding: var(--space-xs) var(--space-md);
       font-family: var(--font-sans);
       font-size: var(--text-sm);
       font-weight: var(--font-weight-medium);
       border-radius: var(--radius-md);
       border: 1px solid transparent;
       cursor: pointer;
-      transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+      transition: background-color var(--duration-fast) var(--ease-default),
+                  border-color var(--duration-fast) var(--ease-default),
+                  color var(--duration-fast) var(--ease-default);
     }
     .btn-primary {
       background: var(--color-primary);
-      color: var(--color-text-inverse);
+      color: var(--color-text-on-primary);
       border-color: var(--color-primary);
     }
     .btn-primary:hover {
@@ -385,10 +385,14 @@
     .btn-secondary:hover {
       background: var(--color-secondary-muted);
       border-color: var(--color-secondary);
-      color: var(--color-secondary-hover);
+      color: var(--color-text-on-secondary-muted);
     }
-    .btn:focus-visible {
-      outline: none;
+    /* Forced-colors-safe focus: outline survives High Contrast Mode,
+       box-shadow halo provides the soft ring in normal mode. */
+    .btn:focus-visible,
+    .theme-toggle:focus-visible {
+      outline: var(--focus-outline-width) solid var(--color-border-focus);
+      outline-offset: var(--focus-outline-offset);
       box-shadow: var(--shadow-focus);
     }
 
@@ -501,10 +505,17 @@
           </div>
         </div>
         <div class="swatch">
-          <div class="swatch-color" style="background: var(--color-warning);"></div>
+          <div class="swatch-color" style="background: var(--color-warning-bg);"></div>
           <div class="swatch-meta">
-            <span class="swatch-name">--color-warning</span>
-            <span class="swatch-hint">caution state</span>
+            <span class="swatch-name">--color-warning-bg</span>
+            <span class="swatch-hint">decorative fills only — fails AA as text</span>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background: var(--color-warning-text);"></div>
+          <div class="swatch-meta">
+            <span class="swatch-name">--color-warning-text</span>
+            <span class="swatch-hint">AA-safe warning copy</span>
           </div>
         </div>
         <div class="swatch">
