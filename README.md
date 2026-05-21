@@ -3,6 +3,7 @@
 cse110 group15
 
 Team Page: [page url](admin/team.md)
+Status Video Link: [Video](https://youtu.be/kwu5zS6MOk0)
 
 ## Running Checks Locally
 
