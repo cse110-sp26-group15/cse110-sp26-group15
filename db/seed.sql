@@ -1,11 +1,12 @@
 -- Initial Seed Data
 
 -- seed users
-INSERT INTO users (full_name, email, role) VALUES 
-('Alex Rivera', 'arivera@ucsd.edu', 'Lead Developer'),
-('Sam Chen', 'schen@ucsd.edu', 'UI/UX Designer'),
-('Jordan Smith', 'jsmith@ucsd.edu', 'Product Owner'),
-('SitRep-Bot-v1', 'agent@sesitrep.ai', 'AI-agent'); -- ai agent
+-- Password for all test users: TestPassword123
+INSERT INTO users (full_name, email, role, password_hash) VALUES
+('Alex Rivera', 'arivera@ucsd.edu', 'Lead Developer', '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
+('Sam Chen', 'schen@ucsd.edu', 'UI/UX Designer', '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
+('Jordan Smith', 'jsmith@ucsd.edu', 'Product Owner', '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
+('SitRep-Bot-v1', 'agent@sesitrep.ai', 'AI-agent', '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO');
 
 -- seed projects
 INSERT INTO projects (name, description) VALUES 
