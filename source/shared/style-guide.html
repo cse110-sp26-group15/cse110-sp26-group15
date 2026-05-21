@@ -1,0 +1,2172 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Design System — Living Style Guide</title>
+
+    <!-- Single source of truth: the centralized theme tokens -->
+    <link rel="stylesheet" href="./theme.css" />
+
+    <style>
+      /* ============================================================
+       style-guide.html — Local layout only
+       ------------------------------------------------------------
+       This <style> block ONLY lays out the documentation page
+       itself. All swatches, type samples, cards, shadows, and
+       buttons consume tokens from theme.css. No hard-coded
+       colors, sizes, radii, or shadows are used for any
+       demonstrated element.
+       ============================================================ */
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-sans);
+        font-size: var(--text-base);
+        line-height: var(--line-height-normal);
+        color: var(--color-text);
+        background: var(--color-bg);
+        transition:
+          background-color 200ms ease,
+          color 200ms ease;
+      }
+
+      /* --- Page chrome --- */
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: var(--space-2xl) var(--space-lg);
+      }
+
+      .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-lg);
+        padding-bottom: var(--space-lg);
+        margin-bottom: var(--space-2xl);
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .page-title {
+        font-size: var(--text-h1);
+        font-weight: var(--font-weight-bold);
+        line-height: var(--line-height-tight);
+        margin: 0 0 var(--space-2xs) 0;
+      }
+
+      .page-subtitle {
+        color: var(--color-text-muted);
+        font-size: var(--text-sm);
+        margin: 0;
+      }
+
+      /* --- Section structure --- */
+      .section {
+        margin-bottom: var(--space-3xl);
+      }
+
+      .section-title {
+        font-size: var(--text-h2);
+        font-weight: var(--font-weight-semibold);
+        line-height: var(--line-height-tight);
+        margin: 0 0 var(--space-xs) 0;
+        padding-bottom: var(--space-xs);
+        border-bottom: 1px solid var(--color-border-subtle);
+      }
+
+      .section-description {
+        color: var(--color-text-muted);
+        font-size: var(--text-sm);
+        margin: 0 0 var(--space-lg) 0;
+      }
+
+      .subsection-title {
+        font-size: var(--text-h5);
+        font-weight: var(--font-weight-semibold);
+        margin: var(--space-xl) 0 var(--space-sm) 0;
+        color: var(--color-text);
+      }
+
+      /* --- Theme switcher button --- */
+      .theme-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-md);
+        font-family: var(--font-sans);
+        font-size: var(--text-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-on-primary);
+        background: var(--color-primary);
+        border: 1px solid var(--color-primary);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition:
+          background-color var(--duration-fast) var(--ease-default),
+          border-color var(--duration-fast) var(--ease-default);
+      }
+      .theme-toggle:hover {
+        background: var(--color-primary-hover);
+        border-color: var(--color-primary-hover);
+      }
+
+      /* --- Grids --- */
+      .grid {
+        display: grid;
+        gap: var(--space-md);
+      }
+      .grid-colors {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      }
+      .grid-spacing {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      }
+      .grid-radius {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      }
+      .grid-shadow {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      }
+
+      /* --- Color swatch --- */
+      .swatch {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        background: var(--color-bg-surface);
+        box-shadow: var(--shadow-xs);
+      }
+      .swatch-color {
+        height: 88px;
+        width: 100%;
+        transition: background-color 200ms ease;
+      }
+      .swatch-meta {
+        padding: var(--space-sm) var(--space-md);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        border-top: 1px solid var(--color-border-subtle);
+      }
+      .swatch-name {
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        color: var(--color-text);
+        font-weight: var(--font-weight-medium);
+        word-break: break-all;
+      }
+      .swatch-hint {
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+      }
+
+      /* --- Typography demo --- */
+      .type-row {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        align-items: baseline;
+        gap: var(--space-md);
+        padding: var(--space-sm) 0;
+        border-bottom: 1px solid var(--color-border-subtle);
+      }
+      .type-label {
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+      }
+      .type-sample {
+        margin: 0;
+        line-height: var(--line-height-tight);
+      }
+
+      .h1-sample {
+        font-size: var(--text-h1);
+        font-weight: var(--font-weight-bold);
+      }
+      .h2-sample {
+        font-size: var(--text-h2);
+        font-weight: var(--font-weight-bold);
+      }
+      .h3-sample {
+        font-size: var(--text-h3);
+        font-weight: var(--font-weight-semibold);
+      }
+      .h4-sample {
+        font-size: var(--text-h4);
+        font-weight: var(--font-weight-semibold);
+      }
+      .h5-sample {
+        font-size: var(--text-h5);
+        font-weight: var(--font-weight-medium);
+      }
+      .h6-sample {
+        font-size: var(--text-h6);
+        font-weight: var(--font-weight-medium);
+      }
+
+      .body-xs {
+        font-size: var(--text-xs);
+      }
+      .body-sm {
+        font-size: var(--text-sm);
+      }
+      .body-base {
+        font-size: var(--text-base);
+      }
+      .body-lg {
+        font-size: var(--text-lg);
+      }
+
+      .font-sans {
+        font-family: var(--font-sans);
+      }
+      .font-mono {
+        font-family: var(--font-mono);
+      }
+
+      /* --- Spacing demo --- */
+      .space-row {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        align-items: center;
+        gap: var(--space-md);
+        padding: var(--space-xs) 0;
+      }
+      .space-bar {
+        height: 24px;
+        background: var(--color-primary);
+        border-radius: var(--radius-sm);
+      }
+      .space-padded-box {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--color-primary-muted);
+        color: var(--color-text-on-primary-muted);
+        border: 1px dashed var(--color-text-on-primary-muted);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+      }
+
+      /* --- Radius demo --- */
+      .radius-tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-md);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-md);
+      }
+      .radius-box {
+        width: 96px;
+        height: 96px;
+        background: var(--color-primary);
+        border: 1px solid var(--color-primary-hover);
+      }
+      .radius-box.pill {
+        width: 140px;
+        height: 56px;
+      }
+      .token-tag {
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+      }
+
+      /* --- Shadow demo --- */
+      .shadow-tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-lg);
+        background: var(--color-bg-subtle);
+        border-radius: var(--radius-md);
+      }
+      .shadow-box {
+        width: 100%;
+        height: 96px;
+        background: var(--color-bg-surface);
+        border-radius: var(--radius-md);
+      }
+
+      /* --- Integration: mini task manager UI --- */
+      .demo-app {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: var(--space-lg);
+        padding: var(--space-lg);
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+      }
+
+      .demo-sidebar {
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-md);
+        padding: var(--space-md);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        box-shadow: var(--shadow-xs);
+      }
+      .demo-sidebar h3 {
+        margin: 0 0 var(--space-xs) 0;
+        font-size: var(--text-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-text-muted);
+        font-weight: var(--font-weight-semibold);
+      }
+      .nav-item {
+        display: block;
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        color: var(--color-text);
+        text-decoration: none;
+        font-size: var(--text-sm);
+        transition:
+          background-color var(--duration-fast) var(--ease-default),
+          color var(--duration-fast) var(--ease-default);
+      }
+      .nav-item:hover {
+        background: var(--color-primary-muted);
+        color: var(--color-text-on-primary-muted);
+      }
+      .nav-item.active {
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
+      }
+
+      .demo-board {
+        display: grid;
+        gap: var(--space-md);
+      }
+
+      .task-card {
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+      }
+      .task-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-sm);
+      }
+      .task-title {
+        margin: 0;
+        font-size: var(--text-h5);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text);
+      }
+      .task-meta {
+        margin: 0;
+        font-size: var(--text-sm);
+        color: var(--color-text-muted);
+      }
+      .task-actions {
+        display: flex;
+        gap: var(--space-xs);
+        margin-top: var(--space-xs);
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--space-2xs) var(--space-xs);
+        font-size: var(--text-xs);
+        font-weight: var(--font-weight-medium);
+        border-radius: var(--radius-full);
+        line-height: 1;
+      }
+      .tag-success {
+        background: var(--color-success-muted);
+        color: var(--color-text-on-success-muted);
+      }
+      .tag-warning {
+        background: var(--color-warning-muted);
+        color: var(--color-text-on-warning-muted);
+      }
+      .tag-error {
+        background: var(--color-error-muted);
+        color: var(--color-text-on-error-muted);
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2xs);
+        padding: var(--space-xs) var(--space-md);
+        font-family: var(--font-sans);
+        font-size: var(--text-sm);
+        font-weight: var(--font-weight-medium);
+        border-radius: var(--radius-md);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition:
+          background-color var(--duration-fast) var(--ease-default),
+          border-color var(--duration-fast) var(--ease-default),
+          color var(--duration-fast) var(--ease-default);
+      }
+      .btn-primary {
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
+        border-color: var(--color-primary);
+      }
+      .btn-primary:hover {
+        background: var(--color-primary-hover);
+        border-color: var(--color-primary-hover);
+      }
+      .btn-secondary {
+        background: transparent;
+        color: var(--color-secondary);
+        border-color: var(--color-border-strong);
+      }
+      .btn-secondary:hover {
+        background: var(--color-secondary-muted);
+        border-color: var(--color-secondary);
+        color: var(--color-text-on-secondary-muted);
+      }
+      /* Forced-colors-safe focus: outline survives High Contrast Mode,
+       box-shadow halo provides the soft ring in normal mode. */
+      .btn:focus-visible,
+      .theme-toggle:focus-visible {
+        outline: var(--focus-outline-width) solid var(--color-border-focus);
+        outline-offset: var(--focus-outline-offset);
+        box-shadow: var(--shadow-focus);
+      }
+
+      /* --- Responsive collapse for the mini app --- */
+      @media (max-width: 640px) {
+        .demo-app {
+          grid-template-columns: 1fr;
+        }
+        .type-row,
+        .space-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ============================================================
+         EXTENDED COMPONENT DEMOS  (sections 7–14)
+         ------------------------------------------------------------
+         Below: buttons, form fields, alerts, tags/badges, overlays
+         (tooltip / menu / modal / toast), z-index visualizer,
+         motion playground, mini kanban. Each consumes only theme
+         tokens — no hard-coded colors, sizes, shadows, or motion.
+         ============================================================ */
+
+      /* --- Layout helper shared by all extended demos --- */
+      .demo-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+      }
+
+      /* --- 7. Buttons gallery --- */
+      .btn-accent {
+        background: var(--color-accent);
+        color: var(--color-text-on-accent);
+        border-color: var(--color-accent);
+      }
+      .btn-accent:hover {
+        background: var(--color-accent-hover);
+        border-color: var(--color-accent-hover);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--color-text);
+        border-color: transparent;
+      }
+      .btn-ghost:hover {
+        background: var(--color-bg-subtle);
+      }
+      .btn-danger {
+        background: var(--color-error);
+        color: var(--color-text-on-error);
+        border-color: var(--color-error);
+      }
+      .btn-danger:hover {
+        filter: brightness(0.92);
+      }
+      .btn-sm {
+        padding: var(--space-2xs) var(--space-sm);
+        font-size: var(--text-xs);
+      }
+      .btn-lg {
+        padding: var(--space-sm) var(--space-lg);
+        font-size: var(--text-base);
+      }
+      .btn[disabled],
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* --- 8. Form fields --- */
+      .form-demo {
+        display: grid;
+        gap: var(--space-md);
+        max-width: var(--container-sm);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+      }
+      .field-label {
+        font-size: var(--text-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text);
+      }
+      .field-control {
+        font-family: var(--font-sans);
+        font-size: var(--text-sm);
+        color: var(--color-text);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        padding: var(--space-xs) var(--space-sm);
+        transition:
+          border-color var(--duration-fast) var(--ease-default),
+          box-shadow var(--duration-fast) var(--ease-default);
+      }
+      .field-control::placeholder {
+        color: var(--color-text-subtle);
+      }
+      .field-control:focus-visible {
+        outline: var(--focus-outline-width) solid var(--color-border-focus);
+        outline-offset: var(--focus-outline-offset);
+        box-shadow: var(--shadow-focus);
+        border-color: var(--color-border-focus);
+      }
+      textarea.field-control {
+        min-height: 6rem;
+        resize: vertical;
+      }
+      .field-help {
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+      }
+      .field[data-state="error"] .field-control {
+        border-color: var(--color-error);
+      }
+      .field[data-state="error"] .field-help {
+        color: var(--color-error);
+      }
+      .field-inline {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        font-size: var(--text-sm);
+        color: var(--color-text);
+      }
+      .field-inline input[type="checkbox"],
+      .field-inline input[type="radio"] {
+        accent-color: var(--color-primary);
+        width: 1rem;
+        height: 1rem;
+      }
+
+      /* --- 9. Alerts / banners --- */
+      .alert {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        border-left: 4px solid;
+        font-size: var(--text-sm);
+      }
+      .alert-title {
+        font-weight: var(--font-weight-semibold);
+        margin: 0;
+      }
+      .alert-body {
+        margin: 0;
+      }
+      .alert-info {
+        background: var(--color-primary-muted);
+        color: var(--color-text-on-primary-muted);
+        border-left-color: var(--color-primary);
+      }
+      .alert-success {
+        background: var(--color-success-muted);
+        color: var(--color-text-on-success-muted);
+        border-left-color: var(--color-success);
+      }
+      .alert-warning {
+        background: var(--color-warning-muted);
+        color: var(--color-text-on-warning-muted);
+        border-left-color: var(--color-warning-bg);
+      }
+      .alert-error {
+        background: var(--color-error-muted);
+        color: var(--color-text-on-error-muted);
+        border-left-color: var(--color-error);
+      }
+
+      /* --- 10. Tag variants & badges --- */
+      .tag-neutral {
+        background: var(--color-bg-subtle);
+        color: var(--color-text-muted);
+      }
+      .tag-primary {
+        background: var(--color-primary-muted);
+        color: var(--color-text-on-primary-muted);
+      }
+      .tag-secondary {
+        background: var(--color-secondary-muted);
+        color: var(--color-text-on-secondary-muted);
+      }
+      .tag-accent {
+        background: var(--color-accent-muted);
+        color: var(--color-text-on-accent-muted);
+      }
+      .badge-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: var(--radius-full);
+        margin-right: var(--space-2xs);
+        vertical-align: middle;
+      }
+      .badge-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.25rem;
+        height: 1.25rem;
+        padding: 0 var(--space-2xs);
+        border-radius: var(--radius-full);
+        background: var(--color-error);
+        color: var(--color-text-on-error);
+        font-size: var(--text-xs);
+        font-weight: var(--font-weight-semibold);
+        line-height: 1;
+      }
+
+      /* --- 11. Overlays: tooltip + dropdown menu --- */
+      .popover-stage {
+        position: relative;
+        min-height: 200px;
+        padding: var(--space-2xl);
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        display: flex;
+        gap: var(--space-2xl);
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .tooltip-target {
+        position: relative;
+        display: inline-block;
+      }
+      .tooltip {
+        position: absolute;
+        bottom: calc(100% + var(--space-xs));
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        background: var(--color-bg-inverse);
+        color: var(--color-text-on-inverse);
+        padding: var(--space-2xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-size: var(--text-xs);
+        box-shadow: var(--shadow-lg);
+        z-index: var(--z-tooltip);
+      }
+      .menu {
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-2xs);
+        min-width: 200px;
+        box-shadow: var(--shadow-lg);
+        z-index: var(--z-dropdown);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .menu-item {
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--radius-sm);
+        font-size: var(--text-sm);
+        color: var(--color-text);
+        cursor: pointer;
+        transition: background-color var(--duration-fast) var(--ease-default);
+      }
+      .menu-item:hover {
+        background: var(--color-primary-muted);
+        color: var(--color-text-on-primary-muted);
+      }
+      .menu-item.danger:hover {
+        background: var(--color-error-muted);
+        color: var(--color-text-on-error-muted);
+      }
+      .menu-divider {
+        height: 1px;
+        background: var(--color-border-subtle);
+        margin: var(--space-2xs) 0;
+      }
+
+      /* --- 11b. Modal --- */
+      .modal-stage {
+        position: relative;
+        min-height: 320px;
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+      .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: hsla(222, 47%, 11%, 0.55);
+        z-index: var(--z-overlay);
+        display: none;
+        animation: sg-fade-in var(--duration-normal) var(--ease-out);
+      }
+      .modal-overlay[data-open="true"] {
+        display: block;
+      }
+      .modal {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(420px, calc(100% - var(--space-xl)));
+        background: var(--color-bg-surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
+        padding: var(--space-lg);
+        z-index: var(--z-modal);
+        display: none;
+        animation: sg-pop-in var(--duration-normal) var(--ease-out);
+      }
+      .modal[data-open="true"] {
+        display: block;
+      }
+      .modal-title {
+        margin: 0 0 var(--space-xs);
+        font-size: var(--text-h5);
+        font-weight: var(--font-weight-semibold);
+      }
+      .modal-body {
+        margin: 0 0 var(--space-lg);
+        color: var(--color-text-muted);
+        font-size: var(--text-sm);
+      }
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-xs);
+      }
+      @keyframes sg-fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes sg-pop-in {
+        from {
+          opacity: 0;
+          transform: translate(-50%, -48%) scale(0.96);
+        }
+        to {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+      }
+
+      /* --- 11c. Toast notifications --- */
+      .toast-stage {
+        position: relative;
+        min-height: 280px;
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-md);
+        overflow: hidden;
+      }
+      .toast-stack {
+        position: absolute;
+        right: var(--space-md);
+        bottom: var(--space-md);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        z-index: var(--z-toast);
+        max-width: 320px;
+      }
+      .toast {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-sm) var(--space-md);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
+        border-left: 4px solid var(--color-primary);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        font-size: var(--text-sm);
+        animation: sg-slide-in var(--duration-normal) var(--ease-out);
+      }
+      .toast-success {
+        border-left-color: var(--color-success);
+      }
+      .toast-warning {
+        border-left-color: var(--color-warning-bg);
+      }
+      .toast-error {
+        border-left-color: var(--color-error);
+      }
+      .toast-title {
+        margin: 0;
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text);
+      }
+      .toast-body {
+        margin: 0;
+        color: var(--color-text-muted);
+        font-size: var(--text-xs);
+      }
+      @keyframes sg-slide-in {
+        from {
+          opacity: 0;
+          transform: translateX(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* --- 12. Z-index stack visualizer --- */
+      .z-stage {
+        position: relative;
+        height: 360px;
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+      }
+      .z-layer {
+        position: absolute;
+        width: 220px;
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
+        box-shadow: var(--shadow-md);
+        color: var(--color-text);
+      }
+      .z-layer strong {
+        display: block;
+        font-size: var(--text-sm);
+        font-weight: var(--font-weight-semibold);
+        margin-bottom: var(--space-2xs);
+      }
+      .z-layer code {
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+      }
+
+      /* --- 13. Motion playground --- */
+      .motion-stage {
+        display: grid;
+        gap: var(--space-md);
+        padding: var(--space-md);
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+      }
+      .motion-track {
+        position: relative;
+        height: 56px;
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+      }
+      .motion-ball {
+        position: absolute;
+        top: 50%;
+        left: var(--space-xs);
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-full);
+        background: var(--color-accent);
+        transition: left var(--motion-duration, var(--duration-normal))
+          var(--motion-ease, var(--ease-default));
+      }
+      .motion-ball.moved {
+        left: calc(100% - 36px - var(--space-xs));
+      }
+      .motion-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        align-items: center;
+      }
+      .motion-controls strong {
+        font-size: var(--text-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-text-muted);
+        margin-right: var(--space-xs);
+      }
+      .motion-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--space-2xs) var(--space-sm);
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-full);
+        color: var(--color-text);
+        cursor: pointer;
+        transition: all var(--duration-fast) var(--ease-default);
+      }
+      .motion-chip:hover {
+        border-color: var(--color-primary);
+      }
+      .motion-chip[aria-pressed="true"] {
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
+        border-color: var(--color-primary);
+      }
+
+      /* --- 14. Mini Kanban board (consumes --kanban-column-min) --- */
+      .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(var(--kanban-column-min), 1fr));
+        gap: var(--space-md);
+      }
+      .kanban-column {
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-lg);
+        padding: var(--space-sm);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        min-height: 320px;
+      }
+      .kanban-col-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-2xs) var(--space-xs);
+        font-size: var(--text-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-muted);
+      }
+      .kanban-card {
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border-subtle);
+        border-radius: var(--radius-md);
+        padding: var(--space-sm) var(--space-md);
+        box-shadow: var(--shadow-xs);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        font-size: var(--text-sm);
+      }
+      .kanban-card-title {
+        margin: 0;
+        font-size: var(--text-sm);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text);
+      }
+      .kanban-card-meta {
+        margin: 0;
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="page">
+      <!-- =========================================================
+         1. HEADER & THEME SWITCHER
+         ========================================================= -->
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Design System — Living Style Guide</h1>
+          <p class="page-subtitle">
+            Visual reference for every token in
+            <code class="font-mono">theme.css</code>. Toggle the theme to verify dark-mode parity.
+          </p>
+        </div>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false">
+          <span id="themeToggleIcon" aria-hidden="true">🌙</span>
+          <span id="themeToggleLabel">Switch to Dark</span>
+        </button>
+      </header>
+
+      <!-- =========================================================
+         2. COLOR PALETTE
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-color">
+        <h2 id="sec-color" class="section-title">Color Palette</h2>
+        <p class="section-description">
+          Every semantic color token. Hover an interactive swatch to preview its
+          <code class="font-mono">-hover</code> variant.
+        </p>
+
+        <h3 class="subsection-title">Brand</h3>
+        <div class="grid grid-colors">
+          <!-- Primary (interactive: base ↔ hover) -->
+          <div class="swatch">
+            <div
+              class="swatch-color"
+              style="background: var(--color-primary)"
+              onmouseover="this.style.background = 'var(--color-primary-hover)'"
+              onmouseout="this.style.background = 'var(--color-primary)'"
+            ></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-primary</span>
+              <span class="swatch-hint">hover → --color-primary-hover</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-primary-muted)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-primary-muted</span>
+              <span class="swatch-hint">tints, selected backgrounds</span>
+            </div>
+          </div>
+
+          <!-- Secondary — neutral cool gray, not a saturated brand color -->
+          <div class="swatch">
+            <div
+              class="swatch-color"
+              style="background: var(--color-secondary)"
+              onmouseover="this.style.background = 'var(--color-secondary-hover)'"
+              onmouseout="this.style.background = 'var(--color-secondary)'"
+            ></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-secondary</span>
+              <span class="swatch-hint">neutral · hover → --color-secondary-hover</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-secondary-muted)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-secondary-muted</span>
+              <span class="swatch-hint">low-emphasis surfaces &amp; chips</span>
+            </div>
+          </div>
+
+          <!-- Accent -->
+          <div class="swatch">
+            <div
+              class="swatch-color"
+              style="background: var(--color-accent)"
+              onmouseover="this.style.background = 'var(--color-accent-hover)'"
+              onmouseout="this.style.background = 'var(--color-accent)'"
+            ></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-accent</span>
+              <span class="swatch-hint">hover → --color-accent-hover</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-accent-muted)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-accent-muted</span>
+              <span class="swatch-hint">pair text with --color-text-on-accent-muted</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">Status</h3>
+        <div class="grid grid-colors">
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-success)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-success</span>
+              <span class="swatch-hint">positive state</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-success-muted)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-success-muted</span>
+              <span class="swatch-hint">tag / banner bg</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-warning-bg)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-warning-bg</span>
+              <span class="swatch-hint">decorative fills only — fails AA as text</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-warning-text)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-warning-text</span>
+              <span class="swatch-hint">AA-safe warning copy</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-warning-muted)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-warning-muted</span>
+              <span class="swatch-hint">tag / banner bg</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-error)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-error</span>
+              <span class="swatch-hint">danger state</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-error-muted)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-error-muted</span>
+              <span class="swatch-hint">tag / banner bg</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">Surfaces & Backgrounds</h3>
+        <div class="grid grid-colors">
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-bg)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-bg</span>
+              <span class="swatch-hint">page background</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-bg-subtle)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-bg-subtle</span>
+              <span class="swatch-hint">alt rows, sidebars</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-bg-surface)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-bg-surface</span>
+              <span class="swatch-hint">cards, modals</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-bg-inverse)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-bg-inverse</span>
+              <span class="swatch-hint">tooltips, dark chips</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">Text</h3>
+        <div class="grid grid-colors">
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-text)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-text</span>
+              <span class="swatch-hint">default body</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-text-muted)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-text-muted</span>
+              <span class="swatch-hint">AA live-text tier · captions, helper</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-text-subtle)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-text-subtle</span>
+              <span class="swatch-hint">decorative only · placeholders, disabled</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-text-inverse)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-text-inverse</span>
+              <span class="swatch-hint">text on dark</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-text-link)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-text-link</span>
+              <span class="swatch-hint">alias of --color-primary</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">Borders</h3>
+        <div class="grid grid-colors">
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-border)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-border</span>
+              <span class="swatch-hint">default dividers</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-border-strong)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-border-strong</span>
+              <span class="swatch-hint">inputs, emphasis</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-border-subtle)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-border-subtle</span>
+              <span class="swatch-hint">hairlines</span>
+            </div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--color-border-focus)"></div>
+            <div class="swatch-meta">
+              <span class="swatch-name">--color-border-focus</span>
+              <span class="swatch-hint">alias of --color-primary</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         3. TYPOGRAPHY
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-type">
+        <h2 id="sec-type" class="section-title">Typography</h2>
+        <p class="section-description">Heading scale, body sizes, weights, and font families.</p>
+
+        <h3 class="subsection-title">Heading Scale</h3>
+        <div class="type-row">
+          <span class="type-label">--text-h1</span>
+          <p class="type-sample h1-sample">The quick brown fox</p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--text-h2</span>
+          <p class="type-sample h2-sample">The quick brown fox</p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--text-h3</span>
+          <p class="type-sample h3-sample">The quick brown fox</p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--text-h4</span>
+          <p class="type-sample h4-sample">The quick brown fox</p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--text-h5</span>
+          <p class="type-sample h5-sample">The quick brown fox</p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--text-h6</span>
+          <p class="type-sample h6-sample">The quick brown fox</p>
+        </div>
+
+        <h3 class="subsection-title">Body Sizes</h3>
+        <div class="type-row">
+          <span class="type-label">--text-lg</span>
+          <p class="type-sample body-lg">Emphasized body — 1.125rem / 18px</p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--text-base</span>
+          <p class="type-sample body-base">Default body — 1rem / 16px</p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--text-sm</span>
+          <p class="type-sample body-sm">Secondary body — 0.875rem / 14px</p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--text-xs</span>
+          <p class="type-sample body-xs">Meta / captions — 0.75rem / 12px</p>
+        </div>
+
+        <h3 class="subsection-title">Font Weights</h3>
+        <div class="type-row">
+          <span class="type-label">--font-weight-light</span>
+          <p class="type-sample body-base" style="font-weight: var(--font-weight-light)">
+            Light 300 — Pack my box with five dozen liquor jugs.
+          </p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--font-weight-regular</span>
+          <p class="type-sample body-base" style="font-weight: var(--font-weight-regular)">
+            Regular 400 — Pack my box with five dozen liquor jugs.
+          </p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--font-weight-medium</span>
+          <p class="type-sample body-base" style="font-weight: var(--font-weight-medium)">
+            Medium 500 — Pack my box with five dozen liquor jugs.
+          </p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--font-weight-semibold</span>
+          <p class="type-sample body-base" style="font-weight: var(--font-weight-semibold)">
+            Semibold 600 — Pack my box with five dozen liquor jugs.
+          </p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--font-weight-bold</span>
+          <p class="type-sample body-base" style="font-weight: var(--font-weight-bold)">
+            Bold 700 — Pack my box with five dozen liquor jugs.
+          </p>
+        </div>
+
+        <h3 class="subsection-title">Font Families</h3>
+        <div class="type-row">
+          <span class="type-label">--font-sans</span>
+          <p class="type-sample body-lg font-sans">Inter, system-ui — interfaces, body copy.</p>
+        </div>
+        <div class="type-row">
+          <span class="type-label">--font-mono</span>
+          <p class="type-sample body-lg font-mono">
+            JetBrains Mono, ui-monospace — code &amp; tokens.
+          </p>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         4. SPACING
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-space">
+        <h2 id="sec-space" class="section-title">Spacing System</h2>
+        <p class="section-description">
+          Strict 8pt grid. Bar width below shows the raw value; the padded box on the right shows
+          the token used as interior padding.
+        </p>
+
+        <div class="space-row">
+          <span class="type-label">--space-2xs · 4px</span>
+          <div style="display: flex; align-items: center; gap: var(--space-md)">
+            <div class="space-bar" style="width: var(--space-2xs)"></div>
+            <span class="space-padded-box" style="padding: var(--space-2xs)">2xs</span>
+          </div>
+        </div>
+        <div class="space-row">
+          <span class="type-label">--space-xs · 8px</span>
+          <div style="display: flex; align-items: center; gap: var(--space-md)">
+            <div class="space-bar" style="width: var(--space-xs)"></div>
+            <span class="space-padded-box" style="padding: var(--space-xs)">xs</span>
+          </div>
+        </div>
+        <div class="space-row">
+          <span class="type-label">--space-sm · 12px</span>
+          <div style="display: flex; align-items: center; gap: var(--space-md)">
+            <div class="space-bar" style="width: var(--space-sm)"></div>
+            <span class="space-padded-box" style="padding: var(--space-sm)">sm</span>
+          </div>
+        </div>
+        <div class="space-row">
+          <span class="type-label">--space-md · 16px</span>
+          <div style="display: flex; align-items: center; gap: var(--space-md)">
+            <div class="space-bar" style="width: var(--space-md)"></div>
+            <span class="space-padded-box" style="padding: var(--space-md)">md</span>
+          </div>
+        </div>
+        <div class="space-row">
+          <span class="type-label">--space-lg · 24px</span>
+          <div style="display: flex; align-items: center; gap: var(--space-md)">
+            <div class="space-bar" style="width: var(--space-lg)"></div>
+            <span class="space-padded-box" style="padding: var(--space-lg)">lg</span>
+          </div>
+        </div>
+        <div class="space-row">
+          <span class="type-label">--space-xl · 32px</span>
+          <div style="display: flex; align-items: center; gap: var(--space-md)">
+            <div class="space-bar" style="width: var(--space-xl)"></div>
+            <span class="space-padded-box" style="padding: var(--space-xl)">xl</span>
+          </div>
+        </div>
+        <div class="space-row">
+          <span class="type-label">--space-2xl · 48px</span>
+          <div style="display: flex; align-items: center; gap: var(--space-md)">
+            <div class="space-bar" style="width: var(--space-2xl)"></div>
+            <span class="space-padded-box" style="padding: var(--space-2xl)">2xl</span>
+          </div>
+        </div>
+        <div class="space-row">
+          <span class="type-label">--space-3xl · 64px</span>
+          <div style="display: flex; align-items: center; gap: var(--space-md)">
+            <div class="space-bar" style="width: var(--space-3xl)"></div>
+            <span class="space-padded-box" style="padding: var(--space-3xl)">3xl</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         5. UI PRIMITIVES — RADIUS & ELEVATION
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-primitives">
+        <h2 id="sec-primitives" class="section-title">UI Primitives</h2>
+        <p class="section-description">
+          Border radius and elevation tokens applied to surface-colored boxes.
+        </p>
+
+        <h3 class="subsection-title">Border Radius</h3>
+        <div class="grid grid-radius">
+          <div class="radius-tile">
+            <div class="radius-box" style="border-radius: var(--radius-none)"></div>
+            <span class="token-tag">--radius-none</span>
+          </div>
+          <div class="radius-tile">
+            <div class="radius-box" style="border-radius: var(--radius-sm)"></div>
+            <span class="token-tag">--radius-sm · 4px</span>
+          </div>
+          <div class="radius-tile">
+            <div class="radius-box" style="border-radius: var(--radius-md)"></div>
+            <span class="token-tag">--radius-md · 8px</span>
+          </div>
+          <div class="radius-tile">
+            <div class="radius-box" style="border-radius: var(--radius-lg)"></div>
+            <span class="token-tag">--radius-lg · 12px</span>
+          </div>
+          <div class="radius-tile">
+            <div class="radius-box" style="border-radius: var(--radius-xl)"></div>
+            <span class="token-tag">--radius-xl · 16px</span>
+          </div>
+          <div class="radius-tile">
+            <div class="radius-box pill" style="border-radius: var(--radius-full)"></div>
+            <span class="token-tag">--radius-full · pill</span>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">Elevation (Shadows)</h3>
+        <div class="grid grid-shadow">
+          <div class="shadow-tile">
+            <div class="shadow-box" style="box-shadow: var(--shadow-xs)"></div>
+            <span class="token-tag">--shadow-xs</span>
+          </div>
+          <div class="shadow-tile">
+            <div class="shadow-box" style="box-shadow: var(--shadow-sm)"></div>
+            <span class="token-tag">--shadow-sm</span>
+          </div>
+          <div class="shadow-tile">
+            <div class="shadow-box" style="box-shadow: var(--shadow-md)"></div>
+            <span class="token-tag">--shadow-md</span>
+          </div>
+          <div class="shadow-tile">
+            <div class="shadow-box" style="box-shadow: var(--shadow-lg)"></div>
+            <span class="token-tag">--shadow-lg</span>
+          </div>
+          <div class="shadow-tile">
+            <div class="shadow-box" style="box-shadow: var(--shadow-xl)"></div>
+            <span class="token-tag">--shadow-xl</span>
+          </div>
+          <div class="shadow-tile">
+            <div class="shadow-box" style="box-shadow: var(--shadow-focus)"></div>
+            <span class="token-tag">--shadow-focus</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         6. INTEGRATION EXAMPLE — MINI TASK MANAGER
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-integration">
+        <h2 id="sec-integration" class="section-title">Integration Example</h2>
+        <p class="section-description">
+          A simplified Task Manager fragment combining radius, elevation, primary &amp; muted text,
+          status tags, and primary/secondary buttons.
+        </p>
+
+        <div class="demo-app">
+          <!-- Sidebar nav uses --color-bg-surface, radius, and primary states -->
+          <nav class="demo-sidebar" aria-label="Sidebar">
+            <h3>Workspace</h3>
+            <a href="#" class="nav-item active">Dashboard</a>
+            <a href="#" class="nav-item">My Tasks</a>
+            <a href="#" class="nav-item">Kanban</a>
+            <a href="#" class="nav-item">Calendar</a>
+            <a href="#" class="nav-item">Settings</a>
+          </nav>
+
+          <!-- Task cards combine radius, shadow, text hierarchy, tags, buttons -->
+          <div class="demo-board">
+            <article class="task-card">
+              <div class="task-card-head">
+                <h3 class="task-title">Finalize design system tokens</h3>
+                <span class="tag tag-success">Done</span>
+              </div>
+              <p class="task-meta">Due May 18 · Assigned to Thomas</p>
+              <p class="body-sm" style="margin: 0">
+                All color, typography, spacing, radius, and shadow tokens are centralized in
+                <span class="font-mono">theme.css</span>.
+              </p>
+              <div class="task-actions">
+                <button class="btn btn-primary" type="button">View task</button>
+                <button class="btn btn-secondary" type="button">Reassign</button>
+              </div>
+            </article>
+
+            <article class="task-card">
+              <div class="task-card-head">
+                <h3 class="task-title">Wire dark-mode toggle into nav</h3>
+                <span class="tag tag-warning">In review</span>
+              </div>
+              <p class="task-meta">Due May 22 · Assigned to Nav team</p>
+              <p class="body-sm" style="margin: 0">
+                Pending QA on tooltip contrast with
+                <span class="font-mono">--color-bg-inverse</span> on dark.
+              </p>
+              <div class="task-actions">
+                <button class="btn btn-primary" type="button">Open PR</button>
+                <button class="btn btn-secondary" type="button">Comment</button>
+              </div>
+            </article>
+
+            <article class="task-card">
+              <div class="task-card-head">
+                <h3 class="task-title">Investigate failing auth redirect</h3>
+                <span class="tag tag-error">Blocked</span>
+              </div>
+              <p class="task-meta">Due May 24 · Assigned to Auth team</p>
+              <p class="body-sm" style="margin: 0">
+                Waiting on upstream session-token fix before re-testing.
+              </p>
+              <div class="task-actions">
+                <button class="btn btn-primary" type="button">Triage</button>
+                <button class="btn btn-secondary" type="button">Escalate</button>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         7. BUTTONS GALLERY
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-buttons">
+        <h2 id="sec-buttons" class="section-title">Buttons</h2>
+        <p class="section-description">
+          All variants × sizes × states. Hover/focus a button to see the motion + focus tokens in
+          action.
+        </p>
+
+        <h3 class="subsection-title">Variants</h3>
+        <div class="demo-row">
+          <button class="btn btn-primary" type="button">Primary</button>
+          <button class="btn btn-secondary" type="button">Secondary</button>
+          <button class="btn btn-accent" type="button">Accent</button>
+          <button class="btn btn-ghost" type="button">Ghost</button>
+          <button class="btn btn-danger" type="button">Danger</button>
+        </div>
+
+        <h3 class="subsection-title">Sizes</h3>
+        <div class="demo-row">
+          <button class="btn btn-primary btn-sm" type="button">Small</button>
+          <button class="btn btn-primary" type="button">Default</button>
+          <button class="btn btn-primary btn-lg" type="button">Large</button>
+        </div>
+
+        <h3 class="subsection-title">States</h3>
+        <div class="demo-row">
+          <button class="btn btn-primary" type="button">Default</button>
+          <button class="btn btn-primary" type="button" disabled>Disabled</button>
+          <button class="btn btn-secondary" type="button">Default</button>
+          <button class="btn btn-secondary" type="button" disabled>Disabled</button>
+        </div>
+
+        <h3 class="subsection-title">With icon</h3>
+        <div class="demo-row">
+          <button class="btn btn-primary" type="button">
+            <span aria-hidden="true">+</span> Add task
+          </button>
+          <button class="btn btn-secondary" type="button">
+            <span aria-hidden="true">↻</span> Refresh
+          </button>
+          <button class="btn btn-danger" type="button">
+            <span aria-hidden="true">🗑</span> Delete
+          </button>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         8. FORM FIELDS
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-forms">
+        <h2 id="sec-forms" class="section-title">Form Fields</h2>
+        <p class="section-description">
+          Inputs use <code class="font-mono">--color-border-strong</code> at rest and the documented
+          outline + box-shadow focus pattern. Error state swaps the border to
+          <code class="font-mono">--color-error</code>.
+        </p>
+
+        <form class="form-demo" onsubmit="event.preventDefault()">
+          <div class="field">
+            <label class="field-label" for="sg-name">Task title</label>
+            <input
+              id="sg-name"
+              class="field-control"
+              type="text"
+              placeholder="e.g. Finalize design tokens"
+            />
+            <span class="field-help">Shown on the card and in lists.</span>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="sg-desc">Description</label>
+            <textarea
+              id="sg-desc"
+              class="field-control"
+              placeholder="What needs to happen?"
+            ></textarea>
+            <span class="field-help">Markdown is supported.</span>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="sg-priority">Priority</label>
+            <select id="sg-priority" class="field-control">
+              <option>Low</option>
+              <option selected>Normal</option>
+              <option>High</option>
+              <option>Urgent</option>
+            </select>
+          </div>
+
+          <div class="field" data-state="error">
+            <label class="field-label" for="sg-due">Due date</label>
+            <input id="sg-due" class="field-control" type="date" />
+            <span class="field-help">Due date must be in the future.</span>
+          </div>
+
+          <div class="demo-row">
+            <label class="field-inline"> <input type="checkbox" checked /> Notify watchers </label>
+            <label class="field-inline">
+              <input type="checkbox" /> Block release on completion
+            </label>
+          </div>
+
+          <div class="demo-row">
+            <label class="field-inline"><input type="radio" name="sg-view" checked /> Kanban</label>
+            <label class="field-inline"><input type="radio" name="sg-view" /> List</label>
+            <label class="field-inline"><input type="radio" name="sg-view" /> Calendar</label>
+          </div>
+
+          <div class="demo-row">
+            <button class="btn btn-primary" type="submit">Save task</button>
+            <button class="btn btn-ghost" type="button">Cancel</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- =========================================================
+         9. ALERTS / BANNERS
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-alerts">
+        <h2 id="sec-alerts" class="section-title">Alerts &amp; Banners</h2>
+        <p class="section-description">
+          The four status colors paired with their AA-safe on-muted text tokens. Border-left uses
+          the solid status color for a visual accent.
+        </p>
+
+        <div class="grid" style="gap: var(--space-sm)">
+          <div class="alert alert-info" role="status">
+            <p class="alert-title">New theme tokens available</p>
+            <p class="alert-body">
+              Pull from <code class="font-mono">main</code> to pick up the V3 accent-muted token and
+              the on-fill foreground pairings.
+            </p>
+          </div>
+          <div class="alert alert-success" role="status">
+            <p class="alert-title">Sprint goal complete</p>
+            <p class="alert-body">All 12 story points landed before the cutoff. Nice work.</p>
+          </div>
+          <div class="alert alert-warning" role="status">
+            <p class="alert-title">Merge freeze starts Thursday</p>
+            <p class="alert-body">
+              Mobile is cutting a release branch — non-critical PRs will be deferred.
+            </p>
+          </div>
+          <div class="alert alert-error" role="alert">
+            <p class="alert-title">Failed to save</p>
+            <p class="alert-body">
+              The server returned 503. Your draft is preserved locally — try again in a moment.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         10. TAGS & BADGES
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-tags">
+        <h2 id="sec-tags" class="section-title">Tags &amp; Badges</h2>
+        <p class="section-description">
+          Inline status &amp; categorization chips. Each variant uses its
+          <code class="font-mono">--color-*-muted</code> background with the matching
+          <code class="font-mono">--color-text-on-*-muted</code> foreground.
+        </p>
+
+        <h3 class="subsection-title">Status tags</h3>
+        <div class="demo-row">
+          <span class="tag tag-success">Done</span>
+          <span class="tag tag-warning">In review</span>
+          <span class="tag tag-error">Blocked</span>
+          <span class="tag tag-neutral">Backlog</span>
+        </div>
+
+        <h3 class="subsection-title">Brand / category tags</h3>
+        <div class="demo-row">
+          <span class="tag tag-primary">Frontend</span>
+          <span class="tag tag-secondary">Backend</span>
+          <span class="tag tag-accent">Design</span>
+          <span class="tag tag-neutral">Docs</span>
+        </div>
+
+        <h3 class="subsection-title">Dot indicators</h3>
+        <div class="demo-row">
+          <span
+            ><span class="badge-dot" style="background: var(--color-success)"></span> Online</span
+          >
+          <span
+            ><span class="badge-dot" style="background: var(--color-warning-bg)"></span> Idle</span
+          >
+          <span
+            ><span class="badge-dot" style="background: var(--color-error)"></span> Offline</span
+          >
+          <span
+            ><span class="badge-dot" style="background: var(--color-text-subtle)"></span>
+            Unknown</span
+          >
+        </div>
+
+        <h3 class="subsection-title">Count badges</h3>
+        <div class="demo-row">
+          <span class="font-mono" style="font-size: var(--text-sm)"
+            >Notifications <span class="badge-count">3</span></span
+          >
+          <span class="font-mono" style="font-size: var(--text-sm)"
+            >Inbox <span class="badge-count">12</span></span
+          >
+          <span class="font-mono" style="font-size: var(--text-sm)"
+            >Errors <span class="badge-count">99+</span></span
+          >
+        </div>
+      </section>
+
+      <!-- =========================================================
+         11. OVERLAYS — Tooltip, Menu, Modal, Toast
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-overlays">
+        <h2 id="sec-overlays" class="section-title">Overlays</h2>
+        <p class="section-description">
+          Tooltip uses <code class="font-mono">--color-bg-inverse</code> +
+          <code class="font-mono">--color-text-on-inverse</code> at
+          <code class="font-mono">--z-tooltip</code>. Menu sits at
+          <code class="font-mono">--z-dropdown</code>. Modal pairs
+          <code class="font-mono">--z-overlay</code> with <code class="font-mono">--z-modal</code>.
+          Toasts sit at <code class="font-mono">--z-toast</code>.
+        </p>
+
+        <h3 class="subsection-title">Tooltip &amp; dropdown menu</h3>
+        <div class="popover-stage">
+          <div class="tooltip-target">
+            <button class="btn btn-secondary" type="button">Hover me</button>
+            <span class="tooltip" role="tooltip">Always visible in this demo</span>
+          </div>
+
+          <div class="menu" role="menu" aria-label="Task actions">
+            <div class="menu-item" role="menuitem">Open task</div>
+            <div class="menu-item" role="menuitem">Duplicate</div>
+            <div class="menu-item" role="menuitem">Move to…</div>
+            <div class="menu-divider" role="separator"></div>
+            <div class="menu-item" role="menuitem">Archive</div>
+            <div class="menu-item danger" role="menuitem">Delete</div>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">Modal</h3>
+        <div class="demo-row">
+          <button id="sg-open-modal" class="btn btn-primary" type="button">Open modal</button>
+        </div>
+        <div class="modal-stage" id="sg-modal-stage">
+          <div class="modal-overlay" id="sg-modal-overlay"></div>
+          <div
+            class="modal"
+            id="sg-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sg-modal-title"
+          >
+            <h3 id="sg-modal-title" class="modal-title">Delete this task?</h3>
+            <p class="modal-body">
+              This will permanently remove the task and any attached blockers. This action cannot be
+              undone.
+            </p>
+            <div class="modal-footer">
+              <button id="sg-modal-cancel" class="btn btn-ghost" type="button">Cancel</button>
+              <button id="sg-modal-confirm" class="btn btn-danger" type="button">Delete</button>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">Toast notifications</h3>
+        <div class="demo-row">
+          <button class="btn btn-secondary" type="button" data-toast="info">Trigger info</button>
+          <button class="btn btn-secondary" type="button" data-toast="success">
+            Trigger success
+          </button>
+          <button class="btn btn-secondary" type="button" data-toast="warning">
+            Trigger warning
+          </button>
+          <button class="btn btn-secondary" type="button" data-toast="error">Trigger error</button>
+        </div>
+        <div class="toast-stage">
+          <div class="toast-stack" id="sg-toast-stack" aria-live="polite"></div>
+          <p class="body-sm" style="margin: 0; color: var(--color-text-muted)">
+            Toasts dock to the bottom-right of this stage. New ones slide in using
+            <code class="font-mono">--duration-normal</code> +
+            <code class="font-mono">--ease-out</code>.
+          </p>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         12. Z-INDEX STACK VISUALIZER
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-zindex">
+        <h2 id="sec-zindex" class="section-title">Z-Index Stack</h2>
+        <p class="section-description">
+          Each card sits at its named z-index. Lower-numbered layers are physically underneath
+          higher ones.
+        </p>
+
+        <div class="z-stage" aria-hidden="true">
+          <div class="z-layer" style="z-index: var(--z-base); top: 16px; left: 16px">
+            <strong>--z-base</strong><code>0</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-dropdown); top: 48px; left: 56px">
+            <strong>--z-dropdown</strong><code>1000</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-sticky); top: 80px; left: 96px">
+            <strong>--z-sticky</strong><code>1100</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-overlay); top: 112px; left: 136px">
+            <strong>--z-overlay</strong><code>1200</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-modal); top: 144px; left: 176px">
+            <strong>--z-modal</strong><code>1300</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-popover); top: 176px; left: 216px">
+            <strong>--z-popover</strong><code>1400</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-toast); top: 208px; left: 256px">
+            <strong>--z-toast</strong><code>1500</code>
+          </div>
+          <div class="z-layer" style="z-index: var(--z-tooltip); top: 240px; left: 296px">
+            <strong>--z-tooltip</strong><code>1600</code>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         13. MOTION PLAYGROUND
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-motion">
+        <h2 id="sec-motion" class="section-title">Motion Playground</h2>
+        <p class="section-description">
+          Pick a duration + easing, then click <em>Play</em>. The ball uses the
+          <code class="font-mono">--duration-*</code> and <code class="font-mono">--ease-*</code>
+          tokens directly. If your OS has reduced-motion enabled, every duration collapses to 1ms.
+        </p>
+
+        <div class="motion-stage">
+          <div class="motion-track" aria-hidden="true">
+            <div id="sg-motion-ball" class="motion-ball"></div>
+          </div>
+
+          <div class="motion-controls" role="group" aria-label="Duration">
+            <strong>Duration</strong>
+            <button
+              class="motion-chip"
+              type="button"
+              data-motion-duration="var(--duration-fast)"
+              aria-pressed="false"
+            >
+              --duration-fast
+            </button>
+            <button
+              class="motion-chip"
+              type="button"
+              data-motion-duration="var(--duration-normal)"
+              aria-pressed="true"
+            >
+              --duration-normal
+            </button>
+            <button
+              class="motion-chip"
+              type="button"
+              data-motion-duration="var(--duration-slow)"
+              aria-pressed="false"
+            >
+              --duration-slow
+            </button>
+          </div>
+
+          <div class="motion-controls" role="group" aria-label="Easing">
+            <strong>Easing</strong>
+            <button
+              class="motion-chip"
+              type="button"
+              data-motion-ease="var(--ease-default)"
+              aria-pressed="true"
+            >
+              --ease-default
+            </button>
+            <button
+              class="motion-chip"
+              type="button"
+              data-motion-ease="var(--ease-in)"
+              aria-pressed="false"
+            >
+              --ease-in
+            </button>
+            <button
+              class="motion-chip"
+              type="button"
+              data-motion-ease="var(--ease-out)"
+              aria-pressed="false"
+            >
+              --ease-out
+            </button>
+          </div>
+
+          <div class="motion-controls">
+            <button id="sg-motion-play" class="btn btn-primary" type="button">Play</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         14. MINI KANBAN BOARD (consumes --kanban-column-min)
+         ========================================================= -->
+      <section class="section" aria-labelledby="sec-kanban">
+        <h2 id="sec-kanban" class="section-title">Mini Kanban Board</h2>
+        <p class="section-description">
+          A realistic layout exercising <code class="font-mono">--kanban-column-min</code>, surface
+          tokens, shadow-xs cards, and the status tag set.
+        </p>
+
+        <div class="kanban-board">
+          <div class="kanban-column">
+            <div class="kanban-col-head">
+              <span>To do</span>
+              <span class="tag tag-neutral">3</span>
+            </div>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Audit auth redirects</h3>
+              <p class="kanban-card-meta">Auth team · 2 pts</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-primary">Frontend</span>
+              </div>
+            </article>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Migrate to V3 tokens</h3>
+              <p class="kanban-card-meta">Design system · 5 pts</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-accent">Design</span>
+              </div>
+            </article>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Refactor dashboard layout</h3>
+              <p class="kanban-card-meta">Web team · 3 pts</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-primary">Frontend</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="kanban-column">
+            <div class="kanban-col-head">
+              <span>In progress</span>
+              <span class="tag tag-neutral">2</span>
+            </div>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Wire dark-mode toggle</h3>
+              <p class="kanban-card-meta">Nav team · 1 pt</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-warning">In review</span>
+              </div>
+            </article>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Style-guide V3 polish</h3>
+              <p class="kanban-card-meta">Thomas · 2 pts</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-accent">Design</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="kanban-column">
+            <div class="kanban-col-head">
+              <span>Done</span>
+              <span class="tag tag-neutral">2</span>
+            </div>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Finalize design tokens</h3>
+              <p class="kanban-card-meta">Thomas · 5 pts</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-success">Done</span>
+              </div>
+            </article>
+            <article class="kanban-card">
+              <h3 class="kanban-card-title">Import theme.css into all pages</h3>
+              <p class="kanban-card-meta">Thomas · 1 pt</p>
+              <div class="demo-row" style="margin: 0">
+                <span class="tag tag-success">Done</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // Theme switcher — flips data-theme on <html> so the dark-mode
+      // overrides in theme.css activate without reloading the page.
+      (function () {
+        const root = document.documentElement;
+        const btn = document.getElementById("themeToggle");
+        const icon = document.getElementById("themeToggleIcon");
+        const label = document.getElementById("themeToggleLabel");
+
+        function applyTheme(theme) {
+          root.setAttribute("data-theme", theme);
+          const isDark = theme === "dark";
+          btn.setAttribute("aria-pressed", String(isDark));
+          icon.textContent = isDark ? "☀️" : "🌙";
+          label.textContent = isDark ? "Switch to Light" : "Switch to Dark";
+        }
+
+        btn.addEventListener("click", function () {
+          const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+          applyTheme(next);
+        });
+
+        // Default to light on first paint.
+        applyTheme(root.getAttribute("data-theme") || "light");
+      })();
+
+      /* ============================================================
+         Extended demo handlers — modal, toast, motion playground.
+         Each is wrapped in its own IIFE so they stay independent.
+         ============================================================ */
+
+      // --- Modal open/close ---
+      (function () {
+        const openBtn = document.getElementById("sg-open-modal");
+        const overlay = document.getElementById("sg-modal-overlay");
+        const modal = document.getElementById("sg-modal");
+        const cancelBtn = document.getElementById("sg-modal-cancel");
+        const confirmBtn = document.getElementById("sg-modal-confirm");
+        if (!openBtn || !overlay || !modal) return;
+
+        function setOpen(open) {
+          const value = open ? "true" : "false";
+          overlay.setAttribute("data-open", value);
+          modal.setAttribute("data-open", value);
+        }
+        openBtn.addEventListener("click", () => setOpen(true));
+        overlay.addEventListener("click", () => setOpen(false));
+        cancelBtn.addEventListener("click", () => setOpen(false));
+        confirmBtn.addEventListener("click", () => setOpen(false));
+      })();
+
+      // --- Toast stack ---
+      (function () {
+        const stack = document.getElementById("sg-toast-stack");
+        if (!stack) return;
+
+        const COPY = {
+          info: { title: "Heads up", body: "This is an informational toast." },
+          success: { title: "Saved", body: "Your changes have been saved." },
+          warning: { title: "Heads up", body: "Merge freeze starts Thursday." },
+          error: { title: "Save failed", body: "We couldn't reach the server." },
+        };
+
+        document.querySelectorAll("[data-toast]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const variant = btn.getAttribute("data-toast") || "info";
+            const copy = COPY[variant] || COPY.info;
+            const toast = document.createElement("div");
+            toast.className = "toast toast-" + variant;
+            toast.innerHTML =
+              '<p class="toast-title">' +
+              copy.title +
+              '</p><p class="toast-body">' +
+              copy.body +
+              "</p>";
+            stack.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+          });
+        });
+      })();
+
+      // --- Motion playground ---
+      (function () {
+        const ball = document.getElementById("sg-motion-ball");
+        const playBtn = document.getElementById("sg-motion-play");
+        if (!ball || !playBtn) return;
+
+        function bindGroup(attr, cssVar) {
+          const chips = document.querySelectorAll("[" + attr + "]");
+          chips.forEach((chip) => {
+            chip.addEventListener("click", () => {
+              chips.forEach((c) => c.setAttribute("aria-pressed", "false"));
+              chip.setAttribute("aria-pressed", "true");
+              ball.style.setProperty(cssVar, chip.getAttribute(attr));
+            });
+          });
+        }
+        bindGroup("data-motion-duration", "--motion-duration");
+        bindGroup("data-motion-ease", "--motion-ease");
+
+        playBtn.addEventListener("click", () => {
+          ball.classList.toggle("moved");
+        });
+      })();
+    </script>
+  </body>
+</html>

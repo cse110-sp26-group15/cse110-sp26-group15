@@ -198,7 +198,15 @@ function renderBoard(tasks) {
     }
 
     for (const task of colTasks) {
-      const card = createTaskCard(task, "kanban");
+      const card = createTaskCard(task, "kanban", {
+        members: projectMembers,
+        onChange: async (taskId, fields) => {
+          await updateTask(taskId, fields);
+          if (fields.status !== undefined) {
+            await loadTasks();
+          }
+        },
+      });
 
       card.setAttribute("draggable", "true");
       card.addEventListener("dragstart", (e) => {
