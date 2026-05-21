@@ -18,7 +18,17 @@
    depth relative to source/shared/.
 
    ------------------------------------------------------------
-   NAMING CONVENTIONS
+   PROJECT-WIDE NAMING CONVENTIONS
+   ------------------------------------------------------------
+   JavaScript variables / functions  →  camelCase
+   JavaScript classes                →  PascalCase
+   CSS custom properties             →  --category-role-modifier (kebab-case)
+   CSS / HTML classes                →  kebab-case (BEM: block__element--modifier)
+   HTML IDs                          →  kebab-case
+   File names                        →  kebab-case
+
+   ------------------------------------------------------------
+   CSS CUSTOM PROPERTY NAMING (detail)
    ------------------------------------------------------------
    --<category>-<role>-<modifier?>
      category : color | font | text | space | margin | padding |
