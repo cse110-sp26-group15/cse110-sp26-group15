@@ -44,65 +44,6 @@
      MUST use the matching --color-text-on-* token. This is
      what guarantees WCAG AA contrast across both themes.
 
-   ------------------------------------------------------------
-   V2 CHANGES (from V1)
-   ------------------------------------------------------------
-   • Added --color-text-on-* tokens for AA-safe text on every
-     non-default surface (muted tints, inverse, brand fills).
-   • Split --color-warning into --color-warning-bg (decorative
-     fill) and --color-warning-text (legible foreground).
-   • Removed --margin-* / --padding-* aliases — use --space-*.
-   • Added motion tokens (--duration-*, --ease-*).
-   • Added focus tokens (--focus-outline-width / -offset) and
-     a documented outline + box-shadow pattern for forced-
-     colors (Windows High Contrast Mode) compatibility.
-   • Added layout tokens (--container-sm…xl, --sidebar-width,
-     --kanban-column-min).
-   • Added a complete z-index scale.
-   • Honors prefers-reduced-motion at the bottom of the file.
-
-   ------------------------------------------------------------
-   V3 CHANGES (from V2)
-   ------------------------------------------------------------
-   • Added --color-accent-muted and --color-text-on-accent-muted
-     to both themes, completing the brand muted/on-muted set.
-   • Dark-mode --color-accent shifted from cyan (184°) toward
-     teal-green (165°) so it visually separates from the dark
-     primary blue (217°).
-   • Fixed dark-mode --color-text-on-error: now dark navy to
-     match the other on-fill tokens in dark mode.
-   • Light --color-text-subtle darkened (64% → 40%) to clear
-     WCAG AA on white (previously failing at ~2.6:1).
-   • Light --color-text-muted darkened (47% → 42%) so muted
-     copy passes AA even on --color-bg-subtle (was 4.49:1).
-
-   ------------------------------------------------------------
-   V4 CHANGES (from V3)
-   ------------------------------------------------------------
-   • --color-secondary recast from a saturated purple (258°) to
-     a neutral cool gray (220°) in both themes. Secondary is
-     now the "neutral action" role (think outlined secondary
-     buttons, low-emphasis chips) rather than a competing
-     brand accent. Use --color-accent for color emphasis.
-   • Re-tuned --color-text-on-secondary-muted in both themes
-     so it sits on the new neutral muted bg with ≥7:1 contrast.
-   • Split the muted / subtle contract so the two tiers are
-     visibly distinct again:
-       –  --color-text-muted is the AA-safe live-text tier
-          (helper text, captions, metadata). Light bumped
-          42% → 38% for a ~6:1 ratio and clearer separation.
-       –  --color-text-subtle is now explicitly DECORATIVE
-          ONLY — placeholders, disabled controls, decorative
-          dividers/dots. It does NOT meet AA for live text by
-          design; never paint real content with it. Light
-          lifted 40% → 56% to restore the visible step down
-          from muted.
-   • Restored --margin-* / --padding-* aliases (removed in
-     V2) as thin pass-throughs to --space-*. They exist for
-     project-spec compliance; --space-* remains canonical and
-     is preferred in new code.
-   ============================================================ */
-
 /* ============================================================
    :root  —  LIGHT MODE (default)
    ============================================================ */
