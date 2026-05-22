@@ -6,6 +6,7 @@ import {
   hideBanner,
   navigateTo,
   apiCreateProject,
+  getCurrentUser,
 } from "../shared/utils.js";
 
 const form = document.getElementById("setup-form");
@@ -125,7 +126,8 @@ form.addEventListener("submit", async (e) => {
   submitBtn.textContent = "Creating project…";
 
   try {
-    await apiCreateProject({ name, workflow, members: [...members] });
+    const created_by = getCurrentUser()?.user_id ?? null;
+    await apiCreateProject({ name, workflow, members: [...members], created_by });
     const dashMap = {
       scrum: "../dashboard/scrum.html",
       kanban: "../dashboard/kanban.html",
