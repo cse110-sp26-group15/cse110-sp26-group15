@@ -1,19 +1,47 @@
 import bcryptjs from "bcryptjs";
 
+/**
+ * Returns true when `email` matches the basic local@domain.tld shape.
+ * @param {string} email
+ * @returns {boolean}
+ */
 function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+/**
+ * Returns true when `password` meets the minimum length requirement (8 chars).
+ * @param {string} password
+ * @returns {boolean}
+ */
 function validatePassword(password) {
   return password.length >= 8;
 }
 
+/**
+ * Generates a cryptographically random 64-char hex session token (256 bits).
+ * @returns {string}
+ */
 function generateSessionToken() {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * Cloudflare Pages function: POST /api/auth/login
+ *
+ * Authenticates a user by email + password against the `users` table, issues
+ * a session token, and sets it as an httpOnly `sitrep_token` cookie. Returns
+ * a generic 401 for invalid credentials or inactive accounts so attackers
+ * cannot distinguish "no such user" from "wrong password".
+ *
+ * Request body: { email: string, password: string }
+ * Response 200: { user: { user_id, email, full_name }, token: string }
+ *
+ * @param {{ env: { DB: object }, request: Request }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequestPost(context) {
   const { env, request } = context;
 

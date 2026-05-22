@@ -8,6 +8,7 @@ import {
   navigateTo,
   apiLogin,
   saveToken,
+  saveCurrentUser,
 } from "../shared/utils.js";
 
 const form = document.getElementById("login-form");
@@ -90,8 +91,9 @@ form.addEventListener("submit", async (e) => {
   submitBtn.textContent = "Signing in…";
 
   try {
-    const { token } = await apiLogin({ email, password });
+    const { token, user } = await apiLogin({ email, password });
     saveToken(token);
+    saveCurrentUser(user);
     // TODO: Redirect to dashboard once it exists; for now go to project setup
     navigateTo("../project-setup/");
   } catch (err) {
