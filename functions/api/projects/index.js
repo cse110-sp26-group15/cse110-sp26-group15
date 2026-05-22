@@ -44,13 +44,7 @@ export async function onRequestPost(context) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const {
-    name,
-    workflow = "scrum",
-    description = null,
-    members = [],
-    created_by = null,
-  } = body;
+  const { name, workflow = "scrum", description = null, members = [], created_by = null } = body;
 
   if (!name || typeof name !== "string" || name.trim() === "") {
     return Response.json({ error: "Project name is required." }, { status: 400 });
@@ -128,10 +122,7 @@ export async function onRequestPost(context) {
       .bind(projectId)
       .first();
 
-    return Response.json(
-      { project, invited, not_found: notFound },
-      { status: 201 }
-    );
+    return Response.json({ project, invited, not_found: notFound }, { status: 201 });
   } catch (err) {
     console.error("Create project error:", err);
     return Response.json({ error: err.message }, { status: 500 });
