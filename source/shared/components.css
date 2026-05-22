@@ -1,0 +1,467 @@
+/* ============================================================
+   components.css — Reusable UI Component Classes
+   ============================================================
+   Shared component styles for buttons, form inputs, and
+   navigation. All values are sourced from theme.css tokens —
+   no hardcoded colors, sizes, or motion values are introduced
+   here. Add this file AFTER theme.css so the tokens cascade in:
+
+     <link rel="stylesheet" href="../shared/theme.css">
+     <link rel="stylesheet" href="../shared/components.css">
+
+   Naming follows the project BEM convention:
+     .block                — base class (shared styles)
+     .block--modifier      — variant (color / size / role)
+     .block__element       — sub-part inside the block
+   ============================================================ */
+
+/* ============================================================
+   BUTTONS
+   ------------------------------------------------------------
+   Base class .btn holds every shared property (typography,
+   spacing, radius, transition, focus ring). Variant modifiers
+   only override what is unique to the variant — typically
+   colors and border. Disabled state is shared across variants
+   via the base class so each variant does not redefine it.
+   ============================================================ */
+
+/* --- Base button --------------------------------------------
+   Shared layout, typography, motion, and focus behavior for
+   every button variant. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid transparent; /* variant fills this in */
+  border-radius: var(--radius-md);
+
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
+}
+
+/* Shared focus ring — keeps focus styling consistent across
+   every button variant (works in forced-colors mode too). */
+.btn:focus-visible {
+  outline: var(--focus-outline-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-outline-offset);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Shared disabled state — applied via attribute OR class so
+   anchors styled as buttons can opt in without `disabled`. */
+.btn:disabled,
+.btn.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+  /* Defuse hover / active so disabled controls stay visually
+     stable when a pointer crosses them. */
+  pointer-events: none;
+}
+
+/* --- Primary button -----------------------------------------
+   The default high-emphasis action on a screen. There should
+   typically be only one primary button per view. */
+.btn--primary {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+.btn--primary:hover {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.btn--primary:active {
+  /* Slight inset shadow on press communicates depth without
+     introducing a new color token. */
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  box-shadow: inset 0 1px 2px hsla(0, 0%, 0%, 0.15);
+}
+
+/* --- Secondary button ---------------------------------------
+   Low-emphasis neutral action. Uses the neutral gray token
+   family, not a brand accent. */
+.btn--secondary {
+  background-color: var(--color-secondary-muted);
+  border-color: var(--color-secondary-muted);
+  color: var(--color-text-on-secondary-muted);
+}
+
+.btn--secondary:hover {
+  background-color: var(--color-secondary);
+  border-color: var(--color-secondary);
+  color: var(--color-text-on-secondary);
+}
+
+.btn--secondary:active {
+  background-color: var(--color-secondary-hover);
+  border-color: var(--color-secondary-hover);
+  color: var(--color-text-on-secondary);
+  box-shadow: inset 0 1px 2px hsla(0, 0%, 0%, 0.15);
+}
+
+/* --- Danger / delete button ---------------------------------
+   Reserved for destructive actions (delete, remove, discard).
+   Mapped to --color-error so it stays in sync with the rest
+   of the error palette across light and dark themes. */
+.btn--danger {
+  background-color: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-text-on-error);
+}
+
+.btn--danger:hover {
+  /* No dedicated -hover token for error; darken via muted-fill
+     contrast text is not appropriate here, so we reuse the
+     base error color with an inset shadow on hover. */
+  background-color: var(--color-error);
+  border-color: var(--color-error);
+  filter: brightness(0.92);
+}
+
+.btn--danger:active {
+  background-color: var(--color-error);
+  border-color: var(--color-error);
+  filter: brightness(0.85);
+  box-shadow: inset 0 1px 2px hsla(0, 0%, 0%, 0.18);
+}
+
+/* --- Outline button -----------------------------------------
+   Transparent fill with a visible border. Used as a low-
+   emphasis alternative to primary when the action is still
+   meaningful but not the dominant choice. */
+.btn--outline {
+  background-color: transparent;
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.btn--outline:hover {
+  /* Fill with the primary muted tint to hint at the action
+     color on hover without committing to a solid fill. */
+  background-color: var(--color-primary-muted);
+  border-color: var(--color-primary);
+  color: var(--color-text-on-primary-muted);
+}
+
+.btn--outline:active {
+  background-color: var(--color-primary-muted);
+  border-color: var(--color-primary-hover);
+  color: var(--color-text-on-primary-muted);
+  box-shadow: inset 0 1px 2px hsla(0, 0%, 0%, 0.12);
+}
+
+/* ============================================================
+   FORM INPUTS
+   ------------------------------------------------------------
+   Base class .input holds the shared shell: size, border,
+   radius, typography, transition, and focus ring. Variant
+   modifiers refine behavior unique to each input type (icon
+   space for search, native select chevron for dropdown).
+   States .is-invalid / .is-valid are shared across variants.
+   ============================================================ */
+
+/* --- Base input ---------------------------------------------
+   Single source of truth for the visual "input chassis". */
+.input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+
+  background-color: var(--color-bg-surface);
+  color: var(--color-text);
+
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+
+  transition:
+    border-color var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default),
+    background-color var(--duration-fast) var(--ease-default);
+}
+
+/* Placeholder text uses the decorative subtle token — it is
+   intentionally below AA because placeholders are not live
+   content (theme.css spells this rule out). */
+.input::placeholder {
+  color: var(--color-text-subtle);
+  opacity: 1; /* normalize Firefox default */
+}
+
+/* Shared focus state — same outline/halo pair as buttons so
+   keyboard users see a consistent focus ring across the app. */
+.input:focus,
+.input:focus-visible {
+  outline: var(--focus-outline-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-outline-offset);
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Shared disabled state */
+.input:disabled,
+.input.is-disabled {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+
+/* --- Validation states --------------------------------------
+   .is-invalid — failed validation, hard error.
+   .is-valid   — passed validation, optional positive hint. */
+.input.is-invalid {
+  border-color: var(--color-error);
+  background-color: var(--color-error-muted);
+  color: var(--color-text-on-error-muted);
+}
+
+.input.is-invalid:focus,
+.input.is-invalid:focus-visible {
+  border-color: var(--color-error);
+  outline-color: var(--color-error);
+  /* Recolor the focus halo to match the error border so the
+     two signals do not visually contradict each other. */
+  box-shadow: 0 0 0 3px var(--color-error-muted);
+}
+
+.input.is-valid {
+  border-color: var(--color-success);
+}
+
+.input.is-valid:focus,
+.input.is-valid:focus-visible {
+  border-color: var(--color-success);
+  outline-color: var(--color-success);
+  box-shadow: 0 0 0 3px var(--color-success-muted);
+}
+
+/* --- Text input variant -------------------------------------
+   No structural override needed — the base chassis already
+   matches the spec for a standard text field. The class is
+   provided so markup can be explicit about intent. */
+.input--text {
+  /* intentionally empty: identical to .input base */
+}
+
+/* --- Password input variant ---------------------------------
+   Slightly wider letter spacing so masked dots are easier to
+   visually count. Uses the monospace token for a steadier
+   character grid (helps confirm length at a glance). */
+.input--password {
+  font-family: var(--font-mono);
+  letter-spacing: var(--space-2xs);
+}
+
+/* --- Search input variant -----------------------------------
+   Pill-shaped chassis with extra left padding so a search
+   icon can be absolutely positioned inside the input wrapper
+   without overlapping typed text. */
+.input--search {
+  padding-left: var(--space-xl); /* reserve room for icon */
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg-subtle);
+}
+
+/* Clear the native "X" reveal that some browsers add to
+   search inputs — we render our own UI for that. */
+.input--search::-webkit-search-cancel-button,
+.input--search::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* --- Dropdown / select variant ------------------------------
+   Strips the native chevron and paints our own via an inline
+   SVG background so the indicator color follows --color-text-
+   muted across themes. Right padding reserves the icon slot. */
+.input--select {
+  padding-right: var(--space-xl);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    right var(--space-md) center,
+    right calc(var(--space-md) - var(--space-2xs)) center;
+  background-size:
+    var(--space-2xs) var(--space-2xs),
+    var(--space-2xs) var(--space-2xs);
+  background-repeat: no-repeat;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.input--select:disabled,
+.input--select.is-disabled {
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   NAVIGATION
+   ------------------------------------------------------------
+   Three navigation patterns share a single base (.nav) that
+   normalizes list styling, link color, and transitions. The
+   variant classes layer on layout (row vs. column) and any
+   variant-specific visual cues (active indicator, sidebar
+   chrome, tab underline).
+   ============================================================ */
+
+/* --- Base navigation ----------------------------------------
+   Wraps a <nav> or any container that holds a list of links.
+   Strips list defaults so child .nav__item elements lay out
+   cleanly without resetting them ad hoc in every variant. */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+/* A single navigation item (link). Shared across every nav
+   variant — variants override layout / accent details only. */
+.nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+
+  /* Include padding inside the declared width so variants that
+     stretch items (e.g. .nav--sidebar uses width: 100%) cannot
+     overflow their container — without this the focus halo on
+     click would visibly bleed past the sidebar's right edge. */
+  box-sizing: border-box;
+
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+
+  color: var(--color-text-muted);
+  text-decoration: none;
+  cursor: pointer;
+
+  transition:
+    background-color var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default);
+}
+
+.nav__item:hover {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text);
+}
+
+/* Shared focus ring for any nav item. */
+.nav__item:focus-visible {
+  outline: var(--focus-outline-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-outline-offset);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Active / current page indicator. Apply .is-active to the
+   item that represents the current route. */
+.nav__item.is-active {
+  background-color: var(--color-primary-muted);
+  color: var(--color-text-on-primary-muted);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* --- Horizontal top navigation bar --------------------------
+   Used for app-level chrome (logo + primary destinations). */
+.nav--bar {
+  flex-direction: row;
+  gap: var(--space-sm);
+
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-bg-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+/* --- Sidebar navigation -------------------------------------
+   Vertical column of destinations, fixed width pulled from
+   the layout token in theme.css. */
+.nav--sidebar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2xs);
+
+  width: var(--sidebar-width);
+  height: 100%;
+  padding: var(--space-md);
+
+  background-color: var(--color-bg-subtle);
+  border-right: 1px solid var(--color-border);
+}
+
+/* Inside a sidebar each item stretches to fill the column. */
+.nav--sidebar .nav__item {
+  justify-content: flex-start;
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+}
+
+/* --- Tabbed navigation --------------------------------------
+   Horizontal tabs with an underline-style active indicator,
+   commonly used to switch sub-views inside a page. */
+.nav--tabs {
+  flex-direction: row;
+  gap: var(--space-md);
+
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 var(--space-md);
+}
+
+/* Tab items override the pill background style of the base
+   nav item in favor of a transparent shell + bottom border. */
+.nav--tabs .nav__item {
+  padding: var(--space-sm) var(--space-xs);
+  border-radius: 0;
+  /* Transparent underline reserves the layout space so the
+     row does not shift when an item becomes active. */
+  border-bottom: 2px solid transparent;
+  background-color: transparent;
+}
+
+.nav--tabs .nav__item:hover {
+  background-color: transparent;
+  color: var(--color-text);
+  border-bottom-color: var(--color-border-strong);
+}
+
+.nav--tabs .nav__item.is-active {
+  background-color: transparent;
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
