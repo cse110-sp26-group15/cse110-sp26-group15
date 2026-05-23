@@ -1,0 +1,195 @@
+/* ── Kanban Dashboard Styles ──────────────────────────────────────────
+   Loaded by kanban.html (standalone Kanban page) AND by scrum.html
+   (so the list ⇄ kanban toggle uses identical column/card styles).
+
+   Load order: main.css → task-card.css → task-form.css → kanban.css
+   (→ scrum.css on the scrum page only).
+
+   All layout variables (--color-bg, --color-surface, --color-border,
+   --color-text-*, --color-accent-warm, …) are defined in main.css and
+   referenced here — this file does NOT redefine them.                */
+
+/* ── Utility ───────────────────────────────────────── */
+/* Hides any element regardless of its original display value.
+   Used by kanban.js and scrum.js to toggle views / panels. */
+.hidden {
+  display: none !important;
+}
+
+/* ── Warm-accent override for the page's primary button ──
+   main.css paints .btn-primary with the cool blue accent.
+   On kanban and scrum pages we override it to the warm
+   orange defined in main.css's --color-accent-warm.      */
+#add-task-btn {
+  background: var(--color-accent-warm);
+}
+
+#add-task-btn:hover {
+  background: var(--color-accent-warm-hover);
+}
+
+/* ── Task list (used by scrum's list view) ─────────── */
+/* Overrides main.css's smaller gap so shared task-card
+   articles have a little more breathing room.           */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Ensure each shared task-card stretches to fill the list. */
+.task-list .task-card {
+  width: 100%;
+}
+
+/* ── Task-card controls row ────────────────────────── */
+/* Appended below each task-card article by appendTaskControls()
+   in kanban.js and scrum.js. Houses the status dropdown (left)
+   and the delete button (right).                       */
+.task-card-row-delete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 8px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 0 0 7px 7px; /* match parent card's border-radius */
+}
+
+/* Blocked status-select variant — not in main.css because
+   main.css only defines todo / in-progress / done. Both the
+   kanban standalone page and the scrum page need this rule,
+   so it lives here in the shared kanban stylesheet.   */
+.status-select.status-blocked {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+/* ── Kanban board grid ─────────────────────────────── */
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start; /* columns grow independently, not stretch-to-tallest */
+}
+
+@media (max-width: 1100px) {
+  .kanban-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .kanban-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Kanban column ─────────────────────────────────── */
+.kanban-column {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 240px;
+}
+
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 4px 2px;
+}
+
+.kanban-column-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Task-count pill next to the column title */
+.kanban-column-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+/* Per-column "+" add-task button */
+.kanban-column-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+  color: #fff;
+  cursor: pointer;
+  background: var(--color-accent-warm);
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.kanban-column-add:hover {
+  background: var(--color-accent-warm-hover);
+}
+
+/* Scrollable card list inside each column */
+.kanban-column-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1; /* fill remaining height so the column doesn't collapse */
+}
+
+/* Empty-column placeholder */
+.kanban-column-empty {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  padding: 16px 12px;
+  text-align: center;
+  background: var(--color-bg);
+}
+
+/* ── Per-column status accent strips ──────────────── */
+/* A 3-px top border gives each column an instant colour cue
+   without heavy background tints.                     */
+.kanban-column--todo {
+  border-top: 3px solid #d4d4d2;
+}
+
+.kanban-column--in-progress {
+  border-top: 3px solid #3b82f6;
+}
+
+.kanban-column--blocked {
+  border-top: 3px solid #b91c1c;
+}
+
+.kanban-column--done {
+  border-top: 3px solid #047857;
+}

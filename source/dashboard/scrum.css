@@ -1,11 +1,16 @@
-/* ── Scrum dashboard styles (layered on main.css) ─── */
+/* ── Scrum dashboard styles (layered on main.css + kanban.css) ─── */
 
 :root {
-  --color-scrum-accent: #e07b39;
-  --color-scrum-accent-hover: #c9612a;
-  --color-scrum-accent-bg: #fdf0e6;
-  --color-scrum-accent-100: #fce4cb;
+  /* Alias the shared warm-accent variables defined in main.css so all
+     scrum-specific rules can keep the readable --color-scrum-accent name
+     without duplicating the hex values.                              */
+  --color-scrum-accent: var(--color-accent-warm);
+  --color-scrum-accent-hover: var(--color-accent-warm-hover);
+  --color-scrum-accent-bg: var(--color-accent-warm-bg);
+  --color-scrum-accent-100: var(--color-accent-warm-100);
 
+  /* Blocker / status-badge colours — scrum-specific; used by blockers
+     panel, checkin-card badges, and the status-select variants.     */
   --color-blocker-bg: #fef2f2;
   --color-blocker-border: #fecaca;
   --color-blocker-text: #b91c1c;
@@ -25,10 +30,8 @@
   --color-status-help-border: #fde68a;
 }
 
-/* Shared utility — hides any element regardless of its display value. */
-.hidden {
-  display: none !important;
-}
+/* .hidden is defined in kanban.css (loaded before this file in scrum.html)
+   so we intentionally omit a duplicate here. */
 
 /* ── Sprint header ─────────────────────────────────── */
 .sprint-header {
@@ -68,15 +71,8 @@
   background: var(--color-scrum-accent-hover);
 }
 
-#add-task-btn,
-.kanban-column-add {
-  background: var(--color-scrum-accent);
-}
-
-#add-task-btn:hover,
-.kanban-column-add:hover {
-  background: var(--color-scrum-accent-hover);
-}
+/* #add-task-btn and .kanban-column-add warm-accent overrides live in
+   kanban.css (loaded first in scrum.html) — not duplicated here. */
 
 /* ── Sprint picker (sprint number + date range) ───── */
 /* Lives between the header and the rest of the page; shows up when the
@@ -423,14 +419,8 @@
   background: var(--color-blocker-bg);
 }
 
-/* main.css defines the three baseline status-select colors but not the
-   blocked one — supply it here so per-task status dropdowns light up red
-   when the column is "blocked". */
-.status-select.status-blocked {
-  background: var(--color-status-blocked-bg);
-  color: var(--color-status-blocked-text);
-  border-color: var(--color-status-blocked-border);
-}
+/* .status-select.status-blocked is defined in kanban.css (loaded before
+   this file in scrum.html) — not duplicated here. */
 
 /* ── View toggle (list ⇄ kanban) ───────────────────── */
 .view-toggle {
@@ -462,132 +452,7 @@
   box-shadow: inset 0 0 0 1px var(--color-scrum-accent-100);
 }
 
-/* ── Sprint task list — wraps shared task cards ────── */
-/* When the rich task-card component is rendered, the items are <article>
-   elements rather than the old single-row .task-card divs; the list just
-   stacks them with consistent spacing. */
-.task-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.task-list .task-card {
-  /* The list view should keep each card visually distinct but compact;
-     the shared task-card component supplies the rest of the look. */
-  width: 100%;
-}
-
-/* Each task card grows a delete button at the bottom-right when on this
-   page so users can remove tasks without leaving the dashboard. */
-.task-card-row-delete {
-  display: flex;
-  justify-content: flex-end;
-  padding: 6px 12px 8px;
-  border-top: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-/* ── Kanban board (columns by status) ──────────────── */
-.kanban-board {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  align-items: stretch;
-}
-
-@media (max-width: 1000px) {
-  .kanban-board {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 600px) {
-  .kanban-board {
-    grid-template-columns: 1fr;
-  }
-}
-
-.kanban-column {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 240px;
-}
-
-.kanban-column-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 0 4px;
-}
-
-.kanban-column-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.kanban-column-count {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
-
-/* Per-column add button — clicking pre-fills the inline form with the
-   column's status so the new task lands in the right column. */
-.kanban-column-add {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  background: var(--color-scrum-accent);
-}
-
-.kanban-column-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.kanban-column-empty {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  border: 1px dashed var(--color-border);
-  border-radius: 8px;
-  padding: 12px;
-  text-align: center;
-  background: var(--color-bg);
-}
-
-/* Status accent strip down the left edge of each column. */
-.kanban-column--todo {
-  border-top: 3px solid #d4d4d2;
-}
-.kanban-column--in-progress {
-  border-top: 3px solid #3b82f6;
-}
-.kanban-column--blocked {
-  border-top: 3px solid var(--color-blocker-text);
-}
-.kanban-column--done {
-  border-top: 3px solid var(--color-status-ok-text);
-}
-
-/* ── Add-task form tweaks ──────────────────────────── */
-/* The form gains a status dropdown on this page, so the row needs to
-   wrap nicely on narrower viewports. */
-.task-form {
-  flex-wrap: wrap;
-}
+/* ── Task list, kanban board, and card-row-delete ───────────────────────
+   All of these styles now live in kanban.css so the standalone kanban
+   page and the scrum page (which loads kanban.css before this file)
+   both get them from a single source.                                 */

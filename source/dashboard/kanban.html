@@ -3,64 +3,81 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SitRep</title>
+    <title>SitRep — Kanban Board</title>
+
+    <!-- Load order matters:
+         1. main.css   — reset, CSS variables, app shell, shared components
+         2. task-card  — shared task-card component styles (overrides .task-card)
+         3. task-form  — modal styles (loaded eagerly; kanban.js imports the
+                         module lazily so its own stylesheet injector won't fire)
+         4. kanban.css — kanban board layout, column styles, shared overrides   -->
     <link rel="stylesheet" href="main.css" />
+    <link rel="stylesheet" href="../task-card/task-card.css" />
+    <link rel="stylesheet" href="../task-form/task-form.css" />
+    <link rel="stylesheet" href="kanban.css" />
   </head>
   <body>
     <div class="app-shell">
+      <!-- ── Sidebar ──────────────────────────────────── -->
       <aside class="sidebar">
         <div class="sidebar-header">
-          <div class="sidebar-logo">
-            <div class="logo-mark">A</div>
-            <div class="logo-text">Agile Style App</div>
-          </div>
+          <!-- Logo / home link -->
+          <a href="../project-setup/index.html" class="sidebar-logo">
+            <div class="logo-mark">S</div>
+            <div class="logo-text">SitRep</div>
+          </a>
         </div>
 
         <nav class="sidebar-nav">
-          <a href="#" class="nav-item active"> Dashboard </a>
-          <a href="#" class="nav-item"> My Check-ins </a>
-          <a href="#" class="nav-item"> Team </a>
-          <a href="#" class="nav-item"> Weekly Report </a>
-          <a href="#" class="nav-item"> Settings </a>
+          <a href="scrum.html" class="nav-item">Dashboard</a>
+          <a href="kanban.html" class="nav-item active">Kanban Board</a>
+          <a href="#" class="nav-item">My Check-ins</a>
+          <a href="#" class="nav-item">Team</a>
+          <a href="#" class="nav-item">Settings</a>
         </nav>
 
         <div class="sidebar-footer">
-          <div class="user-row">
-            <div class="avatar">U</div>
+          <!-- Clicking the user row signs the user out. -->
+          <a href="../login/index.html" class="user-row">
+            <div class="avatar" id="sidebar-avatar">U</div>
             <div class="user-info">
-              <p class="user-name">Username</p>
+              <p class="user-name" id="sidebar-username">Username</p>
+              <p class="user-role">Sign out</p>
             </div>
-          </div>
+          </a>
         </div>
       </aside>
 
+      <!-- ── Main content ──────────────────────────────── -->
       <div class="main-content">
         <header class="topbar">
-          <span class="topbar-title">Dashboard</span>
+          <span class="topbar-title">Kanban Board</span>
         </header>
 
         <main class="content-area" id="page-content">
-          <div id="dashboard-view">
+          <div id="kanban-view">
+            <!-- ── Board header ────────────────────────── -->
             <div class="section-header">
-              <h2 class="section-title">Tasks</h2>
-              <button class="btn-primary" id="add-task-btn">+ Add Task</button>
+              <h2 class="section-title">Sprint Tasks</h2>
+              <!-- #add-task-btn receives a warm-accent override in kanban.css -->
+              <button class="btn-primary" id="add-task-btn" type="button">+ Add Task</button>
             </div>
 
-            <div id="add-task-form" class="task-form hidden">
-              <input type="text" id="new-task-title" class="task-input" placeholder="Task title" />
-              <button class="btn-primary" id="submit-task-btn">Create</button>
-              <button class="btn-secondary" id="cancel-task-btn">Cancel</button>
-            </div>
-
-            <div id="task-list" class="task-list">
-              <p class="task-empty">Loading tasks...</p>
+            <!-- ── Kanban board ─────────────────────────
+                 Four columns (To Do / In Progress / Blocked / Done)
+                 are built and populated by kanban.js on load. The
+                 .kanban-board grid and all column styles come from
+                 kanban.css (shared with scrum.html's toggle view).  -->
+            <div id="kanban-board" class="kanban-board">
+              <p class="task-empty">Loading tasks…</p>
             </div>
           </div>
         </main>
       </div>
     </div>
 
-    <script type="module" src="main.js"></script>
-    <script type="module" src="../task-form/task-form.js"></script>
+    <!-- kanban.js is an ES module; type="module" also defers it
+         automatically so the DOM is ready when init() runs.     -->
+    <script type="module" src="kanban.js"></script>
   </body>
 </html>

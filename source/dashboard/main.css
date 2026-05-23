@@ -12,14 +12,27 @@
   --sidebar-width: 220px;
   --topbar-height: 52px;
 
+  /* Neutral palette */
   --color-bg: #ffffff;
   --color-surface: #f5f5f4;
   --color-border: #e5e5e3;
   --color-text-primary: #1a1a1a;
   --color-text-secondary: #6b6b6b;
   --color-text-muted: #a3a3a3;
+
+  /* Cool accent (default buttons, links) */
   --color-accent: #3b82f6;
   --color-accent-bg: #eff6ff;
+
+  /* ── Warm accent ──────────────────────────────────
+     Shared by Kanban, Scrum, and auth pages.
+     Centralised here so all dashboards reference the
+     same source-of-truth values rather than each file
+     hardcoding its own copy of #e07b39.              */
+  --color-accent-warm: #e07b39;
+  --color-accent-warm-hover: #c9612a;
+  --color-accent-warm-bg: #fdf0e6;
+  --color-accent-warm-100: #fce4cb;
 }
 
 /* ── App shell ─────────────────────────────────────── */
