@@ -225,22 +225,31 @@ function renderBoard(tasks) {
   }
 }
 
-// function renderTaskCards(tasks, projectType, columnIds) {
-//   for (const status of Object.keys(columnIds)) {
-//     const container = document.getElementById(columnIds[status]);
-//     if (!container) continue;
+// ── Task list (XP dashboard) ──────────────────────────
+/**
+ * Renders the XP "Assigned Tasks" list into `#task-list` using the shared
+ * task-card component with `projectType = "xp"`. Shows XP-specific fields
+ * (hour estimate in the banner, pair avatar when `pair_assignee` is set).
+ * Replaces the list contents on every call; no-op when the container is absent.
+ * @param {object[]} tasks - Task records from {@link fetchTasks}.
+ * @returns {void}
+ */
+function renderTaskList(tasks) {
+  const list = document.getElementById("task-list");
+  if (!list) return;
 
-//     container.innerHTML = "";
+  list.innerHTML = "";
 
-//     const colTasks = tasks.filter((task) => task.status === status);
+  if (tasks.length === 0) {
+    list.innerHTML = `<p class="task-empty">No tasks yet.</p>`;
+    return;
+  }
 
-//     for (const task of colTasks) {
-//       const card = createTaskCard(task, projectType);
-//       card.setAttribute("draggable", "true");
-//       container.appendChild(card);
-//     }
-//   }
-// }
+  for (const task of tasks) {
+    const card = createTaskCard(task, "xp");
+    list.appendChild(card);
+  }
+}
 
 // ── Blocker banner ────────────────────────────────────
 async function refreshBlockerBanner() {
@@ -250,6 +259,7 @@ async function refreshBlockerBanner() {
 async function loadTasks() {
   const tasks = await fetchTasks();
   renderBoard(tasks);
+  renderTaskList(tasks);
   await refreshBlockerBanner();
 }
 
