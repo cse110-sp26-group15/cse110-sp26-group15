@@ -10,6 +10,7 @@
          after main so its newer `.task-card` rules win, and scrum.css
          layers on top for the page-specific tweaks. -->
     <link rel="stylesheet" href="../shared/theme.css" />
+    <link rel="stylesheet" href="../shared/components.css" />
     <link rel="stylesheet" href="main.css" />
     <link rel="stylesheet" href="../task-card/task-card.css" />
     <link rel="stylesheet" href="scrum.css" />
@@ -65,10 +66,10 @@
               </div>
               <div class="sprint-header-actions">
                 <!-- Toggle the sprint configuration panel below the header. -->
-                <button class="btn-secondary" id="edit-sprint-btn" type="button">
+                <button class="btn btn--secondary" id="edit-sprint-btn" type="button">
                   Edit sprint
                 </button>
-                <button class="btn-primary btn-checkin" id="checkin-today-btn" type="button">
+                <button class="btn btn--primary" id="checkin-today-btn" type="button">
                   + Check in today
                 </button>
               </div>
@@ -82,25 +83,21 @@
               <div class="sprint-picker-row">
                 <label class="sprint-picker-field">
                   <span>Sprint #</span>
-                  <input
-                    type="number"
-                    id="sprint-number-input"
-                    class="sprint-picker-input"
-                    min="1"
-                    step="1"
-                  />
+                  <input type="number" id="sprint-number-input" class="input" min="1" step="1" />
                 </label>
                 <label class="sprint-picker-field">
                   <span>Start date</span>
-                  <input type="date" id="sprint-start-input" class="sprint-picker-input" />
+                  <input type="date" id="sprint-start-input" class="input" />
                 </label>
                 <label class="sprint-picker-field">
                   <span>End date</span>
-                  <input type="date" id="sprint-end-input" class="sprint-picker-input" />
+                  <input type="date" id="sprint-end-input" class="input" />
                 </label>
                 <div class="sprint-picker-buttons">
-                  <button class="btn-primary" id="save-sprint-btn" type="button">Save</button>
-                  <button class="btn-secondary" id="cancel-sprint-btn" type="button">Cancel</button>
+                  <button class="btn btn--primary" id="save-sprint-btn" type="button">Save</button>
+                  <button class="btn btn--secondary" id="cancel-sprint-btn" type="button">
+                    Cancel
+                  </button>
                 </div>
               </div>
               <!-- Inline error/help — surfaces invalid date ranges, etc. -->
@@ -172,7 +169,9 @@
                       Kanban
                     </button>
                   </div>
-                  <button class="btn-primary" id="add-task-btn" type="button">+ Add Task</button>
+                  <button class="btn btn--primary" id="add-task-btn" type="button">
+                    + Add Task
+                  </button>
                 </div>
               </header>
 
