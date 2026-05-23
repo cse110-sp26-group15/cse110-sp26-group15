@@ -5,17 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SitRep</title>
     <link rel="stylesheet" href="../shared/theme.css" />
+    <link rel="stylesheet" href="../shared/components.css" />
     <link rel="stylesheet" href="main.css" />
+    <link rel="stylesheet" href="../task-card/task-card.css" />
+    <link rel="stylesheet" href="xp.css" />
     <link rel="stylesheet" href="../blocker-card/blocker-card.css" />
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar">
         <div class="sidebar-header">
-          <div class="sidebar-logo">
-            <div class="logo-mark">A</div>
-            <div class="logo-text">Agile Style App</div>
-          </div>
+          <a href="../project-setup/index.html" class="sidebar-logo">
+            <div class="logo-mark">S</div>
+            <div class="logo-text">SitRep</div>
+          </a>
         </div>
 
         <nav class="sidebar-nav">
@@ -27,12 +30,13 @@
         </nav>
 
         <div class="sidebar-footer">
-          <div class="user-row">
+          <a href="../login/index.html" class="user-row">
             <div class="avatar">U</div>
             <div class="user-info">
               <p class="user-name">Username</p>
+              <p class="user-role">Sign out</p>
             </div>
-          </div>
+          </a>
         </div>
       </aside>
 
@@ -63,18 +67,18 @@
             <section class="xp-section" id="assigned-tasks-section">
               <div class="section-header">
                 <h2 class="section-title">Assigned Tasks</h2>
-                <button class="btn-primary" id="add-task-btn">+ Add Task</button>
+                <button class="btn btn--primary" id="add-task-btn" type="button">+ Add Task</button>
               </div>
 
               <div id="add-task-form" class="task-form hidden">
                 <input
                   type="text"
                   id="new-task-title"
-                  class="task-input"
+                  class="input task-input"
                   placeholder="Task title"
                 />
-                <button class="btn-primary" id="submit-task-btn">Create</button>
-                <button class="btn-secondary" id="cancel-task-btn">Cancel</button>
+                <button class="btn btn--primary" id="submit-task-btn" type="button">Create</button>
+                <button class="btn btn--secondary" id="cancel-task-btn" type="button">Cancel</button>
               </div>
 
               <div id="task-list" class="task-list">
@@ -85,7 +89,7 @@
             <section class="xp-section" id="pairing-section">
               <div class="section-header">
                 <h2 class="section-title">Pair Programming / Agent Collaboration</h2>
-                <button class="btn-link" id="new-pair-btn">+ new pair</button>
+                <button class="btn-link" id="new-pair-btn" type="button">+ new pair</button>
               </div>
 
               <div id="pair-list" class="pair-grid">
