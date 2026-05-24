@@ -315,7 +315,7 @@ function renderKanban(tasks) {
 
     const addBtn = document.createElement("button");
     addBtn.type = "button";
-    addBtn.className = "kanban-column-add";
+    addBtn.className = "kanban-column-add btn btn--primary";
     addBtn.dataset.status = col.key;
     addBtn.textContent = "+";
     addBtn.setAttribute("aria-label", `Add task to ${col.label}`);
