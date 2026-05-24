@@ -1,5 +1,6 @@
 name = "cse110-sp26-group15"
 compatibility_date = "2026-05-13"
+compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "dist"
 
 [[d1_databases]]
