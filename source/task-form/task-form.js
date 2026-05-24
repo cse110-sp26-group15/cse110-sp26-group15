@@ -214,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Hook up the existing add-task button
   document.getElementById("add-task-btn")?.addEventListener("click", () => {
     openTaskModal(async (data) => {
-      await window.createTask(data.title, data.assigned_to);
+      await window.createTask(data);
       await window.loadTasks();
     });
   });

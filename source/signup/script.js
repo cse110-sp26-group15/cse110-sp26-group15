@@ -8,6 +8,7 @@ import {
   navigateTo,
   apiSignup,
   saveToken,
+  saveCurrentUser,
 } from "../shared/utils.js";
 
 const form = document.getElementById("signup-form");
@@ -100,8 +101,9 @@ form.addEventListener("submit", async (e) => {
   submitBtn.textContent = "Creating account…";
 
   try {
-    const { token } = await apiSignup({ email, password });
+    const { token, user } = await apiSignup({ email, password });
     saveToken(token);
+    saveCurrentUser(user);
     navigateTo("../project-setup/");
   } catch (err) {
     showBanner(banner, err.message || "Something went wrong. Please try again.");

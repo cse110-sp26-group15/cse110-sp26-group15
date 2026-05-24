@@ -3,46 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SitRep — Kanban Board</title>
-
-    <!-- Load order matters:
-         1. main.css   — reset, CSS variables, app shell, shared components
-         2. task-card  — shared task-card component styles (overrides .task-card)
-         3. task-form  — modal styles (loaded eagerly; kanban.js imports the
-                         module lazily so its own stylesheet injector won't fire)
-         4. kanban.css — kanban board layout, column styles, shared overrides   -->
+    <title>SitRep</title>
+    <link rel="stylesheet" href="../shared/theme.css" />
     <link rel="stylesheet" href="main.css" />
     <link rel="stylesheet" href="../task-card/task-card.css" />
     <link rel="stylesheet" href="../task-form/task-form.css" />
-    <link rel="stylesheet" href="kanban.css" />
+    <link rel="stylesheet" href="../blocker-card/blocker-card.css" />
   </head>
   <body>
     <div class="app-shell">
       <!-- ── Sidebar ──────────────────────────────────── -->
       <aside class="sidebar">
         <div class="sidebar-header">
-          <!-- Logo / home link -->
-          <a href="../project-setup/index.html" class="sidebar-logo">
+          <div class="sidebar-logo">
             <div class="logo-mark">S</div>
             <div class="logo-text">SitRep</div>
-          </a>
+          </div>
         </div>
-
         <nav class="sidebar-nav">
-          <a href="scrum.html" class="nav-item">Dashboard</a>
-          <a href="kanban.html" class="nav-item active">Kanban Board</a>
+          <a href="#" class="nav-item active">Dashboard</a>
           <a href="#" class="nav-item">My Check-ins</a>
           <a href="#" class="nav-item">Team</a>
+          <a href="#" class="nav-item">Weekly Report</a>
           <a href="#" class="nav-item">Settings</a>
         </nav>
-
         <div class="sidebar-footer">
-          <!-- Clicking the user row signs the user out. -->
-          <a href="../login/index.html" class="user-row">
-            <div class="avatar" id="sidebar-avatar">U</div>
+          <div class="user-row">
+            <div class="avatar" id="user-avatar">U</div>
             <div class="user-info">
-              <p class="user-name" id="sidebar-username">Username</p>
-              <p class="user-role">Sign out</p>
+              <p class="user-name" id="user-name">Username</p>
             </div>
           </a>
         </div>
@@ -51,33 +40,66 @@
       <!-- ── Main content ──────────────────────────────── -->
       <div class="main-content">
         <header class="topbar">
-          <span class="topbar-title">Kanban Board</span>
+          <span class="topbar-title">Dashboard</span>
+          <button class="btn-primary" id="add-task-btn">+ Add Task</button>
         </header>
 
         <main class="content-area" id="page-content">
-          <div id="kanban-view">
-            <!-- ── Board header ────────────────────────── -->
-            <div class="section-header">
-              <h2 class="section-title">Sprint Tasks</h2>
-              <!-- #add-task-btn receives a warm-accent override in kanban.css -->
-              <button class="btn-primary" id="add-task-btn" type="button">+ Add Task</button>
+          <!-- Dashboard view -->
+          <div id="dashboard-view" class="page-view">
+            <div id="blockers-banner" class="blockers-banner hidden">
+              <span class="blockers-banner__icon">⚠</span>
+              <span class="blockers-banner__label">Blockers</span>
+              <div class="blockers-banner__list" id="blockers-list"></div>
             </div>
 
-            <!-- ── Kanban board ─────────────────────────
-                 Four columns (To Do / In Progress / Blocked / Done)
-                 are built and populated by kanban.js on load. The
-                 .kanban-board grid and all column styles come from
-                 kanban.css (shared with scrum.html's toggle view).  -->
-            <div id="kanban-board" class="kanban-board">
-              <p class="task-empty">Loading tasks…</p>
+            <div class="kanban-board" id="kanban-board">
+              <div class="kanban-col" id="col-todo" data-status="todo">
+                <div class="kanban-col__header">
+                  <span class="kanban-col__title">To Do</span>
+                  <span class="kanban-col__count" id="count-todo">0</span>
+                </div>
+                <div class="kanban-col__cards" id="cards-todo">
+                  <p class="kanban-col__empty">No tasks yet</p>
+                </div>
+              </div>
+
+              <div class="kanban-col" id="col-in-progress" data-status="in-progress">
+                <div class="kanban-col__header">
+                  <span class="kanban-col__title">In Progress</span>
+                  <span class="kanban-col__count" id="count-in-progress">0</span>
+                </div>
+                <div class="kanban-col__cards" id="cards-in-progress">
+                  <p class="kanban-col__empty">No tasks yet</p>
+                </div>
+              </div>
+
+              <div class="kanban-col" id="col-done" data-status="done">
+                <div class="kanban-col__header">
+                  <span class="kanban-col__title">Done</span>
+                  <span class="kanban-col__count" id="count-done">0</span>
+                </div>
+                <div class="kanban-col__cards" id="cards-done">
+                  <p class="kanban-col__empty">No tasks yet</p>
+                </div>
+              </div>
             </div>
+          </div>
+          <!-- Check-ins view -->
+          <div id="checkins-view" class="page-view hidden">
+            <section class="checkin-section">
+              <h2 class="checkin-section__title">My Check-ins</h2>
+              <div id="checkin-list" class="checkin-list">
+                <p class="task-empty">No check-ins yet.</p>
+              </div>
+            </section>
           </div>
         </main>
       </div>
     </div>
 
-    <!-- kanban.js is an ES module; type="module" also defers it
-         automatically so the DOM is ready when init() runs.     -->
-    <script type="module" src="kanban.js"></script>
+    <script type="module" src="main.js"></script>
+    <script type="module" src="../blocker-card/blocker-card-init.js"></script>
+    <script type="module" src="../task-form/task-form.js"></script>
   </body>
 </html>

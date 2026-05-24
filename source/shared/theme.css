@@ -1,0 +1,412 @@
+/* ============================================================
+   theme.css — Centralized Design System 
+   ============================================================
+   Single source of truth for color, typography, spacing,
+   radius, elevation, motion, focus, layout, and z-index
+   across the Task Manager application.
+
+   ------------------------------------------------------------
+   IMPORT INSTRUCTIONS
+   ------------------------------------------------------------
+   Add the following <link> tag to the <head> of every page,
+   BEFORE any page-specific stylesheet so its tokens cascade
+   into them and page styles can still override when needed:
+
+     <link rel="stylesheet" href="../shared/theme.css">
+
+   Adjust the relative path (../, ../../) based on the page's
+   depth relative to source/shared/.
+
+   ------------------------------------------------------------
+   PROJECT-WIDE NAMING CONVENTIONS
+   ------------------------------------------------------------
+   JavaScript variables / functions  →  camelCase
+   JavaScript classes                →  PascalCase
+   CSS custom properties             →  --category-role-modifier (kebab-case)
+   CSS / HTML classes                →  kebab-case (BEM: block__element--modifier)
+   HTML IDs                          →  kebab-case
+   File names                        →  kebab-case
+
+   ------------------------------------------------------------
+   CSS CUSTOM PROPERTY NAMING (detail)
+   ------------------------------------------------------------
+   --<category>-<role>-<modifier?>
+     category : color | font | text | space | margin | padding |
+                radius | shadow | duration | ease | focus |
+                container | z
+     role     : primary | secondary | bg | surface | sm | md...
+     modifier : hover | muted | inverse | subtle |
+                on-* (guaranteed-contrast foreground)
+
+   Foreground pairing rule:
+     Whenever a surface is painted with --color-*-muted, a
+     brand fill, or --color-bg-inverse, the text on top of it
+     MUST use the matching --color-text-on-* token. This is
+     what guarantees WCAG AA contrast across both themes.
+
+/* ============================================================
+   :root  —  LIGHT MODE (default)
+   ============================================================ */
+:root {
+  /* ==========================================================
+     COLOR — BRAND
+     ---------------------------------------------------------- */
+  --color-primary: hsl(221, 83%, 53%);
+  --color-primary-hover: hsl(221, 83%, 45%);
+  --color-primary-muted: hsl(221, 83%, 92%);
+
+  /* Secondary is a NEUTRAL cool gray (not a brand accent).
+     Reach for it for low-emphasis actions, outlined secondary
+     buttons, and neutral chips. Use --color-accent when you
+     actually want hue. */
+  --color-secondary: hsl(220, 14%, 46%);
+  --color-secondary-hover: hsl(220, 14%, 38%);
+  --color-secondary-muted: hsl(220, 14%, 93%);
+
+  --color-accent: hsl(184, 78%, 27%);
+  --color-accent-hover: hsl(184, 78%, 22%);
+  --color-accent-muted: hsl(184, 78%, 92%);
+
+  /* ==========================================================
+     COLOR — STATUS
+     ----------------------------------------------------------
+     WARNING is split because the bright orange fails AA as a
+     text color on light backgrounds. Use --color-warning-bg
+     for decorative fills (banners, dot indicators) and
+     --color-warning-text for any warning copy.
+     ========================================================== */
+  --color-success: hsl(142, 71%, 40%);
+  --color-success-muted: hsl(142, 71%, 92%);
+
+  --color-warning-bg: hsl(38, 92%, 50%); /* decorative fills only */
+  --color-warning-text: hsl(30, 80%, 30%); /* AA-safe on light / -muted bg */
+  --color-warning-muted: hsl(38, 92%, 93%);
+
+  --color-error: hsl(0, 72%, 51%);
+  --color-error-muted: hsl(0, 72%, 94%);
+
+  /* ==========================================================
+     COLOR — BACKGROUNDS
+     ---------------------------------------------------------- */
+  --color-bg: hsl(0, 0%, 100%);
+  --color-bg-subtle: hsl(210, 20%, 98%);
+  --color-bg-surface: hsl(0, 0%, 100%);
+  --color-bg-inverse: hsl(222, 47%, 11%);
+
+  /* ==========================================================
+     COLOR — TEXT
+     ----------------------------------------------------------
+     Default --color-text-* tokens assume a --color-bg /
+     --color-bg-surface canvas. For any non-default surface,
+     use the matching --color-text-on-* token below.
+     ========================================================== */
+  --color-text: hsl(222, 47%, 11%);
+  --color-text-muted: hsl(215, 16%, 38%); /* AA live-text tier (~6:1 on white) */
+  /* --color-text-subtle is DECORATIVE ONLY — placeholders,
+     disabled controls, decorative dividers/dots. Sub-AA by
+     design (~3.6:1). NEVER use it for live text content. */
+  --color-text-subtle: hsl(215, 14%, 56%);
+  --color-text-inverse: hsl(0, 0%, 100%);
+  --color-text-link: var(--color-primary);
+
+  /* --- "on-fill" foreground tokens (WCAG AA pairings) ---
+     Use these whenever the background is a brand fill, a
+     status fill, --color-bg-inverse, or any --color-*-muted.
+  */
+  /* Solid brand & status fills → light text */
+  --color-text-on-primary: hsl(0, 0%, 100%);
+  --color-text-on-secondary: hsl(0, 0%, 100%);
+  --color-text-on-accent: hsl(0, 0%, 100%);
+  --color-text-on-success: hsl(0, 0%, 100%);
+  --color-text-on-error: hsl(0, 0%, 100%);
+  --color-text-on-inverse: hsl(0, 0%, 100%);
+
+  /* Muted (tinted) fills → deep brand/status hue for AA */
+  --color-text-on-primary-muted: hsl(221, 83%, 28%);
+  --color-text-on-secondary-muted: hsl(220, 18%, 22%);
+  --color-text-on-accent-muted: hsl(184, 78%, 22%);
+  --color-text-on-success-muted: hsl(142, 71%, 22%);
+  --color-text-on-warning-muted: var(--color-warning-text);
+  --color-text-on-error-muted: hsl(0, 72%, 30%);
+
+  /* ==========================================================
+     COLOR — BORDERS
+     ---------------------------------------------------------- */
+  --color-border: hsl(214, 20%, 88%);
+  --color-border-strong: hsl(214, 16%, 72%);
+  --color-border-subtle: hsl(214, 24%, 94%);
+  --color-border-focus: var(--color-primary);
+
+  /* ==========================================================
+     TYPOGRAPHY
+     ----------------------------------------------------------
+     rem-based on a 16px root size (1rem = 16px).
+     ========================================================== */
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    monospace;
+
+  /* --- Body / utility text sizes (modular scale ~1.125) --- */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 1rem; /* 16px */
+  --text-lg: 1.125rem; /* 18px */
+
+  /* --- Heading sizes (h6 → h1) --- */
+  --text-h6: 1rem; /* 16px */
+  --text-h5: 1.125rem; /* 18px */
+  --text-h4: 1.25rem; /* 20px */
+  --text-h3: 1.5rem; /* 24px */
+  --text-h2: 1.875rem; /* 30px */
+  --text-h1: 2.25rem; /* 36px */
+
+  /* --- Font weights --- */
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* --- Line heights (unitless: scales with font-size) --- */
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ==========================================================
+     SPACING  —  single source (8pt grid, 4px base step)
+     ----------------------------------------------------------
+     --space-* is the canonical scale. Prefer it in new code.
+     The --margin-* / --padding-* aliases below are restored in
+     V4 for project-spec compliance and are thin pass-throughs
+     to --space-*. They exist so spec-required tokens are
+     discoverable; you do not need to use them in new code.
+     ========================================================== */
+  --space-2xs: 0.25rem; /*  4px */
+  --space-xs: 0.5rem; /*  8px */
+  --space-sm: 0.75rem; /* 12px */
+  --space-md: 1rem; /* 16px */
+  --space-lg: 1.5rem; /* 24px */
+  --space-xl: 2rem; /* 32px */
+  --space-2xl: 3rem; /* 48px */
+  --space-3xl: 4rem; /* 64px */
+
+  /* --- Standard margin aliases (vertical rhythm between blocks) --- */
+  --margin-2xs: var(--space-2xs);
+  --margin-xs: var(--space-xs);
+  --margin-sm: var(--space-sm);
+  --margin-md: var(--space-md);
+  --margin-lg: var(--space-lg);
+  --margin-xl: var(--space-xl);
+  --margin-2xl: var(--space-2xl);
+  --margin-3xl: var(--space-3xl);
+
+  /* --- Standard padding aliases (interior space of containers) --- */
+  --padding-2xs: var(--space-2xs);
+  --padding-xs: var(--space-xs);
+  --padding-sm: var(--space-sm);
+  --padding-md: var(--space-md);
+  --padding-lg: var(--space-lg);
+  --padding-xl: var(--space-xl);
+  --padding-2xl: var(--space-2xl);
+  --padding-3xl: var(--space-3xl);
+
+  /* ==========================================================
+     RADIUS
+     ========================================================== */
+  --radius-none: 0;
+  --radius-sm: 0.25rem; /*  4px — chips, small inputs */
+  --radius-md: 0.5rem; /*  8px — buttons, cards */
+  --radius-lg: 0.75rem; /* 12px — modals, panels */
+  --radius-xl: 1rem; /* 16px — hero surfaces */
+  --radius-full: 9999px; /* pills, avatars */
+
+  /* ==========================================================
+     SHADOWS / ELEVATION
+     ========================================================== */
+  --shadow-xs: 0 1px 2px 0 hsla(222, 47%, 11%, 0.05);
+
+  --shadow-sm: 0 1px 3px 0 hsla(222, 47%, 11%, 0.08), 0 1px 2px -1px hsla(222, 47%, 11%, 0.08);
+
+  --shadow-md: 0 4px 6px -1px hsla(222, 47%, 11%, 0.1), 0 2px 4px -2px hsla(222, 47%, 11%, 0.08);
+
+  --shadow-lg: 0 10px 15px -3px hsla(222, 47%, 11%, 0.1), 0 4px 6px -4px hsla(222, 47%, 11%, 0.08);
+
+  --shadow-xl:
+    0 20px 25px -5px hsla(222, 47%, 11%, 0.12), 0 8px 10px -6px hsla(222, 47%, 11%, 0.08);
+
+  /* Soft halo used together with the focus outline below.
+     Forced-colors mode drops box-shadow but keeps outline,
+     so the outline is what guarantees a visible focus ring. */
+  --shadow-focus: 0 0 0 3px hsla(221, 83%, 53%, 0.35);
+
+  /* ==========================================================
+     MOTION
+     ----------------------------------------------------------
+     Reserve --duration-fast for micro-interactions (hover,
+     state flips), --duration-normal for typical UI motion
+     (tooltips, dropdowns, taps), and --duration-slow for
+     larger spatial moves (modals, route transitions).
+
+     prefers-reduced-motion is honored at the bottom of this
+     file: every duration collapses to 1ms automatically.
+     ========================================================== */
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 400ms;
+
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1); /* standard curve */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1); /* exits */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1); /* entrances */
+
+  /* ==========================================================
+     FOCUS
+     ----------------------------------------------------------
+     Pattern (works in Windows High Contrast Mode):
+
+       .control:focus-visible {
+         outline: var(--focus-outline-width) solid
+                  var(--color-border-focus);
+         outline-offset: var(--focus-outline-offset);
+         box-shadow: var(--shadow-focus);
+       }
+
+     The outline survives forced-colors mode; the box-shadow
+     halo provides the softer ring in normal mode. Keep both.
+     ========================================================== */
+  --focus-outline-width: 2px;
+  --focus-outline-offset: 2px;
+
+  /* ==========================================================
+     LAYOUT / CONTAINERS
+     ----------------------------------------------------------
+     Generic max-widths plus product-specific layout slots,
+     so page chrome stays consistent across views.
+     ========================================================== */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+
+  --sidebar-width: 240px;
+  --kanban-column-min: 280px;
+
+  /* ==========================================================
+     Z-INDEX SCALE
+     ----------------------------------------------------------
+     Always use a token rather than a raw number so layering
+     order stays predictable across components.
+     ========================================================== */
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-overlay: 1200;
+  --z-modal: 1300;
+  --z-popover: 1400;
+  --z-toast: 1500;
+  --z-tooltip: 1600;
+}
+
+/* ============================================================
+   [data-theme="dark"]  —  DARK MODE
+   ------------------------------------------------------------
+   Activate by setting data-theme="dark" on <html> or <body>:
+       <html data-theme="dark">
+   Only tokens whose value changes between themes are
+   redeclared. Typography, spacing, radius, motion, focus,
+   container, and z-index tokens all inherit from :root.
+   ============================================================ */
+[data-theme="dark"] {
+  /* --- Brand: primary (lifted for contrast on dark bg) --- */
+  --color-primary: hsl(217, 91%, 65%);
+  --color-primary-hover: hsl(217, 91%, 72%);
+  --color-primary-muted: hsl(217, 60%, 22%);
+
+  /* --- Secondary: neutral cool gray (see :root for role) --- */
+  --color-secondary: hsl(220, 16%, 68%);
+  --color-secondary-hover: hsl(220, 16%, 75%);
+  --color-secondary-muted: hsl(220, 12%, 22%);
+
+  /* --- Brand: accent — shifted toward teal-green to visually
+         separate from the dark primary blue (217°) --- */
+  --color-accent: hsl(165, 68%, 55%);
+  --color-accent-hover: hsl(165, 68%, 62%);
+  --color-accent-muted: hsl(165, 50%, 22%);
+
+  /* --- Status --- */
+  --color-success: hsl(142, 65%, 55%);
+  --color-success-muted: hsl(142, 40%, 20%);
+
+  --color-warning-bg: hsl(38, 92%, 60%);
+  --color-warning-text: hsl(38, 90%, 78%); /* light copy on dark muted bg */
+  --color-warning-muted: hsl(38, 50%, 22%);
+
+  --color-error: hsl(0, 78%, 65%);
+  --color-error-muted: hsl(0, 50%, 24%);
+
+  /* --- Backgrounds --- */
+  --color-bg: hsl(222, 47%, 8%);
+  --color-bg-subtle: hsl(222, 40%, 12%);
+  --color-bg-surface: hsl(222, 35%, 15%);
+  --color-bg-inverse: hsl(0, 0%, 100%);
+
+  /* --- Text --- */
+  --color-text: hsl(210, 20%, 96%);
+  --color-text-muted: hsl(215, 16%, 70%); /* AA live-text tier */
+  /* DECORATIVE ONLY in dark mode too — sub-AA by design. */
+  --color-text-subtle: hsl(215, 14%, 55%);
+  --color-text-inverse: hsl(222, 47%, 11%);
+
+  /* --- On-fill text — re-tuned for dark theme --- */
+  /* In dark mode, brand fills are lighter so dark copy reads better */
+  --color-text-on-primary: hsl(222, 47%, 11%);
+  --color-text-on-secondary: hsl(222, 47%, 11%);
+  --color-text-on-accent: hsl(222, 47%, 11%);
+  --color-text-on-success: hsl(222, 47%, 11%);
+  --color-text-on-error: hsl(222, 47%, 11%); /* matches the other on-fills */
+  --color-text-on-inverse: hsl(222, 47%, 11%);
+
+  /* Muted fills are deep tints — use a light tint of the hue */
+  --color-text-on-primary-muted: hsl(217, 91%, 85%);
+  --color-text-on-secondary-muted: hsl(220, 14%, 85%);
+  --color-text-on-accent-muted: hsl(165, 65%, 85%);
+  --color-text-on-success-muted: hsl(142, 65%, 80%);
+  --color-text-on-warning-muted: var(--color-warning-text);
+  --color-text-on-error-muted: hsl(0, 78%, 88%);
+
+  /* --- Borders --- */
+  --color-border: hsl(222, 25%, 22%);
+  --color-border-strong: hsl(222, 20%, 38%);
+  --color-border-subtle: hsl(222, 30%, 16%);
+
+  /* --- Shadows: deeper and darker on dark surfaces --- */
+  --shadow-xs: 0 1px 2px 0 hsla(0, 0%, 0%, 0.3);
+
+  --shadow-sm: 0 1px 3px 0 hsla(0, 0%, 0%, 0.4), 0 1px 2px -1px hsla(0, 0%, 0%, 0.3);
+
+  --shadow-md: 0 4px 6px -1px hsla(0, 0%, 0%, 0.45), 0 2px 4px -2px hsla(0, 0%, 0%, 0.35);
+
+  --shadow-lg: 0 10px 15px -3px hsla(0, 0%, 0%, 0.5), 0 4px 6px -4px hsla(0, 0%, 0%, 0.4);
+
+  --shadow-xl: 0 20px 25px -5px hsla(0, 0%, 0%, 0.55), 0 8px 10px -6px hsla(0, 0%, 0%, 0.4);
+
+  --shadow-focus: 0 0 0 3px hsla(217, 91%, 65%, 0.45);
+}
+
+/* ============================================================
+   prefers-reduced-motion
+   ------------------------------------------------------------
+   Honor the user's OS-level preference by collapsing every
+   duration token to a near-zero value. Components consuming
+   --duration-* automatically inherit this.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 1ms;
+    --duration-normal: 1ms;
+    --duration-slow: 1ms;
+  }
+}

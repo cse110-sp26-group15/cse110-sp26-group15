@@ -232,3 +232,17 @@ export function createTaskCard(task, projectType = "kanban", { compact = false }
 
   return card;
 }
+
+/**
+ * Updates an existing card's status pill in place. Leaves the pill alone if
+ * the card is currently in a blocked state (the blocker takes precedence).
+ * @param {HTMLElement} card
+ * @param {"todo"|"in-progress"|"done"} status
+ */
+export function setTaskCardStatus(card, status) {
+  const pill = card.querySelector(".task-card__status");
+  if (!pill) return;
+  if (pill.classList.contains("task-card__status--blocked")) return;
+  pill.className = `task-card__status task-card__status--${status}`;
+  pill.textContent = STATUS_LABELS[status] ?? status;
+}
