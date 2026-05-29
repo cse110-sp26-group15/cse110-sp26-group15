@@ -91,3 +91,54 @@ export async function onRequest(context) {
     { headers: { "Content-Type": "application/json" } }
   );
 }
+
+export async function onRequestPost(context) {
+  const { env, params, request } = context;
+  const { projectId } = params;
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const { checkin_id, description, task = null, helper = null } = body;
+
+  if (checkin_id === undefined || checkin_id === null) {
+    return Response.json({ error: "checkin_id is required" }, { status: 400 });
+  }
+  if (!description || typeof description !== "string" || description.trim() === "") {
+    return Response.json({ error: "description is required" }, { status: 400 });
+  }
+
+  try {
+    const checkin = await env.DB.prepare(
+      "SELECT checkin_id FROM checkins WHERE checkin_id = ? AND project_id = ?"
+    )
+      .bind(checkin_id, projectId)
+      .first();
+
+    if (!checkin) {
+      return Response.json(
+        { error: "checkin_id does not belong to this project" },
+        { status: 400 }
+      );
+    }
+
+    const result = await env.DB.prepare(
+      `INSERT INTO blockers (checkin_id, description, task, helper)
+       VALUES (?, ?, ?, ?)`
+    )
+      .bind(checkin_id, description.trim(), task, helper)
+      .run();
+
+    const blocker = await env.DB.prepare("SELECT * FROM blockers WHERE blocker_id = ?")
+      .bind(result.meta.last_row_id)
+      .first();
+
+    return Response.json({ blocker }, { status: 201 });
+  } catch (err) {
+    return Response.json({ error: err.message }, { status: 500 });
+  }
+}
