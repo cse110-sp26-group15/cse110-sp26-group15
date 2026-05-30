@@ -1,5 +1,9 @@
 /* ── Task card tokens ─────────────────────────────── */
 :root {
+  /* Priority heat-scale — a dedicated 4-level palette (red → amber →
+     yellow → neutral). theme.css only ships one warm status color
+     (warning), so this scale stays local to preserve all four levels;
+     its dark-mode variants live in the [data-theme="dark"] block below. */
   --priority-urgent-bg: #fee2e2;
   --priority-urgent-fg: #b91c1c;
   --priority-high-bg: #ffedd5;
@@ -9,17 +13,40 @@
   --priority-low-bg: #f5f5f4;
   --priority-low-fg: #6b6b6b;
 
-  --blocker-bg: #fef2f2;
-  --blocker-fg: #b91c1c;
-  --blocker-border: #fecaca;
+  /* Translucent pill backing on the colored priority banner. Flips to a
+     dark wash in dark mode so the pill keeps contrast against the
+     now-light banner text. */
+  --task-card-banner-pill: hsla(0, 0%, 100%, 0.6);
 
-  --tag-bg: #eff6ff;
-  --tag-fg: #1d4ed8;
+  /* Semantic tokens ride theme.css so badges match the dashboard and
+     pick up dark mode automatically. */
+  --blocker-bg: var(--color-error-muted);
+  --blocker-fg: var(--color-text-on-error-muted);
+  --blocker-border: var(--color-error);
 
-  --status-in-progress-bg: #eff6ff;
-  --status-in-progress-fg: #1d4ed8;
-  --status-done-bg: #f0fdf4;
-  --status-done-fg: #15803d;
+  --tag-bg: var(--color-primary-muted);
+  --tag-fg: var(--color-text-on-primary-muted);
+
+  --status-in-progress-bg: var(--color-primary-muted);
+  --status-in-progress-fg: var(--color-text-on-primary-muted);
+  --status-done-bg: var(--color-success-muted);
+  --status-done-fg: var(--color-text-on-success-muted);
+}
+
+/* Dark-mode variants for the local priority scale + banner pill. The
+   four heat levels stay visually distinct (red → amber → yellow →
+   neutral) using deep tints with light foregrounds. */
+[data-theme="dark"] {
+  --priority-urgent-bg: hsl(0, 50%, 24%);
+  --priority-urgent-fg: hsl(0, 78%, 88%);
+  --priority-high-bg: hsl(28, 55%, 24%);
+  --priority-high-fg: hsl(30, 90%, 80%);
+  --priority-medium-bg: hsl(45, 50%, 22%);
+  --priority-medium-fg: hsl(45, 90%, 78%);
+  --priority-low-bg: hsl(220, 12%, 24%);
+  --priority-low-fg: hsl(220, 14%, 78%);
+
+  --task-card-banner-pill: hsla(0, 0%, 0%, 0.28);
 }
 
 /* ── Card shell ───────────────────────────────────── */
@@ -30,7 +57,7 @@
   justify-content: flex-start;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   padding: 0;
   font-family: inherit;
@@ -43,7 +70,7 @@
   justify-content: space-between;
   padding: 6px 12px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .task-card--priority-urgent .task-card__banner {
@@ -73,19 +100,19 @@
 }
 
 .task-card__priority-icon {
-  font-size: 12px;
+  font-size: var(--text-xs);
   line-height: 1;
 }
 
 .task-card__banner-meta {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .task-card__due-date {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   opacity: 0.85;
 }
 
@@ -96,31 +123,31 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--task-card-banner-pill);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .task-card__hours {
   padding: 1px 7px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-full);
+  background: var(--task-card-banner-pill);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 /* ── Body ─────────────────────────────────────────── */
 .task-card__body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-xs);
   padding: 10px 12px;
 }
 
 .task-card__title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
   line-height: 1.3;
   color: var(--color-text-primary);
 }
@@ -129,17 +156,17 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 8px;
+  padding: var(--space-2xs) var(--space-xs);
   border-radius: 5px;
   background: var(--blocker-bg);
   color: var(--blocker-fg);
   border: 1px solid var(--blocker-border);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .task-card__blocker-icon {
-  font-size: 12px;
+  font-size: var(--text-xs);
   line-height: 1;
 }
 
@@ -153,7 +180,7 @@
 
 .task-card__description {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-xs);
   line-height: 1.35;
   color: var(--color-text-secondary);
   display: -webkit-box;
@@ -185,11 +212,11 @@
 
 .task-card__tag {
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--tag-bg);
   color: var(--tag-fg);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 /* ── Footer ───────────────────────────────────────── */
@@ -197,7 +224,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: var(--space-xs) var(--space-sm);
   border-top: 1px solid var(--color-border);
 }
 
@@ -223,7 +250,7 @@
   align-items: center;
   justify-content: center;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   border: 1.5px solid var(--color-bg);
 }
 
@@ -232,7 +259,7 @@
 }
 
 .task-card__assignee-name {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -241,9 +268,9 @@
 
 .task-card__status {
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 10px;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   flex-shrink: 0;
 }
 
