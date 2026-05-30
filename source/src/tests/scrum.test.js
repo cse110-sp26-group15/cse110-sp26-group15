@@ -21,7 +21,6 @@ import {
   formatSprintRange,
   readSprintFromStorage,
   writeSprintToStorage,
-  isLocalTaskId,
 } from "../../dashboard/scrum.js";
 
 // ── Module constants ────────────────────────────────
@@ -294,19 +293,5 @@ describe("sprint persistence", () => {
     expect(read.number).toBeNull();
     expect(read.start_date).toBe("2026-05-05");
     expect(read.end_date).toBe("2026-05-11");
-  });
-});
-
-// ── isLocalTaskId ───────────────────────────────────
-describe("isLocalTaskId", () => {
-  it("returns true for ids minted by the fallback store", () => {
-    expect(isLocalTaskId("local-1700000000000-42")).toBe(true);
-    expect(isLocalTaskId("local-anything")).toBe(true);
-  });
-
-  it("returns false for API-style numeric ids", () => {
-    expect(isLocalTaskId(42)).toBe(false);
-    expect(isLocalTaskId("42")).toBe(false);
-    expect(isLocalTaskId("global-7")).toBe(false);
   });
 });

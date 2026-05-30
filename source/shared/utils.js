@@ -48,6 +48,68 @@ export function navigateTo(path) {
 
 // ── API helpers ─────────────────────────────────────────
 
+/** Default timeout for {@link apiFetch} in milliseconds. */
+export const DEFAULT_API_TIMEOUT_MS = 10_000;
+
+/**
+ * Thrown when an API call returns a non-2xx response or aborts.
+ * Carries the HTTP status (or 0 for network/timeout failures) so callers
+ * can branch on "auth failed" vs "server down" without re-parsing.
+ */
+export class ApiError extends Error {
+  constructor(message, { status = 0, body = null } = {}) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
+/**
+ * Fetch wrapper that guarantees one of two outcomes:
+ *   • resolves with the parsed JSON body, or
+ *   • throws an {@link ApiError} (timeout, network failure, or non-2xx).
+ *
+ * Every request is bounded by an AbortController timeout (default 10s)
+ * so a hung backend can never leave the UI stuck on a spinner — callers
+ * just render an error state in the catch block.
+ *
+ * @param {string} url
+ * @param {RequestInit & { timeoutMs?: number }} [opts]
+ * @returns {Promise<any>}
+ */
+export async function apiFetch(url, opts = {}) {
+  const { timeoutMs = DEFAULT_API_TIMEOUT_MS, ...init } = opts;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res;
+  try {
+    res = await fetch(url, { ...init, signal: controller.signal });
+  } catch (err) {
+    clearTimeout(timer);
+    if (err?.name === "AbortError") {
+      throw new ApiError(`Request to ${url} timed out after ${timeoutMs}ms`, { status: 0 });
+    }
+    throw new ApiError(`Network error calling ${url}: ${err?.message ?? err}`, { status: 0 });
+  }
+  clearTimeout(timer);
+
+  let body = null;
+  try {
+    body = await res.json();
+  } catch {
+    /* response had no JSON body */
+  }
+
+  if (!res.ok) {
+    const message = body?.error || `Request to ${url} failed (${res.status})`;
+    throw new ApiError(message, { status: res.status, body });
+  }
+
+  return body ?? {};
+}
+
 /**
  * POST /api/auth/login
  */

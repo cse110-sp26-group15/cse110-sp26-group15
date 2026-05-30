@@ -9,8 +9,6 @@
 import { describe, it, expect } from "vitest";
 import {
   PROJECT_ID,
-  STORAGE_KEY,
-  LOCAL_TASK_KEYS,
   GENERAL_BLOCKER,
   WORKLOAD_LABELS,
   escapeHtml,
@@ -18,20 +16,14 @@ import {
   formatDate,
   isSameDay,
   hasCheckinToday,
-  readLocalArray,
   buildBlockerBlock,
 } from "../../check-in/check-in.js";
 
 // ── Module constants ─────────────────────────────────
 describe("check-in module constants", () => {
-  it("uses a numeric project id and a namespaced storage key", () => {
+  it("exposes a numeric project id", () => {
     expect(typeof PROJECT_ID).toBe("number");
-    expect(STORAGE_KEY).toBe(`sitrep.checkins.project-${PROJECT_ID}`);
-  });
-
-  it("reads the dashboards' offline task stores (scrum + kanban)", () => {
-    expect(LOCAL_TASK_KEYS).toContain(`sitrep.scrum.tasks.project-${PROJECT_ID}`);
-    expect(LOCAL_TASK_KEYS).toContain(`sitrep.kanban.tasks.project-${PROJECT_ID}`);
+    expect(PROJECT_ID).toBeGreaterThan(0);
   });
 
   it("maps every workload value to a human label", () => {
@@ -98,15 +90,6 @@ describe("hasCheckinToday", () => {
   it("ignores older check-ins and empty lists", () => {
     expect(hasCheckinToday([{ checkin_date: "2000-01-01T00:00:00Z" }])).toBe(false);
     expect(hasCheckinToday([])).toBe(false);
-  });
-});
-
-// ── readLocalArray ───────────────────────────────────
-describe("readLocalArray", () => {
-  it("returns [] when localStorage is unavailable (node)", () => {
-    // No DOM/localStorage under the node test environment, so this must
-    // degrade gracefully rather than throw.
-    expect(readLocalArray("anything")).toEqual([]);
   });
 });
 
