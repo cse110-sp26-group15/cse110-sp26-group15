@@ -115,24 +115,40 @@ export async function onRequestPost(context) {
   }
 
   try {
+    // Verify `created_by` actually references a real user before binding
+    // it to the FK. Stale sessionStorage can carry a user_id from a
+    // previous DB seed/reset, which would otherwise trip the projects
+    // → users FK and abort the entire request.
+    let creatorId = null;
+    if (created_by != null) {
+      const creator = await env.DB.prepare("SELECT user_id FROM users WHERE user_id = ?")
+        .bind(created_by)
+        .first();
+      if (creator) {
+        creatorId = creator.user_id;
+      } else {
+        console.warn(`[projects POST] created_by=${created_by} not found; storing NULL`);
+      }
+    }
+
     const insertProject = await env.DB.prepare(
       `INSERT INTO projects (name, description, workflow, created_by)
        VALUES (?, ?, ?, ?)`
     )
-      .bind(name.trim(), description, workflow, created_by)
+      .bind(name.trim(), description, workflow, creatorId)
       .run();
 
     const projectId = insertProject.meta.last_row_id;
 
-    // Always add the creator as a member (if known)
+    // Always add the creator as a member (if known + verified)
     const addedUserIds = new Set();
-    if (created_by) {
+    if (creatorId) {
       await env.DB.prepare(
         `INSERT OR IGNORE INTO project_members (project_id, user_id) VALUES (?, ?)`
       )
-        .bind(projectId, created_by)
+        .bind(projectId, creatorId)
         .run();
-      addedUserIds.add(created_by);
+      addedUserIds.add(creatorId);
     }
 
     // Resolve invited member emails -> existing users; skip unknown emails
