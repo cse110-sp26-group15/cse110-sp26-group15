@@ -216,11 +216,13 @@ body {
 
 .content-area {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
   padding: 20px 24px;
+  min-height: 0;
 }
 
 /* ── Placeholder ───────────────────────────────────── */
@@ -518,5 +520,13 @@ body {
   flex-direction: column;
   gap: var(--space-md);
   flex: 1;
+  min-height: 0;
+}
+
+/* Allow dashboard sections to scroll */
+.task-list,
+.kanban-column-list,
+.kanban-col__cards {
+  overflow-y: auto;
   min-height: 0;
 }
