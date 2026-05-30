@@ -423,10 +423,16 @@ async function fetchCheckins() {
 
 async function fetchBlockers() {
   try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/blockers`);
+    const res = await fetch(`/api/projects/${PROJECT_ID}/dashboard`);
     if (!res.ok) return [];
     const data = await res.json();
-    return data.blockers ?? [];
+    return (data.open_blockers ?? []).map((b) => ({
+      blocker_id: b.blocker_id,
+      description: b.description,
+      tag: b.helper || null,
+      full_name: b.reported_by?.full_name ?? "",
+      is_resolved: false,
+    }));
   } catch {
     return [];
   }
@@ -509,7 +515,7 @@ function renderBlockers(blockers) {
 
   if (open.length === 0) {
     panel.classList.add("is-empty");
-    list.innerHTML = "";
+    list.innerHTML = `<p class="muted-small">No open blockers.</p>`;
     return;
   }
 

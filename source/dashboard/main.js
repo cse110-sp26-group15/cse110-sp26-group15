@@ -1,5 +1,8 @@
-import { mockTasks, mockMembers, mockCheckins } from "./mock-data.js";
 import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
+
+// Hard-coded for now; will switch to the logged-in project once auth context
+// is plumbed through (same TODO as scrum.js / kanban.js).
+const PROJECT_ID = 1;
 
 // ── Navigation ────────────────────────────────────────
 document.querySelectorAll(".nav-item").forEach((item) => {
@@ -51,21 +54,26 @@ function switchView(label) {
 }
 
 // ── Task API ──────────────────────────────────────────
-//const _PROJECT_ID = 1; // TODO: replace with actual logged-in project context
 
-// ── Mock data (swap out for real API calls when deploying) ────
-let mockTasksLocal = [...mockTasks];
+function assigneeName(userId) {
+  if (!userId) return null;
+  const member = projectMembers.find((m) => Number(m.user_id) === Number(userId));
+  return member?.full_name ?? null;
+}
 
 /**
  * Fetches the list of tasks for the current project.
  * @returns {Promise<object[]>} Array of task records; empty array when none exist.
  */
 async function fetchTasks() {
-  // TODO: swap back to real API when deploying
-  // const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`);
-  // const data = await res.json();
-  // return data.tasks ?? [];
-  return mockTasksLocal;
+  try {
+    const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.tasks ?? [];
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -73,11 +81,14 @@ async function fetchTasks() {
  * @returns {Promise<object[]>} Array of member records ({ user_id, full_name, ... }).
  */
 async function fetchMembers() {
-  // TODO: swap back to real API when deploying
-  // const res = await fetch(`/api/projects/${PROJECT_ID}/members`);
-  // const data = await res.json();
-  // return data.members ?? [];
-  return mockMembers;
+  try {
+    const res = await fetch(`/api/projects/${PROJECT_ID}/members`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.members ?? [];
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -87,24 +98,37 @@ async function fetchMembers() {
  * @returns {Promise<object>} The created task record returned by the API.
  */
 async function createTask(data) {
-  const member = mockMembers.find((m) => m.user_id === data.assigned_to) ?? null;
-
-  const newTask = {
-    task_id: Date.now(),
+  const status = data.status ?? "todo";
+  const payload = {
     title: data.title,
-    description: data.description ?? "",
-    status: data.status ?? "todo",
-    user_id: data.assigned_to ?? null,
-    full_name: member?.full_name ?? null,
-    priority: data.priority ?? "low",
-    due_date: data.due_date ?? null,
-    tags: data.tags ?? [],
-    is_blocked: data.is_blocked ?? false,
-    blocker_reason: data.blocker_reason ?? "",
+    assigned_to: data.assigned_to ?? null,
   };
 
-  mockTasksLocal.push(newTask);
-  return { task: newTask };
+  try {
+    const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return { task: null };
+
+    const json = await res.json();
+    let created = json.task ?? null;
+    if (!created) return { task: null };
+
+    // POST always inserts as 'todo'; patch immediately when another status was requested.
+    if (status !== "todo") {
+      const updated = await updateTask(created.task_id, { status });
+      if (updated?.task) created = updated.task;
+      else created.status = status;
+    }
+
+    created.user_id = created.assigned_to ?? data.assigned_to ?? null;
+    created.full_name = assigneeName(created.user_id);
+    return { task: created };
+  } catch {
+    return { task: null };
+  }
 }
 
 /**
@@ -114,16 +138,17 @@ async function createTask(data) {
  * @returns {Promise<object>} The updated task record returned by the API.
  */
 async function updateTask(taskId, fields) {
-  // TODO: swap back to real API when deploying
-  // const res = await fetch(`/api/projects/${PROJECT_ID}/tasks/${taskId}`, {
-  //   method: "PATCH",
-  //   headers: { "Content-Type": "application/json" },
-  //   body: JSON.stringify(fields),
-  // });
-  // return res.json();
-  const task = mockTasksLocal.find((t) => String(t.task_id) === String(taskId));
-  if (task) Object.assign(task, fields);
-  return { task };
+  try {
+    const res = await fetch(`/api/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fields),
+    });
+    if (res.ok) return await res.json();
+  } catch {
+    /* fall through */
+  }
+  return {};
 }
 
 /**
@@ -132,11 +157,13 @@ async function updateTask(taskId, fields) {
  * @returns {Promise<object>} API response body.
  */
 // async function deleteTask(taskId) {
-//   // TODO: swap back to real API when deploying
-//   // const res = await fetch(`/api/projects/${PROJECT_ID}/tasks/${taskId}`, { method: "DELETE" });
-//   // return res.json();
-//   mockTasksLocal = mockTasksLocal.filter((t) => String(t.task_id) !== String(taskId));
-//   return { success: true };
+//   try {
+//     const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+//     if (res.ok) return await res.json();
+//   } catch {
+//     /* fall through */
+//   }
+//   return {};
 // }
 
 // ── Members cache ─────────────────────────────────────
@@ -253,7 +280,9 @@ function renderTaskList(tasks) {
 
 // ── Blocker banner ────────────────────────────────────
 async function refreshBlockerBanner() {
-  // TODO: swap back to real API when deploying
+  if (document.getElementById("blocker-banner")) {
+    await loadBlockers();
+  }
 }
 
 async function loadTasks() {
@@ -264,11 +293,10 @@ async function loadTasks() {
 }
 
 // ── Pair sessions (XP dashboard) ──────────────────────
-// Static placeholder cards live in xp.html. When the pairing API lands
-// (expected: GET /api/projects/:id/pairs → { pairs: [...] }), call
-// window.renderPairs(pairs) to replace the placeholders. Expected pair
-// shape: { pair_id, title, is_ai_pair, status_text, driver: { full_name,
-// role }, partner: { full_name, role, is_agent } }
+// When the pairing API lands (expected: GET /api/projects/:id/pairs →
+// { pairs: [...] }), call window.renderPairs(pairs). Expected pair shape:
+// { pair_id, title, is_ai_pair, status_text, driver: { full_name, role },
+// partner: { full_name, role, is_agent } }
 
 /**
  * Returns up to two uppercase initials for a person's display name.
@@ -283,14 +311,18 @@ function initialsFor(name) {
 
 /**
  * Renders the XP "Pair Programming / Agent Collaboration" cards from API data.
- * No-op when the section is not on the current page or when `pairs` is empty —
- * in that case the static placeholders defined in xp.html remain visible.
+ * Shows an empty state when `pairs` is empty or missing.
  * @param {object[]} pairs - Pair session records.
  * @returns {void}
  */
 function renderPairs(pairs) {
   const list = document.getElementById("pair-list");
-  if (!list || !Array.isArray(pairs) || pairs.length === 0) return;
+  if (!list) return;
+
+  if (!Array.isArray(pairs) || pairs.length === 0) {
+    list.innerHTML = `<p class="task-empty">No pair sessions yet.</p>`;
+    return;
+  }
 
   list.innerHTML = pairs
     .map((p) => {
@@ -343,18 +375,13 @@ function renderPairs(pairs) {
  * @returns {Promise<object|null>} The dashboard payload, or null on failure.
  */
 async function fetchDashboard() {
-  // TODO: swap back to real API when deploying
-  // try {
-  //   const res = await fetch(`/api/projects/${PROJECT_ID}/dashboard`);
-  //   if (!res.ok) return null;
-  //   return res.json();
-  // } catch {
-  //   return null;
-  // }
-  return {
-    checkins: { entries: mockCheckins },
-    open_blockers: [],
-  };
+  try {
+    const res = await fetch(`/api/projects/${PROJECT_ID}/dashboard`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -578,6 +605,9 @@ async function init() {
   }
   if (document.getElementById("blocker-banner")) {
     await loadBlockers();
+  }
+  if (document.getElementById("pair-list")) {
+    renderPairs([]);
   }
 }
 
