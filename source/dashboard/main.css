@@ -10,7 +10,6 @@
 /* ── Variables ─────────────────────────────────────── */
 :root {
   --sidebar-width: 220px;
-  --topbar-height: 52px;
 
   /* Legacy aliases — points to theme.css tokens so older class names still resolve */
   --color-surface: var(--color-bg-subtle);
@@ -213,22 +212,6 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.topbar {
-  height: var(--topbar-height);
-  border-bottom: 1px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--space-lg);
-  flex-shrink: 0;
-}
-
-.topbar-title {
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
 }
 
 .content-area {
