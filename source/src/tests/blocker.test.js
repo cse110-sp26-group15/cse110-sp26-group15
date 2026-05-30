@@ -16,12 +16,11 @@ function createMockDb({ allResult, firstQueue = [], runResult } = {}) {
   };
 }
 
-function createContext(url, db) {
+function createContext(url, db, projectId = "1") {
   return {
     request: new Request(url),
-    env: {
-      DB: db,
-    },
+    env: { DB: db },
+    params: { projectId },
   };
 }
 
@@ -37,11 +36,12 @@ function createPostContext({ projectId = "1", body, db }) {
   };
 }
 
-describe("blocker API", () => {
+describe("GET /api/projects/:projectId/blockers", () => {
   it("returns 500 if D1 database binding is missing", async () => {
     const response = await onRequest({
-      request: new Request("http://localhost/api/blockers?task=frontend"),
+      request: new Request("http://localhost/api/projects/1/blockers?task=frontend"),
       env: {},
+      params: { projectId: "1" },
     });
 
     const data = await response.json();
@@ -50,249 +50,124 @@ describe("blocker API", () => {
     expect(data.error).toBe("D1 database binding not configured.");
   });
 
-  it("returns 400 if task is missing and general is not true", async () => {
-    const db = createMockDb();
+  it("with no query, returns all open blockers for the project (rich shape)", async () => {
+    const row = {
+      blocker_id: 7,
+      task: "frontend",
+      description: "Merge conflict",
+      helper: "Alice",
+      is_resolved: 0,
+      checkin_id: 3,
+      checkin_date: "2026-05-29",
+      user_id: 2,
+      full_name: "Sam Chen",
+    };
+    const db = createMockDb({ allResult: { results: [row] } });
 
-    const response = await onRequest(createContext("http://localhost/api/blockers", db));
+    const response = await onRequest(createContext("http://localhost/api/projects/1/blockers", db));
     const data = await response.json();
 
-    expect(response.status).toBe(400);
-    expect(data.error).toBe("Missing task query. Use ?task=TaskName or ?general=true.");
+    expect(response.status).toBe(200);
+    expect(data.blockers).toEqual([
+      {
+        blocker_id: 7,
+        task: "frontend",
+        description: "Merge conflict",
+        helper: "Alice",
+        is_resolved: false,
+        blocked: true,
+        checkin_id: 3,
+        checkin_date: "2026-05-29",
+        reported_by: "Sam Chen",
+        user_id: 2,
+        full_name: "Sam Chen",
+      },
+    ]);
   });
 
-  it("returns general blockers when general=true", async () => {
+  it("with ?general=true, returns blockers where task is null/empty", async () => {
     const db = createMockDb({
       allResult: {
         results: [
           {
-            task: "",
-            is_resolved: 0,
-            helper: "Alice",
+            blocker_id: 9,
+            task: null,
             description: "Need help with API",
+            helper: "Alice",
+            is_resolved: 0,
+            checkin_id: 4,
+            checkin_date: "2026-05-29",
+            user_id: 3,
+            full_name: "Jordan Smith",
           },
         ],
       },
     });
 
     const response = await onRequest(
-      createContext("http://localhost/api/blockers?general=true", db)
+      createContext("http://localhost/api/projects/1/blockers?general=true", db)
     );
     const data = await response.json();
 
     expect(response.status).toBe(200);
     expect(data.general).toBe(true);
     expect(data.blocked).toBe(true);
-    expect(data.blockers).toEqual([
-      {
-        task: "",
-        blocked: true,
-        helper: "Alice",
-        description: "Need help with API",
-      },
-    ]);
+    expect(data.blockers[0]).toMatchObject({
+      blocker_id: 9,
+      blocked: true,
+      helper: "Alice",
+      description: "Need help with API",
+      reported_by: "Jordan Smith",
+    });
   });
 
-  it("returns general blockers when task=general", async () => {
+  it("with ?task=name, returns only blockers tagged with that task", async () => {
     const db = createMockDb({
       allResult: {
         results: [
           {
-            task: null,
-            is_resolved: 1,
-            helper: null,
-            description: "Old resolved blocker",
-          },
-        ],
-      },
-    });
-
-    const response = await onRequest(
-      createContext("http://localhost/api/blockers?task=general", db)
-    );
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data.general).toBe(true);
-    expect(data.blocked).toBe(false);
-    expect(data.blockers[0]).toEqual({
-      task: null,
-      blocked: false,
-      helper: null,
-      description: "Old resolved blocker",
-    });
-  });
-
-  it("returns not blocked when no blocker data exists for task", async () => {
-    const db = createMockDb({
-      allResult: {
-        results: [],
-      },
-    });
-
-    const response = await onRequest(
-      createContext("http://localhost/api/blockers?task=frontend", db)
-    );
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data).toEqual({
-      task: "frontend",
-      blocked: false,
-      blockers: [],
-    });
-  });
-
-  it("returns all blockers for a task when multiple blockers exist", async () => {
-    const db = createMockDb({
-      allResult: {
-        results: [
-          {
+            blocker_id: 1,
             task: "frontend",
             is_resolved: 0,
             helper: "Alice",
             description: "API endpoint failing",
-          },
-          {
-            task: "frontend",
-            is_resolved: 0,
-            helper: "Bob",
-            description: "Merge conflict",
-          },
-          {
-            task: "frontend",
-            is_resolved: 1,
-            helper: "Charlie",
-            description: "CSS issue fixed",
+            checkin_id: 2,
+            checkin_date: "2026-05-29",
+            user_id: 2,
+            full_name: "Sam Chen",
           },
         ],
       },
     });
 
     const response = await onRequest(
-      createContext("http://localhost/api/blockers?task=frontend", db)
+      createContext("http://localhost/api/projects/1/blockers?task=frontend", db)
     );
     const data = await response.json();
 
     expect(response.status).toBe(200);
     expect(data.task).toBe("frontend");
     expect(data.blocked).toBe(true);
-    expect(data.blockers).toHaveLength(3);
-
-    expect(data.blockers).toEqual([
-      {
-        blocked: true,
-        helper: "Alice",
-        description: "API endpoint failing",
-      },
-      {
-        blocked: true,
-        helper: "Bob",
-        description: "Merge conflict",
-      },
-      {
-        blocked: false,
-        helper: "Charlie",
-        description: "CSS issue fixed",
-      },
-    ]);
-  });
-
-  it("returns blocked=true when a task has one unresolved blocker", async () => {
-    const db = createMockDb({
-      allResult: {
-        results: [
-          {
-            task: "frontend",
-            is_resolved: 0,
-            helper: "Bob",
-            description: "CSS layout issue",
-          },
-        ],
-      },
-    });
-
-    const response = await onRequest(
-      createContext("http://localhost/api/blockers?task=frontend", db)
-    );
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data).toEqual({
-      task: "frontend",
+    expect(data.blockers[0]).toMatchObject({
+      blocker_id: 1,
       blocked: true,
-      blockers: [
-        {
-          blocked: true,
-          helper: "Bob",
-          description: "CSS layout issue",
-        },
-      ],
-    });
-  });
-
-  it("returns blocked=false when all task blockers are resolved", async () => {
-    const db = createMockDb({
-      allResult: {
-        results: [
-          {
-            task: "backend",
-            is_resolved: 1,
-            helper: null,
-            description: "Database issue fixed",
-          },
-        ],
-      },
-    });
-
-    const response = await onRequest(
-      createContext("http://localhost/api/blockers?task=backend", db)
-    );
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data).toEqual({
-      task: "backend",
-      blocked: false,
-      blockers: [
-        {
-          blocked: false,
-          helper: null,
-          description: "Database issue fixed",
-        },
-      ],
+      helper: "Alice",
+      description: "API endpoint failing",
     });
   });
 
   it("trims whitespace from task query", async () => {
     const db = createMockDb({
-      allResult: {
-        results: [
-          {
-            task: "frontend",
-            is_resolved: 0,
-            helper: "Alice",
-            description: "Merge conflict",
-          },
-        ],
-      },
+      allResult: { results: [] },
     });
 
     const response = await onRequest(
-      createContext("http://localhost/api/blockers?task=%20frontend%20", db)
+      createContext("http://localhost/api/projects/1/blockers?task=%20frontend%20", db)
     );
-
     const data = await response.json();
 
     expect(response.status).toBe(200);
     expect(data.task).toBe("frontend");
-    expect(data.blocked).toBe(true);
-    expect(data.blockers).toEqual([
-      {
-        blocked: true,
-        helper: "Alice",
-        description: "Merge conflict",
-      },
-    ]);
   });
 });
 

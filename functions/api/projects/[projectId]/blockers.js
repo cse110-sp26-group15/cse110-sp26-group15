@@ -1,95 +1,113 @@
+/**
+ * Cloudflare Pages function: GET /api/projects/:projectId/blockers
+ *
+ * Returns blockers scoped to a single project. All queries join through
+ * `checkins` so the response always carries the reporter's name and the
+ * check-in date — what the dashboards need to render the blocker list.
+ *
+ * Query modes:
+ *   (no query)     → all *open* blockers for this project.
+ *   ?general=true  → blockers for this project where `task` is null/empty.
+ *                    Used by the "General blockers" rail variant.
+ *   ?task=<name>   → blockers tagged with that task name in this project.
+ *
+ * Response shape (all modes):
+ *   {
+ *     blockers: [{ blocker_id, task, blocked, helper, description,
+ *                  reported_by, checkin_id, checkin_date, is_resolved }]
+ *   }
+ *
+ * @param {{ env: { DB?: object }, params: { projectId: string }, request: Request }} context
+ * @returns {Promise<Response>}
+ */
 export async function onRequest(context) {
-  const { request, env } = context;
-  const url = new URL(request.url);
+  const { request, env, params } = context;
+  const { projectId } = params;
 
+  if (!env.DB) {
+    return Response.json({ error: "D1 database binding not configured." }, { status: 500 });
+  }
+
+  const url = new URL(request.url);
   const task = url.searchParams.get("task")?.trim();
   const general = url.searchParams.get("general");
 
-  const db = env.DB;
+  // Shared columns: every mode returns the same row shape so callers
+  // never have to branch on which query they used.
+  const SELECT_COLS = `b.blocker_id, b.task, b.description, b.helper, b.is_resolved,
+                       b.checkin_id, c.checkin_date, u.user_id, u.full_name`;
 
-  if (!db) {
-    return new Response(JSON.stringify({ error: "D1 database binding not configured." }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  const mapRow = (row) => ({
+    blocker_id: row.blocker_id,
+    task: row.task,
+    description: row.description,
+    helper: row.helper || null,
+    is_resolved: Boolean(row.is_resolved),
+    blocked: !row.is_resolved,
+    checkin_id: row.checkin_id,
+    checkin_date: row.checkin_date,
+    reported_by: row.full_name || null,
+    user_id: row.user_id,
+    full_name: row.full_name || null,
+  });
 
-  const shouldQueryGeneral = general === "true" || task === "general" || task === "";
+  try {
+    let results;
 
-  // If the task parameter is "general", empty, or if the general flag is set, return all general blockers
-  if (shouldQueryGeneral) {
-    const result = await db
-      .prepare(
-        `SELECT task, is_resolved, helper, description
-         FROM blockers
-         WHERE task IS NULL OR task = ''
-         ORDER BY blocker_id DESC`
+    if (general === "true" || task === "general" || task === "") {
+      ({ results } = await env.DB.prepare(
+        `SELECT ${SELECT_COLS}
+         FROM blockers b
+         JOIN checkins c ON b.checkin_id = c.checkin_id
+         LEFT JOIN users u ON c.user_id = u.user_id
+         WHERE c.project_id = ? AND (b.task IS NULL OR b.task = '')
+         ORDER BY b.blocker_id DESC`
       )
-      .all();
+        .bind(projectId)
+        .all());
 
-    return new Response(
-      JSON.stringify({
+      return Response.json({
         general: true,
-        blocked: result.results.some((row) => !row.is_resolved),
-        blockers: result.results.map((row) => ({
-          task: row.task,
-          blocked: !row.is_resolved,
-          helper: row.helper || null,
-          description: row.description,
-        })),
-      }),
-      { headers: { "Content-Type": "application/json" } }
-    );
-  }
+        blocked: results.some((row) => !row.is_resolved),
+        blockers: results.map(mapRow),
+      });
+    }
 
-  // If the task doesn't exist, return an error
-  if (!task) {
-    return new Response(
-      JSON.stringify({
-        error: "Missing task query. Use ?task=TaskName or ?general=true.",
-      }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
-  }
+    if (task) {
+      ({ results } = await env.DB.prepare(
+        `SELECT ${SELECT_COLS}
+         FROM blockers b
+         JOIN checkins c ON b.checkin_id = c.checkin_id
+         LEFT JOIN users u ON c.user_id = u.user_id
+         WHERE c.project_id = ? AND b.task = ?
+         ORDER BY b.blocker_id DESC`
+      )
+        .bind(projectId, task)
+        .all());
 
-  const result = await db
-    .prepare(
-      `SELECT task, is_resolved, helper, description
-       FROM blockers
-       WHERE task = ?
-       ORDER BY blocker_id DESC
-       LIMIT 1`
-    )
-    .bind(task)
-    .all();
-
-  // If no blocker data is found for the task, return a response indicating that the task is not blocked
-  if (!result) {
-    return new Response(
-      JSON.stringify({
+      return Response.json({
         task,
-        blocked: false,
-        helper: null,
-        description: null,
-        message: "No blocker data found for this task.",
-      }),
-      { headers: { "Content-Type": "application/json" } }
-    );
-  }
+        blocked: results.some((row) => !row.is_resolved),
+        blockers: results.map(mapRow),
+      });
+    }
 
-  // Return the blocker status for the specified task
-  return new Response(
-    JSON.stringify({
-      task,
-      blocked: result.results.some((row) => !row.is_resolved),
-      blockers: result.results.map((row) => ({
-        blocked: !row.is_resolved,
-        helper: row.helper || null,
-        description: row.description,
-      })),
-    }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+    // Default: every open blocker for this project (what scrum.js wants).
+    ({ results } = await env.DB.prepare(
+      `SELECT ${SELECT_COLS}
+       FROM blockers b
+       JOIN checkins c ON b.checkin_id = c.checkin_id
+       LEFT JOIN users u ON c.user_id = u.user_id
+       WHERE c.project_id = ? AND b.is_resolved = 0
+       ORDER BY b.blocker_id DESC`
+    )
+      .bind(projectId)
+      .all());
+
+    return Response.json({ blockers: results.map(mapRow) });
+  } catch (err) {
+    return Response.json({ error: err.message }, { status: 500 });
+  }
 }
 
 export async function onRequestPost(context) {

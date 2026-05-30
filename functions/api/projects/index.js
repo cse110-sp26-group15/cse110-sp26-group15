@@ -1,6 +1,50 @@
 const VALID_WORKFLOWS = ["scrum", "kanban", "xp"];
 
 /**
+ * Cloudflare Pages function: GET /api/projects
+ *
+ * Lists projects. When `?user_id=N` is supplied, returns only projects
+ * where N is a member (via project_members); otherwise returns every
+ * project. Each row includes `member_count` so callers can render a
+ * picker without a second round-trip.
+ *
+ * @param {{ env: { DB?: object }, request: Request }} context
+ * @returns {Promise<Response>}
+ */
+export async function onRequestGet(context) {
+  const { env, request } = context;
+
+  if (!env.DB) {
+    return Response.json({ error: "D1 database binding not configured." }, { status: 500 });
+  }
+
+  const url = new URL(request.url);
+  const userIdParam = url.searchParams.get("user_id");
+  const userId = userIdParam ? Number(userIdParam) : null;
+
+  try {
+    const query = userId
+      ? `SELECT p.project_id, p.name, p.description, p.workflow, p.created_by, p.created_at,
+                (SELECT COUNT(*) FROM project_members pm2 WHERE pm2.project_id = p.project_id) AS member_count
+         FROM projects p
+         JOIN project_members pm ON pm.project_id = p.project_id
+         WHERE pm.user_id = ?
+         ORDER BY p.created_at DESC`
+      : `SELECT p.project_id, p.name, p.description, p.workflow, p.created_by, p.created_at,
+                (SELECT COUNT(*) FROM project_members pm2 WHERE pm2.project_id = p.project_id) AS member_count
+         FROM projects p
+         ORDER BY p.created_at DESC`;
+
+    const stmt = userId ? env.DB.prepare(query).bind(userId) : env.DB.prepare(query);
+    const { results } = await stmt.all();
+
+    return Response.json({ projects: results });
+  } catch (err) {
+    return Response.json({ error: err.message }, { status: 500 });
+  }
+}
+
+/**
  * Returns true when `email` matches the basic local@domain.tld shape.
  * @param {string} email
  * @returns {boolean}
