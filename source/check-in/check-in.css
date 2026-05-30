@@ -1,0 +1,248 @@
+/* ============================================================
+   check-in.css — My Check-ins page styles
+   ------------------------------------------------------------
+   Layered on top of (in this order): theme.css, components.css,
+   main.css (app shell), and xp.css (reused .checkin-badge-*
+   pills + the .hidden helper). Only styles unique to this page
+   live here — the form, the two daily-status banners, and the
+   expanded check-in cards. All values come from theme.css
+   tokens so the page tracks light/dark mode automatically.
+   ============================================================ */
+
+/* Constrain the column width so long textareas stay readable,
+   matching the .xp-dashboard max-width feel. */
+.checkin-page {
+  max-width: 760px;
+  overflow-y: auto;
+}
+
+/* ── Daily status banners ────────────────────────────
+   Two mutually-exclusive banners: one prompts the user to check
+   in, the other confirms today's check-in is done. check-in.js
+   toggles .hidden on each. */
+.checkin-prompt,
+.checkin-done {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid;
+  border-radius: var(--radius-lg);
+}
+
+/* Pending state — uses the primary/brand tint as a gentle nudge. */
+.checkin-prompt {
+  background: var(--color-primary-muted);
+  border-color: var(--color-primary);
+  color: var(--color-text-on-primary-muted);
+}
+
+/* Completed state — uses the success palette as positive feedback. */
+.checkin-done {
+  background: var(--color-success-muted);
+  border-color: var(--color-success);
+  color: var(--color-text-on-success-muted);
+}
+
+.checkin-prompt__icon,
+.checkin-done__icon {
+  font-size: var(--text-base);
+  flex-shrink: 0;
+}
+
+.checkin-prompt__text,
+.checkin-done__text {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+}
+
+/* ── Check-in form ───────────────────────────────────
+   The .input class (from components.css) supplies the field
+   chassis; these rules only handle layout + the textarea sizing
+   that .input does not cover. */
+.checkin-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.checkin-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.checkin-form__label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.checkin-form__optional {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-muted);
+}
+
+/* Allow vertical resize only so the layout width stays stable. */
+.checkin-form__textarea {
+  resize: vertical;
+  min-height: 2.5rem;
+  font-family: var(--font-sans);
+  line-height: var(--line-height-normal);
+}
+
+.checkin-form__error {
+  font-size: var(--text-sm);
+  color: var(--color-text-on-error-muted);
+  background: var(--color-error-muted);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+  margin: 0;
+}
+
+.checkin-form__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── Blocker picker ──────────────────────────────────
+   A toggle button (styled with the shared .btn--outline component)
+   reveals a small panel of blocker fields. The button sits left-aligned
+   so it reads as an inline "add" action rather than a full-width control. */
+.checkin-form__blocker-toggle {
+  align-self: flex-start;
+}
+
+/* The revealed panel groups the blocker fields with a subtle inset so they
+   read as a sub-section of the form. */
+.checkin-form__blocker-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+  padding: var(--space-sm);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* ── Check-in history / cards ────────────────────────
+   The history section is visually separated from the form above. */
+.checkin-history {
+  margin-top: var(--space-md);
+}
+
+.checkin-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* A single submitted check-in. Shows every field, the completion
+   date, and a delete action. */
+.checkin-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Top row: author + mood badge on the left, date on the right. */
+.checkin-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.checkin-card__avatar {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.checkin-card__author {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+/* Neutral workload chip — distinct from the removed status badge. */
+.checkin-card__workload {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: var(--space-2xs) var(--space-sm);
+  white-space: nowrap;
+}
+
+/* Pushes the date to the far right of the header row. */
+.checkin-card__date {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* One labelled field block inside the card. */
+.checkin-card__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.checkin-card__label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.checkin-card__text {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  line-height: var(--line-height-normal);
+  white-space: pre-wrap; /* preserve user line breaks */
+  word-break: break-word;
+}
+
+/* Compact blocker line — tinted with the error palette so it stands out,
+   but kept to a single wrapping line so it takes minimal vertical space.
+   Segments (task / why / who-can-help) are joined inline by check-in.js. */
+.checkin-card__blocker {
+  margin: 0;
+  padding: var(--space-2xs) var(--space-xs);
+  font-size: var(--text-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-on-error-muted);
+  background: var(--color-error-muted);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-sm);
+  word-break: break-word;
+}
+
+.checkin-card__blocker-key {
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Footer holds the delete button, right-aligned. */
+.checkin-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-sm);
+}

@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SitRep — My Check-ins</title>
+
+    <!--
+      Stylesheets are layered in cascade order (mirrors the dashboard pages):
+        1. theme.css      — design tokens (colors, spacing, type)
+        2. components.css — reusable .btn / .input / .nav component classes
+        3. main.css       — app shell (sidebar, topbar, content area)
+        4. xp.css         — reused .checkin-badge-* status pills + .hidden helper
+        5. check-in.css   — styles specific to this page
+      theme.css MUST come first so its tokens cascade into the rest.
+    -->
+    <link rel="stylesheet" href="../shared/theme.css" />
+    <link rel="stylesheet" href="../shared/components.css" />
+    <link rel="stylesheet" href="../dashboard/main.css" />
+    <link rel="stylesheet" href="../dashboard/xp.css" />
+    <link rel="stylesheet" href="check-in.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- ── Sidebar ───────────────────────────────────────
+           Mirrors the dashboard sidebar so the app feels continuous.
+           Nav items link out to the real pages that exist, keeping this
+           page connected to the rest of the app. "My Check-ins" is the
+           current page, so it carries the .active state. -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <a href="../project-setup/index.html" class="sidebar-logo">
+            <div class="logo-mark">S</div>
+            <div class="logo-text">SitRep</div>
+          </a>
+        </div>
+
+        <nav class="sidebar-nav">
+          <!-- scrum.html is the project-setup default dashboard target -->
+          <a href="../dashboard/scrum.html" class="nav-item">Dashboard</a>
+          <a href="check-in.html" class="nav-item active">My Check-ins</a>
+          <a href="#" class="nav-item">Team</a>
+          <a href="#" class="nav-item">Weekly Report</a>
+          <a href="#" class="nav-item">Settings</a>
+        </nav>
+
+        <!-- The username row + avatar deliberately reuse the SAME shared
+             classes the dashboards use (.user-row / .avatar / .user-name,
+             defined in dashboard/main.css). Because this page links main.css,
+             any restyle of that shared username icon flows here automatically
+             — keep these class names identical to the dashboards so they stay
+             in sync. (components.css has no avatar component to bind to today;
+             if one is added later, switch all sidebars together.) -->
+        <div class="sidebar-footer">
+          <a href="../login/index.html" class="user-row">
+            <div class="avatar" id="user-avatar">U</div>
+            <div class="user-info">
+              <p class="user-name" id="user-name">Username</p>
+              <p class="user-role">Sign out</p>
+            </div>
+          </a>
+        </div>
+      </aside>
+
+      <!-- ── Main content ──────────────────────────────────── -->
+      <div class="main-content">
+        <header class="topbar">
+          <span class="topbar-title">My Check-ins</span>
+        </header>
+
+        <main class="content-area" id="page-content">
+          <div class="page-view checkin-page">
+            <header class="section-header">
+              <h2 class="section-title">Daily Check-in</h2>
+            </header>
+
+            <!-- ── Daily status banner ──────────────────────────
+                 Exactly one of the two banners below is visible at a time.
+                 check-in.js toggles them based on whether a check-in already
+                 exists for today. -->
+
+            <!-- Shown when today's check-in is still pending -->
+            <section class="checkin-prompt" id="checkin-prompt" role="status" aria-live="polite">
+              <p class="checkin-prompt__text">
+                You haven't completed today's check-in yet. Fill out the form below to log it.
+              </p>
+            </section>
+
+            <!-- Shown after today's check-in has been submitted -->
+            <section class="checkin-done hidden" id="checkin-done" role="status" aria-live="polite">
+              <span class="checkin-done__icon" aria-hidden="true">✓</span>
+              <p class="checkin-done__text">Today's check-in has been completed.</p>
+            </section>
+
+            <!-- ── Check-in form ────────────────────────────────
+                 Hidden once today's check-in exists (see check-in.js). The
+                 stand-up structure: what I did, what I need to do, mood /
+                 workload, and any blockers. -->
+            <form class="checkin-form" id="checkin-form" novalidate>
+              <div class="checkin-form__field">
+                <label class="checkin-form__label" for="field-work-done">What I did</label>
+                <textarea
+                  id="field-work-done"
+                  class="input checkin-form__textarea"
+                  rows="3"
+                  placeholder="What did you accomplish since your last check-in?"
+                  required
+                ></textarea>
+              </div>
+
+              <div class="checkin-form__field">
+                <label class="checkin-form__label" for="field-work-planned"
+                  >What I need to do</label
+                >
+                <textarea
+                  id="field-work-planned"
+                  class="input checkin-form__textarea"
+                  rows="3"
+                  placeholder="What are you planning to work on next?"
+                  required
+                ></textarea>
+              </div>
+
+              <div class="checkin-form__field">
+                <label class="checkin-form__label" for="field-workload">Workload</label>
+                <select id="field-workload" class="input input--select" required>
+                  <option value="" selected disabled>Select your workload</option>
+                  <option value="very-light">Very Light</option>
+                  <option value="light">Light</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="heavy">Heavy</option>
+                  <option value="overloaded">Overloaded</option>
+                </select>
+              </div>
+
+              <div class="checkin-form__field">
+                <span class="checkin-form__label">
+                  Blocker <span class="checkin-form__optional">(optional)</span>
+                </span>
+
+                <!-- Toggle button: reveals the blocker picker below. While it
+                     stays closed the check-in records no blocker. The task and
+                     "who can help" lists are filled from mock-data.js in
+                     check-in.js. -->
+                <button
+                  type="button"
+                  class="btn btn--outline checkin-form__blocker-toggle"
+                  id="blocker-toggle-btn"
+                  aria-expanded="false"
+                  aria-controls="blocker-panel"
+                >
+                  + I'm blocked on a task
+                </button>
+
+                <div class="checkin-form__blocker-panel hidden" id="blocker-panel">
+                  <div class="checkin-form__field">
+                    <label class="checkin-form__label" for="field-blocker-task">Blocked on</label>
+                    <!-- "General" + every project task; populated in check-in.js -->
+                    <select id="field-blocker-task" class="input input--select"></select>
+                  </div>
+
+                  <div class="checkin-form__field">
+                    <label class="checkin-form__label" for="field-blocker-why">
+                      Why are you blocked?
+                    </label>
+                    <textarea
+                      id="field-blocker-why"
+                      class="input checkin-form__textarea"
+                      rows="2"
+                      placeholder="Describe what's blocking you"
+                    ></textarea>
+                  </div>
+
+                  <div class="checkin-form__field">
+                    <label class="checkin-form__label" for="field-blocker-helper"
+                      >Who can help?</label
+                    >
+                    <!-- Project members; populated in check-in.js -->
+                    <select id="field-blocker-helper" class="input input--select"></select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Inline validation message, populated by check-in.js -->
+              <p class="checkin-form__error hidden" id="checkin-form-error" role="alert"></p>
+
+              <div class="checkin-form__actions">
+                <button type="submit" class="btn btn--primary" id="submit-checkin-btn">
+                  Submit check-in
+                </button>
+              </div>
+            </form>
+
+            <!-- ── Submitted check-ins ──────────────────────────
+                 Each submitted check-in is rendered here as a card with all
+                 fields, the completion date, and a delete button. -->
+            <section class="checkin-history">
+              <header class="section-header">
+                <h2 class="section-title">Past check-ins</h2>
+              </header>
+              <div id="checkin-list" class="checkin-cards">
+                <p class="task-empty">No check-ins yet.</p>
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script type="module" src="check-in.js"></script>
+  </body>
+</html>
