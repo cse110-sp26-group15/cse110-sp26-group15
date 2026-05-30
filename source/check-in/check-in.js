@@ -2,49 +2,37 @@
 // Drives the standalone agile stand-up check-in page (check-in.html).
 //
 // Responsibilities:
-//   • Keep a per-project list of daily check-ins (what I did / what I need
-//     to do / workload / an optional blocker).
-//   • Detect whether a check-in already exists for *today* and toggle
-//     between a "please check in" prompt and a "today's check-in is done"
-//     message accordingly.
-//   • Handle form submission, then render each check-in as a card showing
-//     every field, the completion date, and a delete button.
+//   • List today's + recent check-ins from `GET /api/projects/:id/checkins`.
+//   • Detect whether the current user has a check-in dated today and toggle
+//     between the "please check in" prompt and the "today's check-in is
+//     done" confirmation accordingly.
+//   • Submit the form via `POST /api/projects/:id/checkins`, then (if the
+//     blocker panel is open) `POST /api/projects/:id/blockers` to attach
+//     the blocker to the just-created check-in.
+//   • Wire the per-card Delete button to `DELETE /api/checkins/:id`.
 //
-// Persistence mirrors the offline-fallback pattern in dashboard/kanban.js:
-// check-ins are stored in localStorage under a project-namespaced key so
-// the page is fully functional without a running backend. The matching
-// real API is POST/GET `/api/projects/:projectId/checkins` (see
-// functions/api/projects/[projectId]/checkins.js) — swap readCheckins /
-// writeCheckins for fetch() calls there when auth + project context land.
+// Every fetch goes through `apiFetch` (10s timeout, throws ApiError on
+// non-2xx) so a hung backend can't leave the page on a stale spinner — the
+// catch block paints a visible inline error instead.
 //
-// The blocker pickers reflect the real project: the "Blocked on" list comes
-// from tasks actually created in the dashboard (the same /api/projects/:id/
-// tasks endpoint the dashboards use, plus their offline localStorage stores),
-// and "Who can help?" lists the project's assigned members.
+// The blocker pickers reflect the real project: the "Blocked on" list
+// comes from `GET /api/projects/:id/tasks` and "Who can help?" from
+// `GET /api/projects/:id/members`.
+
+import { apiFetch, ApiError, getCurrentUser } from "../shared/utils.js";
 
 // ── Constants ────────────────────────────────────────
-// Hard-coded for now; will switch to the logged-in project + user once
-// auth context is plumbed through (same TODO as scrum.js / kanban.js).
+// Hard-coded for now; will switch to the logged-in project once auth
+// context is plumbed through (same TODO as scrum.js / kanban.js).
 export const PROJECT_ID = 1;
-const CURRENT_USER = { user_id: 1, full_name: "You" };
-
-// localStorage key for the check-in store, namespaced by project so
-// multi-project support is straightforward later.
-export const STORAGE_KEY = `sitrep.checkins.project-${PROJECT_ID}`;
-
-// Where the dashboards persist tasks created while the API is unreachable
-// (see scrum.js / kanban.js). Reading these lets offline-created tasks
-// still appear in the blocker picker.
-export const LOCAL_TASK_KEYS = [
-  `sitrep.scrum.tasks.project-${PROJECT_ID}`,
-  `sitrep.kanban.tasks.project-${PROJECT_ID}`,
-];
 
 // Non-task-specific blocker option shown first in the "Blocked on" picker.
 export const GENERAL_BLOCKER = "General";
 
 // Maps each workload value (the <option> values in check-in.html) to the
-// human label shown on the check-in card.
+// human label shown on the check-in card. Workload is a UI-only field —
+// it isn't part of the API check-in schema, so we stash it inside the
+// `status_mood` column with a `workload:` prefix when posting.
 export const WORKLOAD_LABELS = {
   "very-light": "Very Light",
   light: "Light",
@@ -68,13 +56,16 @@ let blockerTaskSelect;
 let blockerWhyInput;
 let blockerHelperSelect;
 
+// In-memory cache of the most recently-fetched check-ins, so the per-card
+// delete handler can find the row it's removing without a re-fetch.
+let currentCheckins = [];
+
 // ── Pure helpers ─────────────────────────────────────
 
 /**
  * Escape user-controlled strings before inserting into innerHTML.
- * (Mirrors the helper used in dashboard/main.js + kanban.js.)
- * @param {unknown} s - Value to escape; coerced to string ("" when nullish).
- * @returns {string} HTML-safe text.
+ * @param {unknown} s
+ * @returns {string}
  */
 export function escapeHtml(s) {
   return String(s ?? "").replace(
@@ -85,8 +76,8 @@ export function escapeHtml(s) {
 
 /**
  * Returns up to two uppercase initials for a display name.
- * @param {string} name - Display name (e.g. "Wayne Dyer").
- * @returns {string} The initials, or "?" when the name is missing.
+ * @param {string} name
+ * @returns {string}
  */
 export function initialsFor(name) {
   if (!name) return "?";
@@ -95,10 +86,9 @@ export function initialsFor(name) {
 }
 
 /**
- * Formats an ISO date string as a readable completion date, e.g.
- * "May 28, 2026 · 2:14 PM".
- * @param {string} dateStr - ISO date string parseable by `Date`.
- * @returns {string} Formatted date, or "" when input is missing/invalid.
+ * Formats an ISO date string as a readable completion date.
+ * @param {string} dateStr
+ * @returns {string}
  */
 export function formatDate(dateStr) {
   const d = new Date(dateStr);
@@ -123,127 +113,78 @@ export function isSameDay(a, b) {
 }
 
 /**
- * True when the list already contains a check-in dated today.
+ * True when the list already contains a check-in dated today (by the
+ * current user when `userId` is supplied — otherwise any author).
  * @param {object[]} checkins
+ * @param {number} [userId]
  * @returns {boolean}
  */
-export function hasCheckinToday(checkins) {
+export function hasCheckinToday(checkins, userId) {
   const today = new Date();
-  return checkins.some((c) => isSameDay(new Date(c.checkin_date), today));
+  return checkins.some((c) => {
+    if (!isSameDay(new Date(c.checkin_date), today)) return false;
+    if (userId == null) return true;
+    return Number(c.user_id ?? c.user?.user_id) === Number(userId);
+  });
 }
 
-// ── Persistence (localStorage store) ─────────────────
+// ── API calls ────────────────────────────────────────
 
-/**
- * Reads the stored check-ins, newest first. Tolerates missing/corrupt
- * storage by returning an empty array.
- * @returns {object[]}
- */
-function readCheckins() {
-  if (typeof localStorage === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) ?? []) : [];
-  } catch {
-    return [];
-  }
+async function fetchCheckins() {
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/checkins`);
+  return data.checkins ?? [];
 }
 
-/**
- * Persists the check-in list. Swallows quota/disabled-storage errors so
- * the UI stays responsive.
- * @param {object[]} checkins
- */
-function writeCheckins(checkins) {
-  if (typeof localStorage === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(checkins));
-  } catch {
-    /* quota / disabled storage — swallow silently */
-  }
+async function fetchTasks() {
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`);
+  return data.tasks ?? [];
 }
 
-// ── Blocker picker data ──────────────────────────────
-
-/**
- * Reads a JSON array out of localStorage, tolerating missing/corrupt data.
- * @param {string} key
- * @returns {object[]}
- */
-export function readLocalArray(key) {
-  if (typeof localStorage === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(key);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+async function fetchMembers() {
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/members`);
+  return data.members ?? [];
 }
 
-/**
- * Collects the tasks created in the dashboard. Tries the real tasks API
- * first (same endpoint scrum.js / kanban.js use), then merges in any tasks
- * the dashboards persisted locally while offline. Returns [] when none
- * exist or the data can't be reached.
- * @returns {Promise<object[]>}
- */
-async function fetchDashboardTasks() {
-  let tasks = [];
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`);
-    if (res.ok) {
-      const data = await res.json();
-      tasks = Array.isArray(data.tasks) ? data.tasks : [];
-    }
-  } catch {
-    /* API unreachable — fall back to the dashboards' local stores */
-  }
-  for (const key of LOCAL_TASK_KEYS) {
-    tasks = tasks.concat(readLocalArray(key));
-  }
-  return tasks;
+async function postCheckin(payload) {
+  const { checkin } = await apiFetch(`/api/projects/${PROJECT_ID}/checkins`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return checkin;
 }
 
-/**
- * Collects the people assigned to the project. Tries the members API first,
- * then falls back to deriving members from task assignees (mirrors the
- * deriveMembers pattern in scrum.js). Returns [] when no one is assigned.
- * @param {object[]} tasks - Tasks already fetched, used for the fallback.
- * @returns {Promise<{user_id: number, full_name: string}[]>}
- */
-async function fetchProjectMembers(tasks) {
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/members`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data.members) && data.members.length) return data.members;
-    }
-  } catch {
-    /* API unreachable — derive from task assignees below */
-  }
-  const byId = new Map();
-  for (const t of tasks) {
-    if (t.user_id && t.full_name) byId.set(t.user_id, t.full_name);
-  }
-  return [...byId.entries()].map(([user_id, full_name]) => ({ user_id, full_name }));
+async function postBlocker(payload) {
+  const { blocker } = await apiFetch(`/api/projects/${PROJECT_ID}/blockers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return blocker;
+}
+
+async function apiDeleteCheckin(checkinId) {
+  return apiFetch(`/api/checkins/${checkinId}`, { method: "DELETE" });
 }
 
 // ── Blocker picker setup ─────────────────────────────
 
 /**
  * Fills the "Blocked on" select with the General option plus the title of
- * every task created in the dashboard, and the "Who can help?" select with
- * the project's assigned members (excluding the current user). When there
- * are no tasks the picker shows only "General"; when no one else is
- * assigned the helper picker shows only "Not sure / anyone".
- * @returns {Promise<void>}
+ * every task in the project, and the "Who can help?" select with the
+ * project's members (excluding the current user). On API failure both
+ * pickers degrade to just "General" / "anyone" so the form is still
+ * submittable.
  */
-async function populateBlockerOptions() {
-  const tasks = await fetchDashboardTasks();
-  const members = await fetchProjectMembers(tasks);
+async function populateBlockerOptions(currentUserId) {
+  let tasks = [];
+  let members = [];
+  try {
+    [tasks, members] = await Promise.all([fetchTasks(), fetchMembers()]);
+  } catch (err) {
+    console.warn("[check-in] failed to populate blocker pickers", err);
+  }
 
-  // "Blocked on" — General first (default), then each unique task title.
   const titles = [...new Set(tasks.map((t) => t.title).filter(Boolean))];
   const taskLabels = [GENERAL_BLOCKER, ...titles];
   blockerTaskSelect.innerHTML = taskLabels
@@ -253,8 +194,7 @@ async function populateBlockerOptions() {
     )
     .join("");
 
-  // "Who can help?" — an unsure default, then everyone else on the project.
-  const others = members.filter((m) => Number(m.user_id) !== CURRENT_USER.user_id);
+  const others = members.filter((m) => Number(m.user_id) !== Number(currentUserId));
   const helperOptions = [
     `<option value="" selected>Not sure / anyone</option>`,
     ...others.map(
@@ -264,19 +204,10 @@ async function populateBlockerOptions() {
   blockerHelperSelect.innerHTML = helperOptions.join("");
 }
 
-/**
- * Whether the blocker panel is currently revealed.
- * @returns {boolean}
- */
 function isBlockerOpen() {
   return !blockerPanel.classList.contains("hidden");
 }
 
-/**
- * Shows/hides the blocker panel and keeps the toggle button's label +
- * aria-expanded state in sync.
- * @param {boolean} open
- */
 function setBlockerOpen(open) {
   blockerPanel.classList.toggle("hidden", !open);
   blockerToggle.setAttribute("aria-expanded", String(open));
@@ -284,9 +215,9 @@ function setBlockerOpen(open) {
 }
 
 /**
- * Reads the blocker fields into a blocker object, or null when the panel is
- * closed. Shape matches the blocker-card component
- * ({ task, description, helper }) so a future API sync can reuse it.
+ * Reads the blocker fields into a blocker object, or null when the panel
+ * is closed. Shape matches the blocker-card component so any rail render
+ * downstream can consume it directly.
  * @returns {{task: string, description: string, helper: string}|null}
  */
 function readBlocker() {
@@ -300,34 +231,34 @@ function readBlocker() {
 
 // ── Rendering ────────────────────────────────────────
 
-/**
- * Toggles the prompt vs. completed banner and the form's visibility based
- * on whether today's check-in already exists.
- * @param {object[]} checkins
- */
-function renderDailyStatus(checkins) {
-  const done = hasCheckinToday(checkins);
-  // When today's check-in is done: hide the prompt + form, show the
-  // confirmation. Otherwise show the prompt + form, hide the confirmation.
+function renderDailyStatus(checkins, userId) {
+  const done = hasCheckinToday(checkins, userId);
   promptBanner.classList.toggle("hidden", done);
   form.classList.toggle("hidden", done);
   doneBanner.classList.toggle("hidden", !done);
 }
 
 /**
- * Builds the markup for a check-in's blocker, or "" when there is none.
- * Kept to a single compact line: the blocked-on task, then the reason and
- * who-can-help appended inline (each shown only when it has a value).
+ * Pulls a workload value out of a status_mood string. The API has no
+ * `workload` column so we encode it as `workload:<value> · <mood>` when
+ * posting; this reverses that for display.
+ * @param {string|null} statusMood
+ * @returns {string} The human workload label, or "—" when none is encoded.
+ */
+function workloadFromStatusMood(statusMood) {
+  const match = String(statusMood ?? "").match(/workload:([a-z-]+)/i);
+  if (!match) return "—";
+  return WORKLOAD_LABELS[match[1]] ?? match[1];
+}
+
+/**
+ * Builds the markup for a check-in's blocker block, or "" when there is none.
  * @param {{task?: string, description?: string, helper?: string}|null} blocker
  * @returns {string}
  */
 export function buildBlockerBlock(blocker) {
-  // Defensive: only render structured blocker objects (ignores any legacy
-  // free-text blocker left in storage by an earlier version of the page).
   if (!blocker || typeof blocker !== "object") return "";
 
-  // Build the inline segments, dropping any that are empty, then join them
-  // with a middot so the whole blocker reads as one tight line.
   const segments = [
     `<span class="checkin-card__blocker-key">Blocked on:</span> ${escapeHtml(blocker.task || GENERAL_BLOCKER)}`,
   ];
@@ -341,20 +272,13 @@ export function buildBlockerBlock(blocker) {
   return `<p class="checkin-card__blocker">${segments.join(" · ")}</p>`;
 }
 
-/**
- * Builds the DOM for a single check-in card: header (author, workload, date),
- * the "Accomplished" and "To-do" fields, an optional blocker block, and a
- * delete button.
- * @param {object} checkin
- * @returns {HTMLElement} A detached <article> ready to append.
- */
 function buildCheckinCard(checkin) {
   const card = document.createElement("article");
   card.className = "checkin-card";
   card.dataset.checkinId = checkin.checkin_id;
 
-  const name = checkin.user?.full_name ?? "Unknown";
-  const workloadLabel = WORKLOAD_LABELS[checkin.workload] ?? checkin.workload ?? "—";
+  const name = checkin.user?.full_name ?? checkin.full_name ?? "Unknown";
+  const workloadLabel = workloadFromStatusMood(checkin.status_mood);
 
   card.innerHTML = `
     <div class="checkin-card__header">
@@ -366,12 +290,12 @@ function buildCheckinCard(checkin) {
 
     <div class="checkin-card__section">
       <span class="checkin-card__label">Accomplished</span>
-      <p class="checkin-card__text">${escapeHtml(checkin.work_done)}</p>
+      <p class="checkin-card__text">${escapeHtml(checkin.work_done ?? "")}</p>
     </div>
 
     <div class="checkin-card__section">
       <span class="checkin-card__label">To-do</span>
-      <p class="checkin-card__text">${escapeHtml(checkin.work_planned)}</p>
+      <p class="checkin-card__text">${escapeHtml(checkin.work_planned ?? "")}</p>
     </div>
 
     ${buildBlockerBlock(checkin.blocker)}
@@ -381,19 +305,13 @@ function buildCheckinCard(checkin) {
     </div>
   `;
 
-  // Wire the delete button to remove this check-in and re-render.
   card.querySelector(".checkin-card__delete").addEventListener("click", () => {
-    deleteCheckin(checkin.checkin_id);
+    handleDelete(checkin.checkin_id);
   });
 
   return card;
 }
 
-/**
- * Renders the full list of check-in cards (newest first), or an empty
- * state when there are none.
- * @param {object[]} checkins
- */
 function renderList(checkins) {
   listEl.innerHTML = "";
 
@@ -407,76 +325,100 @@ function renderList(checkins) {
   }
 }
 
-/**
- * Reads from storage and repaints both the daily-status banner and the
- * list. Single entry point so every mutation ends with one render call.
- */
-function render() {
-  const checkins = readCheckins();
-  renderDailyStatus(checkins);
+function renderLoadError(message) {
+  listEl.innerHTML = `<p class="task-empty task-error">⚠ ${escapeHtml(message)}</p>`;
+  // Show the form so the user can still try to submit; renderDailyStatus
+  // will overwrite this on the next successful load.
+  promptBanner.classList.remove("hidden");
+  form.classList.remove("hidden");
+  doneBanner.classList.add("hidden");
+}
+
+async function refresh(userId) {
+  let checkins;
+  try {
+    checkins = await fetchCheckins();
+  } catch (err) {
+    const reason =
+      err instanceof ApiError && err.status > 0
+        ? `Failed to load check-ins (${err.status}): ${err.message}`
+        : `Failed to load check-ins: ${err?.message ?? "network error"}`;
+    renderLoadError(reason);
+    console.error("[check-in] fetch failed", err);
+    return;
+  }
+  currentCheckins = checkins;
+  renderDailyStatus(checkins, userId);
   renderList(checkins);
 }
 
 // ── Mutations ────────────────────────────────────────
 
-/**
- * Validates and stores a new check-in from the form, then re-renders.
- * @param {SubmitEvent} event
- */
-function handleSubmit(event) {
+async function handleSubmit(event) {
   event.preventDefault();
 
   const workDone = document.getElementById("field-work-done").value.trim();
   const workPlanned = document.getElementById("field-work-planned").value.trim();
   const workload = document.getElementById("field-workload").value;
 
-  // Required fields: the two stand-up updates and the workload pick.
   if (!workDone || !workPlanned || !workload) {
     showError("Please fill in what you did, what you need to do, and your workload.");
     return;
   }
   hideError();
 
-  const checkin = {
-    // Local id prefixed like kanban.js's offline tasks so a future API
-    // sync layer can tell client-minted records apart.
-    checkin_id: `local-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-    user: { ...CURRENT_USER },
-    work_done: workDone,
-    work_planned: workPlanned,
-    workload,
-    blocker: readBlocker(), // null when the blocker panel is closed
-    checkin_date: new Date().toISOString(),
-  };
+  const user = getCurrentUser();
+  const userId = user?.user_id ?? 1; // fallback for unauthenticated demos
+  const blocker = readBlocker();
 
-  // Prepend so the newest check-in renders at the top of the history.
-  writeCheckins([checkin, ...readCheckins()]);
+  try {
+    const checkin = await postCheckin({
+      user_id: userId,
+      // Encode workload inside status_mood since the schema has no
+      // dedicated workload column.
+      status_mood: `workload:${workload}`,
+      work_done: workDone,
+      work_planned: workPlanned,
+    });
 
-  resetForm();
-  render();
+    if (blocker && checkin?.checkin_id) {
+      try {
+        await postBlocker({
+          checkin_id: checkin.checkin_id,
+          description: blocker.description || "(no description)",
+          task: blocker.task === GENERAL_BLOCKER ? null : blocker.task,
+          helper: blocker.helper || null,
+        });
+      } catch (err) {
+        console.warn("[check-in] check-in saved but blocker failed", err);
+        alert(`Check-in saved, but couldn't attach the blocker: ${err.message}`);
+      }
+    }
+
+    resetForm();
+    await refresh(userId);
+  } catch (err) {
+    console.error("[check-in] submit failed", err);
+    showError(`Couldn't save check-in: ${err.message}`);
+  }
 }
 
-/**
- * Removes a check-in by id and re-renders. Deleting today's check-in
- * reverts the page to the prompt state so the user can log a new one.
- * @param {string} checkinId
- */
-function deleteCheckin(checkinId) {
-  const remaining = readCheckins().filter((c) => String(c.checkin_id) !== String(checkinId));
-  writeCheckins(remaining);
-  render();
+async function handleDelete(checkinId) {
+  try {
+    await apiDeleteCheckin(checkinId);
+    const user = getCurrentUser();
+    await refresh(user?.user_id ?? 1);
+  } catch (err) {
+    console.error("[check-in] delete failed", err);
+    alert(`Couldn't delete check-in: ${err.message}`);
+  }
 }
 
-/**
- * Clears the form back to its empty state, including collapsing the blocker
- * panel (which form.reset() alone does not handle).
- */
 function resetForm() {
   form.reset();
   setBlockerOpen(false);
 }
 
-// ── Inline form error helpers ────────────────────────
 function showError(message) {
   errorEl.textContent = message;
   errorEl.classList.remove("hidden");
@@ -488,13 +430,7 @@ function hideError() {
 }
 
 // ── Init ─────────────────────────────────────────────
-/**
- * Caches the DOM references, fills the blocker pickers, wires the toggle +
- * submit handlers, and paints the initial state. Runs only in the browser
- * (see the guard below) so node-side tests can import the pure helpers
- * above without a DOM — same approach as scrum.js / kanban.js.
- */
-function init() {
+async function init() {
   form = document.getElementById("checkin-form");
   promptBanner = document.getElementById("checkin-prompt");
   doneBanner = document.getElementById("checkin-done");
@@ -506,15 +442,21 @@ function init() {
   blockerWhyInput = document.getElementById("field-blocker-why");
   blockerHelperSelect = document.getElementById("field-blocker-helper");
 
-  populateBlockerOptions();
+  const user = getCurrentUser();
+  const userId = user?.user_id ?? 1;
+
+  await populateBlockerOptions(userId);
   blockerToggle.addEventListener("click", () => setBlockerOpen(!isBlockerOpen()));
   form.addEventListener("submit", handleSubmit);
-  render();
+
+  await refresh(userId);
 }
 
-// ES modules are deferred, so the DOM is already parsed when this runs in
-// the browser. Skipped under node (no document) so importing the module for
-// unit tests never touches the DOM.
+// Skip everything DOM-related under node so the test suite can import
+// the pure helpers above without a document. Mirrors scrum.js / kanban.js.
 if (typeof document !== "undefined") {
   init();
 }
+
+// Exported for tests
+export { currentCheckins };

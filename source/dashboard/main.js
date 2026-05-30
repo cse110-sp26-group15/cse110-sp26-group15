@@ -1,4 +1,5 @@
 import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
+import { apiFetch, ApiError } from "../shared/utils.js";
 
 // Hard-coded for now; will switch to the logged-in project once auth context
 // is plumbed through (same TODO as scrum.js / kanban.js).
@@ -58,92 +59,62 @@ function assigneeName(userId) {
 
 /**
  * Fetches the list of tasks for the current project.
- * @returns {Promise<object[]>} Array of task records; empty array when none exist.
+ * Throws ApiError on failure so the caller can surface a visible error.
+ * @returns {Promise<object[]>}
  */
 async function fetchTasks() {
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.tasks ?? [];
-  } catch {
-    return [];
-  }
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`);
+  return data.tasks ?? [];
 }
 
 /**
  * Fetches the list of members for the current project.
- * @returns {Promise<object[]>} Array of member records ({ user_id, full_name, ... }).
+ * Throws ApiError on failure.
+ * @returns {Promise<object[]>}
  */
 async function fetchMembers() {
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/members`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.members ?? [];
-  } catch {
-    return [];
-  }
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/members`);
+  return data.members ?? [];
 }
 
 /**
  * Creates a new task on the current project.
- * @param {string} title - Task title.
- * @param {number|null} assignedTo - Member user_id to assign, or null/undefined for unassigned.
- * @returns {Promise<object>} The created task record returned by the API.
+ * @param {object} data - { title, assigned_to, status, description }
+ * @returns {Promise<{ task: object|null }>}
  */
 async function createTask(data) {
   const status = data.status ?? "todo";
   const payload = {
     title: data.title,
+    description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
+    status,
   };
 
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) return { task: null };
+  const { task } = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!task) return { task: null };
 
-    const json = await res.json();
-    let created = json.task ?? null;
-    if (!created) return { task: null };
-
-    // POST always inserts as 'todo'; patch immediately when another status was requested.
-    if (status !== "todo") {
-      const updated = await updateTask(created.task_id, { status });
-      if (updated?.task) created = updated.task;
-      else created.status = status;
-    }
-
-    created.user_id = created.assigned_to ?? data.assigned_to ?? null;
-    created.full_name = assigneeName(created.user_id);
-    return { task: created };
-  } catch {
-    return { task: null };
-  }
+  task.user_id = task.assigned_to ?? data.assigned_to ?? null;
+  task.full_name = task.full_name ?? assigneeName(task.user_id);
+  return { task };
 }
 
 /**
  * Patches mutable fields on an existing task (status, assignee, etc.).
- * @param {number|string} taskId - Task identifier.
- * @param {object} fields - Partial task fields to update (e.g. { status, assigned_to }).
- * @returns {Promise<object>} The updated task record returned by the API.
+ * @param {number|string} taskId
+ * @param {object} fields
+ * @returns {Promise<object>}
  */
 async function updateTask(taskId, fields) {
-  try {
-    const res = await fetch(`/api/tasks/${taskId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fields),
-    });
-    if (res.ok) return await res.json();
-  } catch {
-    /* fall through */
-  }
-  return {};
+  return apiFetch(`/api/tasks/${taskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(fields),
+  });
 }
 
 /**
@@ -280,8 +251,34 @@ async function refreshBlockerBanner() {
   }
 }
 
+// Paint a visible error so the task panels never stay on "Loading…".
+function renderTasksLoadError(message) {
+  const safe = String(message ?? "").replace(
+    /[&<>]/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]
+  );
+  const html = `<p class="task-empty task-error">⚠ ${safe}</p>`;
+  const list = document.getElementById("task-list");
+  if (list) list.innerHTML = html;
+  for (const status of ["todo", "in-progress", "done"]) {
+    const container = document.getElementById(`cards-${status}`);
+    if (container) container.innerHTML = html;
+  }
+}
+
 async function loadTasks() {
-  const tasks = await fetchTasks();
+  let tasks;
+  try {
+    tasks = await fetchTasks();
+  } catch (err) {
+    const reason =
+      err instanceof ApiError && err.status > 0
+        ? `Failed to load tasks (${err.status}): ${err.message}`
+        : `Failed to load tasks: ${err?.message ?? "network error"}`;
+    renderTasksLoadError(reason);
+    console.error("[main] loadTasks failed", err);
+    return;
+  }
   renderBoard(tasks);
   renderTaskList(tasks);
   await refreshBlockerBanner();
@@ -365,18 +362,12 @@ function renderPairs(pairs) {
 // ── Check-ins (XP dashboard) ──────────────────────────
 /**
  * Fetches the aggregate dashboard payload (project, members, tasks, blockers,
- * checkins) for the current project. Returns null on network or HTTP error so
- * callers can degrade gracefully.
- * @returns {Promise<object|null>} The dashboard payload, or null on failure.
+ * checkins) for the current project. Throws ApiError on failure so callers
+ * can surface a visible error state.
+ * @returns {Promise<object>}
  */
 async function fetchDashboard() {
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/dashboard`);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
+  return apiFetch(`/api/projects/${PROJECT_ID}/dashboard`);
 }
 
 /**
@@ -477,9 +468,18 @@ function renderCheckins(entries) {
  * @returns {Promise<void>}
  */
 async function loadCheckins() {
-  const data = await fetchDashboard();
-  const entries = data?.checkins?.entries ?? [];
-  renderCheckins(entries);
+  const list = document.getElementById("checkin-list");
+  try {
+    const data = await fetchDashboard();
+    const entries = data?.checkins?.entries ?? [];
+    renderCheckins(entries);
+  } catch (err) {
+    console.error("[main] loadCheckins failed", err);
+    if (list) {
+      const msg = err instanceof ApiError ? err.message : "network error";
+      list.innerHTML = `<p class="task-empty task-error">⚠ Failed to load check-ins: ${escapeHtml(msg)}</p>`;
+    }
+  }
 }
 
 // ── Blockers (XP dashboard) ───────────────────────────
@@ -526,9 +526,17 @@ function renderBlockerSummary(blockers) {
  * @returns {Promise<void>}
  */
 async function loadBlockers() {
-  const data = await fetchDashboard();
-  const blockers = data?.open_blockers ?? [];
-  renderBlockerSummary(blockers);
+  try {
+    const data = await fetchDashboard();
+    const blockers = data?.open_blockers ?? [];
+    renderBlockerSummary(blockers);
+  } catch (err) {
+    console.error("[main] loadBlockers failed", err);
+    // Don't show a banner error — the banner is hidden by default, and
+    // surfacing a blocker-load failure in a banner that says "Blockers"
+    // would be confusing. Silent log is the right call here.
+    renderBlockerSummary([]);
+  }
 }
 
 // Expose to task-form module
@@ -592,7 +600,12 @@ document.querySelectorAll(".kanban-col__cards").forEach((zone) => {
  * @returns {Promise<void>}
  */
 async function init() {
-  projectMembers = await fetchMembers();
+  try {
+    projectMembers = await fetchMembers();
+  } catch (err) {
+    console.error("[main] fetchMembers failed during init", err);
+    projectMembers = [];
+  }
   populateCreateFormAssignees();
   await loadTasks();
   if (document.getElementById("checkin-list")) {

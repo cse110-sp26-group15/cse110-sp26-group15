@@ -60,3 +60,34 @@ export async function onRequestPatch(context) {
     return Response.json({ error: err.message }, { status: 500 });
   }
 }
+
+/**
+ * Cloudflare Pages function: DELETE /api/blockers/:blockerId
+ *
+ * Hard-deletes a blocker row. Returns 404 when the row does not exist so
+ * callers can distinguish "already gone" from "succeeded". Symmetric with
+ * DELETE /api/tasks/:taskId.
+ *
+ * @param {{ env: { DB: object }, params: { blockerId: string } }} context
+ * @returns {Promise<Response>}
+ */
+export async function onRequestDelete(context) {
+  const { env, params } = context;
+  const { blockerId } = params;
+
+  try {
+    const blocker = await env.DB.prepare("SELECT blocker_id FROM blockers WHERE blocker_id = ?")
+      .bind(blockerId)
+      .first();
+
+    if (!blocker) {
+      return Response.json({ error: "Blocker not found" }, { status: 404 });
+    }
+
+    await env.DB.prepare("DELETE FROM blockers WHERE blocker_id = ?").bind(blockerId).run();
+
+    return Response.json({ success: true });
+  } catch (err) {
+    return Response.json({ error: err.message }, { status: 500 });
+  }
+}

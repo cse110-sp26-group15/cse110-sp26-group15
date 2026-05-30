@@ -2,27 +2,25 @@
 // Drives the standalone Kanban Board page (kanban.html).
 //
 // Responsibilities:
-//   • Fetch project tasks from /api (falls back to localStorage when the
-//     API is unreachable so the page stays functional on a plain server).
+//   • Fetch project tasks via apiFetch (10s timeout, throws on non-2xx).
 //   • Render tasks into four shared kanban columns using createTaskCard()
 //     from the shared task-card component (Issue #8).
 //   • Open the shared task-form modal on "+ Add Task" and on per-column
 //     "+" buttons, locking the status for column-specific adds.
 //   • Handle status changes and task deletion without a full page reload.
+//   • Paint a visible error state when the API call fails so the board
+//     never gets stuck on "Loading tasks…".
 //
 // Pure helpers and the STATUS_COLUMNS constant are exported so the test
 // suite can exercise them without a DOM (mirrors scrum.js's pattern).
 
 import { createTaskCard } from "../task-card/task-card.js";
+import { apiFetch, ApiError } from "../shared/utils.js";
 
 // ── Constants ────────────────────────────────────────
 // Hard-coded for now; will switch to the logged-in project once auth
 // context is plumbed through (same TODO as scrum.js).
 export const PROJECT_ID = 1;
-
-// localStorage key for the offline-fallback task store.
-// Namespaced by project so multi-project support is straightforward later.
-const LOCAL_TASKS_KEY = `sitrep.kanban.tasks.project-${PROJECT_ID}`;
 
 // Column definitions — order is left → right on the board.
 export const STATUS_COLUMNS = [
@@ -58,41 +56,6 @@ export function groupTasksByStatus(tasks) {
   return groups;
 }
 
-/**
- * Returns true for task IDs minted by the local-fallback store so
- * mutations can be routed to localStorage instead of the API.
- */
-export function isLocalTaskId(taskId) {
-  return String(taskId).startsWith("local-");
-}
-
-// ── LocalStorage fallback ─────────────────────────────
-// When the API is unavailable, tasks are persisted here so create /
-// update / delete still feel responsive to the user.
-
-function readLocalTasks() {
-  if (typeof localStorage === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(LOCAL_TASKS_KEY);
-    return raw ? (JSON.parse(raw) ?? []) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeLocalTasks(tasks) {
-  if (typeof localStorage === "undefined") return;
-  try {
-    localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(tasks));
-  } catch {
-    /* quota / disabled storage — swallow silently */
-  }
-}
-
-function nextLocalId() {
-  return `local-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-}
-
 // ── Module state ──────────────────────────────────────
 // Cached member list so the task-form assignee dropdown can populate.
 let projectMembers = [];
@@ -108,42 +71,19 @@ function loadTaskFormModule() {
   return taskFormModulePromise;
 }
 
-// Look up an assignee name by user_id from the cached member list.
-function assigneeName(userId) {
-  if (!userId) return null;
-  const member = projectMembers.find((m) => Number(m.user_id) === Number(userId));
-  return member?.full_name ?? null;
-}
-
-// ── API (with localStorage fallback) ─────────────────
-// Each function tries the real endpoint first, then falls through to the
-// in-browser store. The shape returned is identical either way.
+// ── API calls ────────────────────────────────────────
+// All requests go through apiFetch (10s timeout, throws on non-2xx).
+// Callers in this file catch + surface failures via alert() / inline
+// error so a failing request never leaves the board on a stale state.
 
 async function fetchTasks() {
-  let apiTasks = [];
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`);
-    if (res.ok) {
-      const data = await res.json();
-      apiTasks = data.tasks ?? [];
-    }
-  } catch {
-    /* API unreachable — fall through to local-only */
-  }
-  // Merge API tasks with any locally-created ones so nothing is lost
-  // when the user is partially offline.
-  return [...apiTasks, ...readLocalTasks()];
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`);
+  return data.tasks ?? [];
 }
 
 async function fetchMembers() {
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/members`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.members ?? [];
-  } catch {
-    return [];
-  }
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/members`);
+  return data.members ?? [];
 }
 
 /**
@@ -162,74 +102,24 @@ async function createTask(data, { forceStatus } = {}) {
     status,
   };
 
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      const json = await res.json();
-      const created = json.task ?? null;
-      // The API always inserts as 'todo'; if we want a different status,
-      // immediately PATCH so the task lands in the correct column.
-      if (created && status !== "todo") {
-        await updateTask(created.task_id, { status });
-        created.status = status;
-      }
-      return { task: created };
-    }
-  } catch {
-    /* fall through to local storage */
-  }
-
-  // API unavailable — persist locally with the same shape as an API row.
-  const localTask = {
-    task_id: nextLocalId(),
-    title: data.title,
-    description: data.description ?? "",
-    user_id: data.assigned_to ?? null,
-    full_name: assigneeName(data.assigned_to),
-    status,
-    is_local: true,
-  };
-  writeLocalTasks([...readLocalTasks(), localTask]);
-  return { task: localTask };
+  const { task } = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return { task: task ?? null };
 }
 
 async function updateTask(taskId, fields) {
-  if (isLocalTaskId(taskId)) {
-    const tasks = readLocalTasks().map((t) =>
-      String(t.task_id) === String(taskId) ? { ...t, ...fields } : t
-    );
-    writeLocalTasks(tasks);
-    return {};
-  }
-  try {
-    const res = await fetch(`/api/tasks/${taskId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fields),
-    });
-    if (res.ok) return await res.json();
-  } catch {
-    /* fall through */
-  }
-  return {};
+  return apiFetch(`/api/tasks/${taskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(fields),
+  });
 }
 
 async function deleteTask(taskId) {
-  if (isLocalTaskId(taskId)) {
-    writeLocalTasks(readLocalTasks().filter((t) => String(t.task_id) !== String(taskId)));
-    return {};
-  }
-  try {
-    const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
-    if (res.ok) return await res.json();
-  } catch {
-    /* fall through */
-  }
-  return {};
+  return apiFetch(`/api/tasks/${taskId}`, { method: "DELETE" });
 }
 
 // ── Task-card controls ────────────────────────────────
@@ -254,9 +144,14 @@ function appendTaskControls(card, task) {
   statusSelect.addEventListener("change", async (e) => {
     const newStatus = e.target.value;
     e.target.className = `status-select status-${newStatus}`;
-    await updateTask(task.task_id, { status: newStatus });
-    // Re-render so the card moves to the correct column immediately.
-    await loadAll();
+    try {
+      await updateTask(task.task_id, { status: newStatus });
+      await loadAll();
+    } catch (err) {
+      console.error("[kanban] updateTask failed", err);
+      alert(`Couldn't update task: ${err.message}`);
+      await loadAll();
+    }
   });
 
   // Delete button
@@ -266,8 +161,13 @@ function appendTaskControls(card, task) {
   deleteBtn.dataset.taskId = task.task_id;
   deleteBtn.textContent = "Delete";
   deleteBtn.addEventListener("click", async () => {
-    await deleteTask(task.task_id);
-    await loadAll();
+    try {
+      await deleteTask(task.task_id);
+      await loadAll();
+    } catch (err) {
+      console.error("[kanban] deleteTask failed", err);
+      alert(`Couldn't delete task: ${err.message}`);
+    }
   });
 
   row.appendChild(statusSelect);
@@ -358,11 +258,13 @@ async function openCreateTaskModal({ lockedStatus, defaultStatus = "todo" } = {}
   const { openTaskModal } = await loadTaskFormModule();
 
   openTaskModal(async (data) => {
-    const result = await createTask(data, { forceStatus: lockedStatus });
-    if (!result?.task) {
-      console.error("kanban.js: failed to create task — API and localStorage both rejected it.");
+    try {
+      await createTask(data, { forceStatus: lockedStatus });
+      await loadAll();
+    } catch (err) {
+      console.error("[kanban] createTask failed", err);
+      alert(`Couldn't create task: ${err.message}`);
     }
-    await loadAll();
   });
 
   // Pre-select the column's status in the modal and hide the dropdown
@@ -379,9 +281,28 @@ async function openCreateTaskModal({ lockedStatus, defaultStatus = "todo" } = {}
   }
 }
 
+// Paint a visible error so the board never stays on "Loading tasks…".
+function renderLoadError(message) {
+  const board = document.getElementById("kanban-board");
+  if (board) {
+    board.innerHTML = `<p class="task-empty task-error">⚠ ${escapeHtml(message)}</p>`;
+  }
+}
+
 // ── Data loading ──────────────────────────────────────
 async function loadAll() {
-  const [tasks, members] = await Promise.all([fetchTasks(), fetchMembers()]);
+  let tasks, members;
+  try {
+    [tasks, members] = await Promise.all([fetchTasks(), fetchMembers()]);
+  } catch (err) {
+    const reason =
+      err instanceof ApiError && err.status > 0
+        ? `Failed to load board (${err.status}): ${err.message}`
+        : `Failed to load board: ${err?.message ?? "network error"}`;
+    renderLoadError(reason);
+    console.error("[kanban] loadAll failed", err);
+    return;
+  }
 
   // Cache members so the task-form modal's assignee dropdown can populate.
   projectMembers = members;

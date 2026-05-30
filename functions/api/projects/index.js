@@ -1,6 +1,50 @@
 const VALID_WORKFLOWS = ["scrum", "kanban", "xp"];
 
 /**
+ * Cloudflare Pages function: GET /api/projects
+ *
+ * Lists projects. When `?user_id=N` is supplied, returns only projects
+ * where N is a member (via project_members); otherwise returns every
+ * project. Each row includes `member_count` so callers can render a
+ * picker without a second round-trip.
+ *
+ * @param {{ env: { DB?: object }, request: Request }} context
+ * @returns {Promise<Response>}
+ */
+export async function onRequestGet(context) {
+  const { env, request } = context;
+
+  if (!env.DB) {
+    return Response.json({ error: "D1 database binding not configured." }, { status: 500 });
+  }
+
+  const url = new URL(request.url);
+  const userIdParam = url.searchParams.get("user_id");
+  const userId = userIdParam ? Number(userIdParam) : null;
+
+  try {
+    const query = userId
+      ? `SELECT p.project_id, p.name, p.description, p.workflow, p.created_by, p.created_at,
+                (SELECT COUNT(*) FROM project_members pm2 WHERE pm2.project_id = p.project_id) AS member_count
+         FROM projects p
+         JOIN project_members pm ON pm.project_id = p.project_id
+         WHERE pm.user_id = ?
+         ORDER BY p.created_at DESC`
+      : `SELECT p.project_id, p.name, p.description, p.workflow, p.created_by, p.created_at,
+                (SELECT COUNT(*) FROM project_members pm2 WHERE pm2.project_id = p.project_id) AS member_count
+         FROM projects p
+         ORDER BY p.created_at DESC`;
+
+    const stmt = userId ? env.DB.prepare(query).bind(userId) : env.DB.prepare(query);
+    const { results } = await stmt.all();
+
+    return Response.json({ projects: results });
+  } catch (err) {
+    return Response.json({ error: err.message }, { status: 500 });
+  }
+}
+
+/**
  * Returns true when `email` matches the basic local@domain.tld shape.
  * @param {string} email
  * @returns {boolean}
@@ -71,24 +115,40 @@ export async function onRequestPost(context) {
   }
 
   try {
+    // Verify `created_by` actually references a real user before binding
+    // it to the FK. Stale sessionStorage can carry a user_id from a
+    // previous DB seed/reset, which would otherwise trip the projects
+    // → users FK and abort the entire request.
+    let creatorId = null;
+    if (created_by != null) {
+      const creator = await env.DB.prepare("SELECT user_id FROM users WHERE user_id = ?")
+        .bind(created_by)
+        .first();
+      if (creator) {
+        creatorId = creator.user_id;
+      } else {
+        console.warn(`[projects POST] created_by=${created_by} not found; storing NULL`);
+      }
+    }
+
     const insertProject = await env.DB.prepare(
       `INSERT INTO projects (name, description, workflow, created_by)
        VALUES (?, ?, ?, ?)`
     )
-      .bind(name.trim(), description, workflow, created_by)
+      .bind(name.trim(), description, workflow, creatorId)
       .run();
 
     const projectId = insertProject.meta.last_row_id;
 
-    // Always add the creator as a member (if known)
+    // Always add the creator as a member (if known + verified)
     const addedUserIds = new Set();
-    if (created_by) {
+    if (creatorId) {
       await env.DB.prepare(
         `INSERT OR IGNORE INTO project_members (project_id, user_id) VALUES (?, ?)`
       )
-        .bind(projectId, created_by)
+        .bind(projectId, creatorId)
         .run();
-      addedUserIds.add(created_by);
+      addedUserIds.add(creatorId);
     }
 
     // Resolve invited member emails -> existing users; skip unknown emails

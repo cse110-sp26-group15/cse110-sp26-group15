@@ -8,13 +8,14 @@
 //   • a list ⇄ kanban toggle for the Sprint Tasks panel, with per-column
 //     + buttons that pre-fill (and lock) the new-task status.
 //
-// All task mutations (create/update/delete) fall back to a localStorage
-// store when the API isn't reachable, so the dashboard stays usable on a
-// plain static server too. Pure helper functions (computeDayOfSprint,
-// computeSprintProgress, etc.) are exported so tests can exercise them
-// without a DOM.
+// All data loads go through {@link apiFetch} (10s timeout, throws on
+// non-2xx) — when a call fails the matching renderer paints a visible
+// error state instead of an empty panel. Pure helper functions
+// (computeDayOfSprint, computeSprintProgress, etc.) are exported so
+// tests can exercise them without a DOM.
 
 import { createTaskCard } from "../task-card/task-card.js";
+import { apiFetch, ApiError } from "../shared/utils.js";
 
 // task-form.js runs `document.addEventListener(...)` at module top, so we
 // can't import it statically — it would crash the node-side tests where
@@ -41,13 +42,9 @@ export const PROJECT_ID = 1;
 
 // localStorage key for the sprint picker selection. Namespaced by
 // project so multiple projects can each remember their own sprint.
+// (This is a UI preference, not data — we keep it in localStorage on
+// purpose so the user's last-picked sprint survives reloads.)
 const SPRINT_STORAGE_KEY = `sitrep.scrum.sprint.project-${PROJECT_ID}`;
-
-// localStorage key for the task fallback store. Used whenever the API
-// isn't reachable (e.g. running the static `dist/` on a plain HTTP
-// server with no D1 binding). Local tasks are merged with API tasks on
-// every fetch so users never see "I created something but it vanished".
-const LOCAL_TASKS_KEY = `sitrep.scrum.tasks.project-${PROJECT_ID}`;
 
 // Column definitions for the kanban view. Order is left → right.
 // Each column tracks every task whose `status` matches `key`.
@@ -253,62 +250,15 @@ let currentTasks = [];
 // the assignee dropdown can be populated.
 let projectMembers = [];
 
-// ── Local-task fallback store ────────────────────────
-// When the API is unreachable, tasks are persisted here so the create /
-// update / delete actions still feel responsive. Local tasks carry a
-// "local-…" id so we can tell them apart from API rows.
-
-function readLocalTasks() {
-  if (typeof localStorage === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(LOCAL_TASKS_KEY);
-    return raw ? (JSON.parse(raw) ?? []) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeLocalTasks(tasks) {
-  if (typeof localStorage === "undefined") return;
-  try {
-    localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(tasks));
-  } catch {
-    /* quota / disabled storage — swallow */
-  }
-}
-
-// Generated id for local-only tasks. The "local-" prefix is meaningful:
-// updateTask/deleteTask check for it to route the mutation to storage
-// instead of the API.
-function nextLocalTaskId() {
-  return `local-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-}
-
-// Identifies a task id minted by the local-fallback store (so callers
-// know to route updates/deletes to localStorage instead of the API).
-export function isLocalTaskId(taskId) {
-  return String(taskId).startsWith("local-");
-}
-
-// ── API (with local-fallback semantics) ──────────────
-// Each call tries the real endpoint first, then degrades to the
-// in-browser store. The shape returned to callers (task / tasks array)
-// is identical so the renderers don't need to know which source won.
+// ── API calls ────────────────────────────────────────
+// All requests go through apiFetch (10s timeout, throws ApiError on
+// non-2xx). loadAll() catches once at the top so a single failure
+// surfaces as an inline error in the relevant panel rather than a
+// half-rendered dashboard.
 
 async function fetchTasks() {
-  let apiTasks = [];
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`);
-    if (res.ok) {
-      const data = await res.json();
-      apiTasks = data.tasks ?? [];
-    }
-  } catch {
-    /* fall through to local-only */
-  }
-  // Always merge in local-only rows so user-created tasks show up even
-  // when only one side of the pipe is live.
-  return [...apiTasks, ...readLocalTasks()];
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`);
+  return data.tasks ?? [];
 }
 
 /**
@@ -327,137 +277,50 @@ async function createTask(data, { forceStatus } = {}) {
     status,
   };
 
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/tasks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      const json = await res.json();
-      // The POST handler currently always inserts as `status='todo'`
-      // (see functions/api/projects/[projectId]/tasks.js). If the user
-      // wanted something else, immediately PATCH to fix it up so the
-      // task lands in the correct column.
-      const created = json.task ?? null;
-      if (created && status !== "todo") {
-        await updateTask(created.task_id, { status });
-        created.status = status;
-      }
-      return { task: created };
-    }
-  } catch {
-    /* fall through */
-  }
-
-  // API was unavailable — persist locally so the UI still shows the
-  // new task. The shape mirrors the API row enough for the renderers.
-  const localTask = {
-    task_id: nextLocalTaskId(),
-    title: data.title,
-    description: data.description ?? "",
-    user_id: data.assigned_to ?? null,
-    full_name: assigneeName(data.assigned_to),
-    status,
-    is_local: true,
-  };
-  writeLocalTasks([...readLocalTasks(), localTask]);
-  return { task: localTask };
+  const { task } = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return { task: task ?? null };
 }
 
 async function updateTask(taskId, fields) {
-  if (isLocalTaskId(taskId)) {
-    // Local task — just rewrite the entry in storage.
-    const tasks = readLocalTasks().map((t) =>
-      String(t.task_id) === String(taskId) ? { ...t, ...fields } : t
-    );
-    writeLocalTasks(tasks);
-    return {};
-  }
-  try {
-    const res = await fetch(`/api/tasks/${taskId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fields),
-    });
-    if (res.ok) return await res.json();
-  } catch {
-    /* fall through */
-  }
-  return {};
+  return apiFetch(`/api/tasks/${taskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(fields),
+  });
 }
 
 async function deleteTask(taskId) {
-  if (isLocalTaskId(taskId)) {
-    const tasks = readLocalTasks().filter((t) => String(t.task_id) !== String(taskId));
-    writeLocalTasks(tasks);
-    return {};
-  }
-  try {
-    const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
-    if (res.ok) return await res.json();
-  } catch {
-    /* fall through */
-  }
-  return {};
-}
-
-// Look up an assignee's name from the cached project members. Used when
-// creating a local-only task so the avatar/name row still renders.
-function assigneeName(userId) {
-  if (!userId) return null;
-  const member = projectMembers.find((m) => Number(m.user_id) === Number(userId));
-  return member?.full_name ?? null;
+  return apiFetch(`/api/tasks/${taskId}`, { method: "DELETE" });
 }
 
 async function fetchCheckins() {
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/checkins`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.checkins ?? [];
-  } catch {
-    return [];
-  }
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/checkins`);
+  return data.checkins ?? [];
 }
 
 async function fetchBlockers() {
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/dashboard`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.open_blockers ?? []).map((b) => ({
-      blocker_id: b.blocker_id,
-      description: b.description,
-      tag: b.helper || null,
-      full_name: b.reported_by?.full_name ?? "",
-      is_resolved: false,
-    }));
-  } catch {
-    return [];
-  }
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/blockers`);
+  return (data.blockers ?? []).map((b) => ({
+    blocker_id: b.blocker_id,
+    description: b.description,
+    tag: b.helper || null,
+    full_name: b.reported_by || b.full_name || "",
+    is_resolved: Boolean(b.is_resolved),
+  }));
 }
 
 async function fetchSprint() {
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/sprints/current`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.sprint ?? null;
-  } catch {
-    return null;
-  }
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/sprints/current`);
+  return data.sprint ?? null;
 }
 
 async function fetchMembers() {
-  try {
-    const res = await fetch(`/api/projects/${PROJECT_ID}/members`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.members ?? [];
-  } catch {
-    return [];
-  }
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/members`);
+  return data.members ?? [];
 }
 
 // ── Sprint header + progress ─────────────────────────
@@ -608,8 +471,14 @@ function appendTaskControls(card, task) {
   statusSelect.addEventListener("change", async (e) => {
     const newStatus = e.target.value;
     e.target.className = `status-select status-${newStatus}`;
-    await updateTask(task.task_id, { status: newStatus });
-    await loadAll();
+    try {
+      await updateTask(task.task_id, { status: newStatus });
+      await loadAll();
+    } catch (err) {
+      console.error("[scrum] updateTask failed", err);
+      alert(`Couldn't update task: ${err.message}`);
+      await loadAll();
+    }
   });
 
   const deleteBtn = document.createElement("button");
@@ -618,8 +487,13 @@ function appendTaskControls(card, task) {
   deleteBtn.dataset.taskId = task.task_id;
   deleteBtn.textContent = "Delete";
   deleteBtn.addEventListener("click", async () => {
-    await deleteTask(task.task_id);
-    await loadAll();
+    try {
+      await deleteTask(task.task_id);
+      await loadAll();
+    } catch (err) {
+      console.error("[scrum] deleteTask failed", err);
+      alert(`Couldn't delete task: ${err.message}`);
+    }
   });
 
   row.appendChild(statusSelect);
@@ -748,13 +622,13 @@ async function openCreateTaskModal({ lockedStatus, defaultStatus = "todo" } = {}
   const { openTaskModal } = await loadTaskFormModule();
 
   openTaskModal(async (data) => {
-    const result = await createTask(data, { forceStatus: lockedStatus });
-    if (!result?.task) {
-      // Storage was wedged AND the API failed — give the user feedback
-      // instead of silently dropping the task.
-      console.error("Failed to create task — neither API nor localStorage accepted it.");
+    try {
+      await createTask(data, { forceStatus: lockedStatus });
+      await loadAll();
+    } catch (err) {
+      console.error("[scrum] createTask failed", err);
+      alert(`Couldn't create task: ${err.message}`);
     }
-    await loadAll();
   });
 
   // Tweak the just-opened modal: preselect the column's status, and hide
@@ -830,15 +704,39 @@ function saveSprintPicker() {
   renderTasks(currentTasks);
 }
 
+// Paint a visible error state across every panel so failures are loud,
+// not silent. Caller passes the message to surface.
+function renderLoadError(message) {
+  for (const id of ["task-list", "kanban-board", "checkin-grid", "blockers-list"]) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = `<p class="task-empty task-error">⚠ ${escapeHtml(message)}</p>`;
+  }
+  const title = document.getElementById("blockers-title");
+  if (title) title.textContent = "⚠ Blockers (unavailable)";
+  const meta = document.getElementById("sprint-meta");
+  if (meta) meta.textContent = "Sprint data unavailable";
+}
+
 // ── Load + render orchestration ──────────────────────
 async function loadAll() {
-  const [tasks, checkins, blockers, apiSprint, apiMembers] = await Promise.all([
-    fetchTasks(),
-    fetchCheckins(),
-    fetchBlockers(),
-    fetchSprint(),
-    fetchMembers(),
-  ]);
+  let tasks, checkins, blockers, apiSprint, apiMembers;
+  try {
+    [tasks, checkins, blockers, apiSprint, apiMembers] = await Promise.all([
+      fetchTasks(),
+      fetchCheckins(),
+      fetchBlockers(),
+      fetchSprint(),
+      fetchMembers(),
+    ]);
+  } catch (err) {
+    const reason =
+      err instanceof ApiError && err.status > 0
+        ? `Failed to load dashboard (${err.status}): ${err.message}`
+        : `Failed to load dashboard: ${err?.message ?? "network error"}`;
+    renderLoadError(reason);
+    console.error("[scrum] loadAll failed", err);
+    return;
+  }
 
   // If /members returned something, trust it; otherwise reverse-engineer
   // members from rows that include user info (legacy / partial APIs).
