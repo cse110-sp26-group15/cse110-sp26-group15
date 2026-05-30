@@ -483,7 +483,7 @@ function appendTaskControls(card, task) {
 
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
-  deleteBtn.className = "btn-delete";
+  deleteBtn.className = "btn task-card-delete";
   deleteBtn.dataset.taskId = task.task_id;
   deleteBtn.textContent = "Delete";
   deleteBtn.addEventListener("click", async () => {
