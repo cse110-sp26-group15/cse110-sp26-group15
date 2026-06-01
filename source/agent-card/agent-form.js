@@ -214,11 +214,17 @@ export function openAgentModal({ members = [], onSubmit }) {
   submitBtn.addEventListener("click", async () => {
     errorEl.hidden = true;
 
-    const full_name = /** @type {HTMLInputElement} */ (document.getElementById("af-name")).value.trim();
-    const email = /** @type {HTMLInputElement} */ (document.getElementById("af-email")).value.trim();
+    const full_name = /** @type {HTMLInputElement} */ (
+      document.getElementById("af-name")
+    ).value.trim();
+    const email = /** @type {HTMLInputElement} */ (
+      document.getElementById("af-email")
+    ).value.trim();
     const agent_type = /** @type {HTMLSelectElement} */ (document.getElementById("af-type")).value;
-    const owner_user_id = /** @type {HTMLSelectElement} */ (document.getElementById("af-owner")).value;
-    const description = /** @type {HTMLTextAreaElement} */ (document.getElementById("af-desc")).value.trim() || null;
+    const owner_user_id = /** @type {HTMLSelectElement} */ (document.getElementById("af-owner"))
+      .value;
+    const description =
+      /** @type {HTMLTextAreaElement} */ (document.getElementById("af-desc")).value.trim() || null;
 
     if (!full_name) return showError("Name is required.");
     if (!email) return showError("Email is required.");
