@@ -20,6 +20,9 @@
 // `GET /api/projects/:id/members`.
 
 import { apiFetch, ApiError, getCurrentUser } from "../shared/utils.js";
+import { initUserMenu } from "../shared/user-menu.js";
+
+initUserMenu();
 
 // ── Constants ────────────────────────────────────────
 // Hard-coded for now; will switch to the logged-in project once auth
