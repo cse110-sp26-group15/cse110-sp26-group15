@@ -231,6 +231,10 @@ function renderTaskList(tasks) {
   const list = document.getElementById("task-list");
   if (!list) return;
 
+  // Each page declares its card variant via `data-card-variant` on #task-list
+  // (xp.html → "xp"; main.html → "kanban"). Defaults to the base kanban card.
+  const variant = list.dataset.cardVariant || "kanban";
+
   list.innerHTML = "";
 
   if (tasks.length === 0) {
@@ -239,7 +243,7 @@ function renderTaskList(tasks) {
   }
 
   for (const task of tasks) {
-    const card = createTaskCard(task, "xp", {
+    const card = createTaskCard(task, variant, {
       members: projectMembers,
       editPair: false,
       onChange: async (taskId, fields) => {
