@@ -15,6 +15,7 @@
 // tests can exercise them without a DOM.
 
 import { createTaskCard } from "../task-card/task-card.js";
+import { renderAgents } from "../agent-card/agent-card.js";
 import { apiFetch, ApiError } from "../shared/utils.js";
 
 // task-form.js runs `document.addEventListener(...)` at module top, so we
@@ -250,6 +251,11 @@ let currentTasks = [];
 // the assignee dropdown can be populated.
 let projectMembers = [];
 
+// Cache of AI agents on this project. Exposed via window.getProjectAgents
+// so the task-form modal can identify which assignees are agents and
+// auto-enforce the reviewer-required rule on the client side.
+let projectAgents = [];
+
 // ── API calls ────────────────────────────────────────
 // All requests go through apiFetch (10s timeout, throws ApiError on
 // non-2xx). loadAll() catches once at the top so a single failure
@@ -275,6 +281,11 @@ async function createTask(data, { forceStatus } = {}) {
     description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
     status,
+    // reviewer_id + review_status only flow through when the task-form
+    // modal sets them (agent-assigned tasks). Server enforces the rule
+    // either way; we just avoid sending null spam for human tasks.
+    ...(data.reviewer_id != null ? { reviewer_id: data.reviewer_id } : {}),
+    ...(data.review_status != null ? { review_status: data.review_status } : {}),
   };
 
   const { task } = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`, {
@@ -321,6 +332,11 @@ async function fetchSprint() {
 async function fetchMembers() {
   const data = await apiFetch(`/api/projects/${PROJECT_ID}/members`);
   return data.members ?? [];
+}
+
+async function fetchAgents() {
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/agents`);
+  return data.agents ?? [];
 }
 
 // ── Sprint header + progress ─────────────────────────
@@ -707,7 +723,7 @@ function saveSprintPicker() {
 // Paint a visible error state across every panel so failures are loud,
 // not silent. Caller passes the message to surface.
 function renderLoadError(message) {
-  for (const id of ["task-list", "kanban-board", "checkin-grid", "blockers-list"]) {
+  for (const id of ["task-list", "kanban-board", "checkin-grid", "blockers-list", "agents-list"]) {
     const el = document.getElementById(id);
     if (el) el.innerHTML = `<p class="task-empty task-error">⚠ ${escapeHtml(message)}</p>`;
   }
@@ -719,14 +735,21 @@ function renderLoadError(message) {
 
 // ── Load + render orchestration ──────────────────────
 async function loadAll() {
-  let tasks, checkins, blockers, apiSprint, apiMembers;
+  let tasks, checkins, blockers, apiSprint, apiMembers, apiAgents;
   try {
-    [tasks, checkins, blockers, apiSprint, apiMembers] = await Promise.all([
+    [tasks, checkins, blockers, apiSprint, apiMembers, apiAgents] = await Promise.all([
       fetchTasks(),
       fetchCheckins(),
       fetchBlockers(),
       fetchSprint(),
       fetchMembers(),
+      // The agents endpoint is best-effort — a missing/empty response
+      // shouldn't blow up the dashboard. Catch + log so the rest of
+      // loadAll() proceeds even when agents 500s.
+      fetchAgents().catch((err) => {
+        console.warn("[scrum] fetchAgents failed; rendering empty agents rail", err);
+        return [];
+      }),
     ]);
   } catch (err) {
     const reason =
@@ -743,6 +766,7 @@ async function loadAll() {
   // Either way, cache the result so the create modal's assignee dropdown
   // can populate (it reads via window.getProjectMembers).
   projectMembers = apiMembers.length ? apiMembers : deriveMembers(tasks, checkins);
+  projectAgents = apiAgents;
 
   // If the user hasn't set a sprint yet, prefer whatever the API knows;
   // user-saved values always win once they exist.
@@ -759,6 +783,35 @@ async function loadAll() {
   renderBlockers(blockers);
   renderCheckins(checkins, projectMembers);
   renderTasks(tasks);
+  renderAgents(document.getElementById("agents-list"), projectAgents);
+  renderAgentContributionsMeta(projectAgents, tasks);
+}
+
+/**
+ * Paint a one-liner above the agents grid: "N agents · X tasks completed".
+ * Lets the team see at-a-glance whether agents are pulling their weight
+ * without a full weekly report. Numbers are derived client-side from the
+ * payload we already have so no extra request is needed.
+ *
+ * @param {object[]} agents
+ * @param {object[]} tasks
+ */
+function renderAgentContributionsMeta(agents, tasks) {
+  const meta = document.getElementById("agent-contributions-meta");
+  if (!meta) return;
+  if (!agents.length) {
+    meta.textContent = "";
+    return;
+  }
+  const agentIds = new Set(agents.map((a) => a.user_id));
+  const completed = tasks.filter((t) => agentIds.has(t.user_id) && t.status === "done").length;
+  const pendingReview = tasks.filter(
+    (t) => agentIds.has(t.user_id) && t.review_status === "pending"
+  ).length;
+  const parts = [`${agents.length} agent${agents.length === 1 ? "" : "s"}`];
+  parts.push(`${completed} task${completed === 1 ? "" : "s"} done`);
+  if (pendingReview > 0) parts.push(`${pendingReview} pending review`);
+  meta.textContent = parts.join(" · ");
 }
 
 // Derive team members from any rows that include user info — keeps the
@@ -824,6 +877,9 @@ function init() {
   // expose ours here so the dropdown isn't empty.
   if (typeof window !== "undefined") {
     window.getProjectMembers = () => projectMembers;
+    // The task-form modal also needs to know which members are AI agents
+    // so it can auto-default + require a reviewer when one is selected.
+    window.getProjectAgents = () => projectAgents;
   }
 
   // ── Check-in button (placeholder until check-in flow exists) ──

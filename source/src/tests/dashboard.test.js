@@ -79,9 +79,25 @@ describe("dashboard helpers", () => {
       task: null,
       helper: null,
       checkin_id: 2,
-      reported_by: { user_id: 3, full_name: "Sam Chen" },
+      reported_by: { user_id: 3, full_name: "Sam Chen", is_agent: false },
       checkin_date: "2026-05-16",
     });
+  });
+
+  it("mapOpenBlocker marks AI-agent reporters as agents", () => {
+    expect(
+      mapOpenBlocker({
+        blocker_id: 9,
+        description: "Stuck",
+        task: null,
+        helper: null,
+        checkin_id: 2,
+        user_id: 7,
+        full_name: "Spec-Reviewer-Bot",
+        is_agent: 1,
+        checkin_date: "2026-05-16",
+      }).reported_by
+    ).toEqual({ user_id: 7, full_name: "Spec-Reviewer-Bot", is_agent: true });
   });
 
   it("mapCheckinEntry shapes user nested object", () => {
@@ -101,7 +117,7 @@ describe("dashboard helpers", () => {
       status_mood: "Good",
       work_done: "Done work",
       work_planned: "Next work",
-      user: { user_id: 2, full_name: "Alex Rivera" },
+      user: { user_id: 2, full_name: "Alex Rivera", is_agent: false },
     });
   });
 
@@ -140,8 +156,14 @@ describe("dashboard helpers", () => {
     expect(payload.tasks).toHaveLength(1);
     expect(payload.open_blockers).toHaveLength(1);
     expect(payload.checkins.entries).toHaveLength(1);
+    expect(payload.agents).toEqual([]);
     expect(payload.meta.checkin_days).toBe(2);
     expect(payload.meta.generated_at).toBeTruthy();
+    expect(payload.meta.agent_contributions).toEqual({
+      tasks_completed: 0,
+      checkins: 0,
+      agent_count: 0,
+    });
   });
 });
 

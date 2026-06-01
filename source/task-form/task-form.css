@@ -184,3 +184,23 @@
 .tf-btn-primary:hover {
   background: #2563eb;
 }
+
+/* ── Reviewer field (revealed for agent assignees) ─── */
+.tf-field--reviewer {
+  border-top: 1px dashed var(--color-border, #e1e4e8);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.tf-hint {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  color: var(--color-text-secondary, #57606a);
+  line-height: 1.4;
+}
+
+.tf-error {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: #b91c1c;
+}

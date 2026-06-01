@@ -1,3 +1,43 @@
+const VALID_STATUSES = ["todo", "in-progress", "done"];
+const VALID_REVIEW_STATUSES = ["not-required", "pending", "approved", "needs-revision"];
+
+/**
+ * Resolve a user_id to "human" / "agent" / "missing". See the matching
+ * helper in projects/[projectId]/tasks.js for context.
+ *
+ * @param {object} db
+ * @param {number} userId
+ * @returns {Promise<{ kind: "human"|"agent"|"missing", owner_user_id: number|null }>}
+ */
+async function classifyUser(db, userId) {
+  if (!userId) return { kind: "missing", owner_user_id: null };
+  const row = await db
+    .prepare(
+      `SELECT u.user_id, a.user_id AS agent_user_id, a.owner_user_id
+         FROM users u
+         LEFT JOIN agents a ON a.user_id = u.user_id
+         WHERE u.user_id = ?`
+    )
+    .bind(userId)
+    .first();
+  if (!row) return { kind: "missing", owner_user_id: null };
+  return row.agent_user_id != null
+    ? { kind: "agent", owner_user_id: row.owner_user_id ?? null }
+    : { kind: "human", owner_user_id: null };
+}
+
+/**
+ * Cloudflare Pages function: PATCH /api/tasks/:taskId
+ *
+ * Updates mutable task fields. Accepts any subset of:
+ *   status, assigned_to, reviewer_id, review_status, description.
+ *
+ * Two invariants the API enforces (mirrors POST in tasks.js):
+ *   1. If the new assignee is an AI agent and no reviewer is set
+ *      (existing or incoming), the request is rejected.
+ *   2. reviewer_id must point at a non-agent user. Agents cannot review
+ *      other agents — that would defeat human accountability.
+ */
 export async function onRequestPatch(context) {
   const { env, params, request } = context;
   const { taskId } = params;
@@ -9,8 +49,7 @@ export async function onRequestPatch(context) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const VALID_STATUSES = ["todo", "in-progress", "done"];
-  const { status, assigned_to } = body;
+  const { status, assigned_to, reviewer_id, review_status, description } = body;
 
   if (status !== undefined && !VALID_STATUSES.includes(status)) {
     return Response.json(
@@ -18,43 +57,117 @@ export async function onRequestPatch(context) {
       { status: 400 }
     );
   }
-
-  const fields = [];
-  const values = [];
-
-  if (status !== undefined) {
-    fields.push("status = ?");
-    values.push(status);
+  if (review_status !== undefined && !VALID_REVIEW_STATUSES.includes(review_status)) {
+    return Response.json(
+      { error: `review_status must be one of: ${VALID_REVIEW_STATUSES.join(", ")}` },
+      { status: 400 }
+    );
   }
-  if (assigned_to !== undefined) {
-    fields.push("assigned_to = ?");
-    values.push(assigned_to);
-  }
-
-  if (fields.length === 0) {
-    return Response.json({ error: "No valid fields to update" }, { status: 400 });
-  }
-
-  values.push(taskId);
 
   try {
+    const existing = await env.DB.prepare(
+      `SELECT task_id, assigned_to, reviewer_id, review_status FROM tasks WHERE task_id = ?`
+    )
+      .bind(taskId)
+      .first();
+    if (!existing) {
+      return Response.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // Compute the post-update assignee/reviewer so we can validate as a
+    // single coherent state rather than field-by-field.
+    const nextAssigned = assigned_to === undefined ? existing.assigned_to : assigned_to;
+    let nextReviewer = reviewer_id === undefined ? existing.reviewer_id : reviewer_id;
+    let nextReviewStatus = review_status === undefined ? existing.review_status : review_status;
+
+    const assignee = await classifyUser(env.DB, nextAssigned);
+    if (nextAssigned && assignee.kind === "missing") {
+      return Response.json({ error: "assigned_to references unknown user" }, { status: 400 });
+    }
+
+    if (assignee.kind === "agent") {
+      // If the caller didn't provide a reviewer and the existing reviewer
+      // is empty, default to the agent's owner. This mirrors the POST
+      // behavior and prevents PATCH from creating a no-reviewer agent task.
+      if (nextReviewer == null) nextReviewer = assignee.owner_user_id;
+      if (nextReviewer == null) {
+        return Response.json(
+          { error: "reviewer_id is required when assignee is an AI agent" },
+          { status: 400 }
+        );
+      }
+      const reviewer = await classifyUser(env.DB, nextReviewer);
+      if (reviewer.kind !== "human") {
+        return Response.json(
+          { error: "reviewer_id must reference a non-agent user" },
+          { status: 400 }
+        );
+      }
+      if (!nextReviewStatus || nextReviewStatus === "not-required") {
+        nextReviewStatus = "pending";
+      }
+    } else {
+      if (nextReviewer != null) {
+        const reviewer = await classifyUser(env.DB, nextReviewer);
+        if (reviewer.kind !== "human") {
+          return Response.json(
+            { error: "reviewer_id must reference a non-agent user" },
+            { status: 400 }
+          );
+        }
+      } else if (!nextReviewStatus) {
+        nextReviewStatus = "not-required";
+      }
+    }
+
+    const fields = [];
+    const values = [];
+    if (status !== undefined) {
+      fields.push("status = ?");
+      values.push(status);
+    }
+    if (assigned_to !== undefined) {
+      fields.push("assigned_to = ?");
+      values.push(assigned_to);
+    }
+    if (description !== undefined) {
+      fields.push("description = ?");
+      values.push(description);
+    }
+    // Always write the resolved reviewer/review_status so defaults stick.
+    if (nextReviewer !== existing.reviewer_id) {
+      fields.push("reviewer_id = ?");
+      values.push(nextReviewer);
+    }
+    if (nextReviewStatus !== existing.review_status) {
+      fields.push("review_status = ?");
+      values.push(nextReviewStatus);
+    }
+
+    if (fields.length === 0) {
+      return Response.json({ error: "No valid fields to update" }, { status: 400 });
+    }
+
+    values.push(taskId);
+
     await env.DB.prepare(`UPDATE tasks SET ${fields.join(", ")} WHERE task_id = ?`)
       .bind(...values)
       .run();
 
     const task = await env.DB.prepare(
-      `SELECT t.task_id, t.title, t.status, t.github_issue_url,
-              u.user_id, u.full_name
-       FROM tasks t
-       LEFT JOIN users u ON t.assigned_to = u.user_id
-       WHERE t.task_id = ?`
+      `SELECT t.task_id, t.title, t.description, t.status, t.github_issue_url,
+              t.reviewer_id, t.review_status,
+              u.user_id, u.full_name,
+              CASE WHEN a.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_agent,
+              r.full_name AS reviewer_name
+         FROM tasks t
+         LEFT JOIN users u  ON t.assigned_to = u.user_id
+         LEFT JOIN agents a ON a.user_id = u.user_id
+         LEFT JOIN users r  ON t.reviewer_id = r.user_id
+         WHERE t.task_id = ?`
     )
       .bind(taskId)
       .first();
-
-    if (!task) {
-      return Response.json({ error: "Task not found" }, { status: 404 });
-    }
 
     return Response.json({ task });
   } catch (err) {
