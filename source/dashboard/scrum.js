@@ -16,6 +16,7 @@
 
 import { createTaskCard } from "../task-card/task-card.js";
 import { renderAgents } from "../agent-card/agent-card.js";
+import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
 import { apiFetch, ApiError } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 
@@ -900,6 +901,21 @@ function init() {
   // ── View toggle (list ⇄ kanban) ────────────────────
   document.querySelectorAll(".view-toggle-btn").forEach((btn) => {
     btn.addEventListener("click", () => setViewMode(btn.dataset.view));
+  });
+
+  // ── Add-agent button (opens agent-form modal) ──────
+  // Members are filtered to non-agents inside openAgentModal — we pass
+  // the full cached list. createAgent posts to the API; on success we
+  // reload everything so the new agent shows in the rail + the
+  // assignee/owner pickers.
+  document.getElementById("add-agent-btn")?.addEventListener("click", () => {
+    openAgentModal({
+      members: projectMembers,
+      onSubmit: async (data) => {
+        await createAgent(PROJECT_ID, data);
+        await loadAll();
+      },
+    });
   });
 
   // ── Add-task button (opens task-form modal) ────────

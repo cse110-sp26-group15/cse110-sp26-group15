@@ -1,5 +1,6 @@
 import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
 import { renderAgents } from "../agent-card/agent-card.js";
+import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
 import { apiFetch, ApiError } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 
@@ -658,6 +659,27 @@ async function init() {
   }
   // No-op on pages without an #agents-list container.
   await loadAgents();
+
+  // "+ Add Agent" button in the AI Agents rail header (xp dashboard).
+  // On other pages without the button this is a no-op. Bound here in
+  // init() so projectMembers is already cached. The onSubmit refreshes
+  // members + agents but does NOT re-call init() — that would re-bind
+  // this same listener and stack duplicates.
+  document.getElementById("add-agent-btn")?.addEventListener("click", () => {
+    openAgentModal({
+      members: projectMembers,
+      onSubmit: async (data) => {
+        await createAgent(PROJECT_ID, data);
+        try {
+          projectMembers = await fetchMembers();
+        } catch (err) {
+          console.warn("[main] re-fetch members after agent create failed", err);
+        }
+        populateCreateFormAssignees();
+        await loadAgents();
+      },
+    });
+  });
 }
 
 init();

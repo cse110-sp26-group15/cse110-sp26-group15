@@ -16,6 +16,7 @@
 
 import { createTaskCard } from "../task-card/task-card.js";
 import { renderAgents } from "../agent-card/agent-card.js";
+import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
 import { apiFetch, ApiError } from "../shared/utils.js";
 
 // ── Constants ────────────────────────────────────────
@@ -349,6 +350,17 @@ function init() {
   // "+ Add Task" button at the top of the board.
   document.getElementById("add-task-btn")?.addEventListener("click", () => {
     openCreateTaskModal({ defaultStatus: "todo" });
+  });
+
+  // "+ Add Agent" button in the AI Agents rail header.
+  document.getElementById("add-agent-btn")?.addEventListener("click", () => {
+    openAgentModal({
+      members: projectMembers,
+      onSubmit: async (data) => {
+        await createAgent(PROJECT_ID, data);
+        await loadAll();
+      },
+    });
   });
 
   // Expose the member + agent caches to the task-form modal so it can
