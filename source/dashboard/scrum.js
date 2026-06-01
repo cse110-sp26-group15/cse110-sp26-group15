@@ -451,65 +451,33 @@ function renderCheckins(checkins, members) {
 }
 
 // ── Task rendering helpers (shared by list + kanban) ──
-// Decorates a card with the page-specific status + delete controls in a
-// row below the task-card component. The shared component intentionally
-// doesn't provide a delete button, so we add it here.
+// onChange handler for the shared task-card's interactive controls. The card
+// can edit priority, story points, tags, blocker, assignee and status inline,
+// but only assigned_to + status have backend persistence right now — the rest
+// update locally and are intentionally not PATCHed. Blocker persistence is
+// owned by another branch, so we leave is_blocked/blocker_reason untouched too.
+async function persistTaskChange(taskId, fields) {
+  const payload = {};
+  if ("assigned_to" in fields) payload.assigned_to = fields.assigned_to;
+  if ("status" in fields) payload.status = fields.status;
+  if (Object.keys(payload).length === 0) return;
+
+  try {
+    await updateTask(taskId, payload);
+    await loadAll();
+  } catch (err) {
+    console.error("[scrum] task-card change failed", err);
+    alert(`Couldn't update task: ${err.message}`);
+    await loadAll();
+  }
+}
+
+// Adds the page-specific delete button in a row below the task-card. Assignee
+// and status editing now come from the shared component's interactive mode;
+// the component intentionally doesn't provide a delete button, so we add it.
 function appendTaskControls(card, task) {
   const row = document.createElement("div");
   row.className = "task-card-row-delete";
-
-  const assigneeSelect = document.createElement("select");
-  assigneeSelect.className = "assignee-select";
-  assigneeSelect.dataset.taskId = task.task_id;
-  assigneeSelect.setAttribute("aria-label", "Assignee");
-  const unassigned = document.createElement("option");
-  unassigned.value = "";
-  unassigned.textContent = "Unassigned";
-  assigneeSelect.appendChild(unassigned);
-  for (const m of projectMembers) {
-    const opt = document.createElement("option");
-    opt.value = String(m.user_id);
-    opt.textContent = m.full_name ?? "";
-    if (task.user_id != null && Number(m.user_id) === Number(task.user_id)) {
-      opt.selected = true;
-    }
-    assigneeSelect.appendChild(opt);
-  }
-  assigneeSelect.addEventListener("change", async (e) => {
-    const raw = e.target.value;
-    const newId = raw === "" ? null : Number(raw);
-    try {
-      await updateTask(task.task_id, { assigned_to: newId });
-      await loadAll();
-    } catch (err) {
-      console.error("[scrum] updateTask (assignee) failed", err);
-      alert(`Couldn't reassign task: ${err.message}`);
-      await loadAll();
-    }
-  });
-
-  const statusSelect = document.createElement("select");
-  statusSelect.className = `status-select status-${task.status ?? "todo"}`;
-  statusSelect.dataset.taskId = task.task_id;
-  for (const col of STATUS_COLUMNS) {
-    const opt = document.createElement("option");
-    opt.value = col.key;
-    opt.textContent = col.label;
-    if (task.status === col.key) opt.selected = true;
-    statusSelect.appendChild(opt);
-  }
-  statusSelect.addEventListener("change", async (e) => {
-    const newStatus = e.target.value;
-    e.target.className = `status-select status-${newStatus}`;
-    try {
-      await updateTask(task.task_id, { status: newStatus });
-      await loadAll();
-    } catch (err) {
-      console.error("[scrum] updateTask failed", err);
-      alert(`Couldn't update task: ${err.message}`);
-      await loadAll();
-    }
-  });
 
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
@@ -526,8 +494,6 @@ function appendTaskControls(card, task) {
     }
   });
 
-  row.appendChild(assigneeSelect);
-  row.appendChild(statusSelect);
   row.appendChild(deleteBtn);
   card.appendChild(row);
 }
@@ -538,9 +504,16 @@ function buildTaskCard(task, { compact = false } = {}) {
   // "Urgent · Sprint 3" the way the task-card scrum variant expects.
   const enriched = {
     ...task,
+    // The card's assignee dropdown keys off assigned_to; scrum rows carry the
+    // assignee as user_id, so mirror it across for correct pre-selection.
+    assigned_to: task.assigned_to ?? task.user_id ?? null,
     sprint: sprintState.number ? `Sprint ${sprintState.number}` : task.sprint,
   };
-  const card = createTaskCard(enriched, "scrum", { compact });
+  const card = createTaskCard(enriched, "scrum", {
+    compact,
+    members: projectMembers,
+    onChange: persistTaskChange,
+  });
   appendTaskControls(card, task);
   return card;
 }
