@@ -173,6 +173,31 @@ let projectMembers = [];
 // task-form modal can identify which assignees are agents.
 let projectAgents = [];
 
+// Maps a task title → the description of an open blocker filed against it (via
+// the daily check-in). Rebuilt each loadTasks; used to show a blocker chip on
+// the matching task card. Cards display blockers read-only — they're raised
+// and resolved through the check-in flow, not here.
+let blockerByTask = new Map();
+
+// Build the title→reason lookup from the open-blocker list. First open blocker
+// per task wins (the API returns them most-recent-first).
+function buildBlockerIndex(openBlockers) {
+  const map = new Map();
+  for (const b of openBlockers ?? []) {
+    if (!b.task) continue; // skip project-wide (general) blockers
+    if (!map.has(b.task)) map.set(b.task, b.description || "Blocked");
+  }
+  return map;
+}
+
+// Returns a copy of `task` flagged as blocked when an open blocker targets it;
+// otherwise the task unchanged.
+function enrichTaskWithBlocker(task) {
+  const reason = blockerByTask.get(task.title);
+  if (!reason) return task;
+  return { ...task, is_blocked: true, blocker_reason: reason };
+}
+
 /**
  * Builds the inner HTML for an assignee `<select>`, populated from the cached
  * project members list with the given member pre-selected.
@@ -229,7 +254,7 @@ function renderBoard(tasks) {
     }
 
     for (const task of colTasks) {
-      const card = createTaskCard(task, "kanban", {
+      const card = createTaskCard(enrichTaskWithBlocker(task), "kanban", {
         members: projectMembers,
         onChange: async (taskId, fields) => {
           await updateTask(taskId, fields);
@@ -269,6 +294,10 @@ function renderTaskList(tasks) {
   const list = document.getElementById("task-list");
   if (!list) return;
 
+  // Each page declares its card variant via `data-card-variant` on #task-list
+  // (xp.html → "xp"; main.html → "kanban"). Defaults to the base kanban card.
+  const variant = list.dataset.cardVariant || "kanban";
+
   list.innerHTML = "";
 
   if (tasks.length === 0) {
@@ -277,7 +306,16 @@ function renderTaskList(tasks) {
   }
 
   for (const task of tasks) {
-    const card = createTaskCard(task, "xp");
+    const card = createTaskCard(enrichTaskWithBlocker(task), variant, {
+      members: projectMembers,
+      editPair: false,
+      onChange: async (taskId, fields) => {
+        await updateTask(taskId, fields);
+        if (fields.status !== undefined) {
+          await loadTasks();
+        }
+      },
+    });
     list.appendChild(card);
   }
 }
@@ -317,6 +355,18 @@ async function loadTasks() {
     console.error("[main] loadTasks failed", err);
     return;
   }
+
+  // Pull open blockers so cards can show a chip when a check-in flagged the
+  // task as blocked. Best-effort: a blocker-fetch failure must not blank the
+  // board, so we log it and render tasks without chips.
+  try {
+    const data = await fetchDashboard();
+    blockerByTask = buildBlockerIndex(data?.open_blockers ?? []);
+  } catch (err) {
+    console.error("[main] loadTasks: blocker fetch failed", err);
+    blockerByTask = new Map();
+  }
+
   renderBoard(tasks);
   renderTaskList(tasks);
   await refreshBlockerBanner();

@@ -243,6 +243,28 @@ export function writeSprintToStorage(sprint, storage = globalThis.localStorage) 
 // user saves the picker.
 let sprintState = { number: null, start_date: null, end_date: null };
 
+// Real sprint_id of the current sprint, when the API knows one. Used to wire
+// the create-modal's sprint dropdown. Null until /sprints/current returns a
+// row (localStorage picks carry only a number, never a sprint_id).
+let currentSprintId = null;
+
+// Maps a task title → the description of an open blocker filed against it (via
+// the daily check-in). Rebuilt each loadAll; used to show a blocker chip on
+// the matching task card. Blockers are read-only here — they're raised and
+// resolved through the check-in flow, not the cards.
+let blockerByTask = new Map();
+
+// Build the title→reason lookup from the open-blocker list. First (most
+// recent, since the API sorts DESC) open blocker per task wins.
+function buildBlockerIndex(blockers) {
+  const map = new Map();
+  for (const b of blockers ?? []) {
+    if (b.is_resolved || !b.task) continue;
+    if (!map.has(b.task)) map.set(b.task, b.description || "Blocked");
+  }
+  return map;
+}
+
 // "list" or "kanban" — controls which view of Sprint Tasks is visible.
 let viewMode = "list";
 
@@ -277,6 +299,9 @@ async function fetchTasks() {
  *
  * `forceStatus` overrides whatever status the modal returned — used by
  * kanban-column + buttons so the task always lands in the right column.
+ *
+ * New tasks automatically join the currently-active sprint — there's no
+ * manual sprint picker, since a task created "now" belongs to "now"'s sprint.
  */
 async function createTask(data, { forceStatus } = {}) {
   const status = forceStatus ?? data.status ?? "todo";
@@ -290,6 +315,10 @@ async function createTask(data, { forceStatus } = {}) {
     // either way; we just avoid sending null spam for human tasks.
     ...(data.reviewer_id != null ? { reviewer_id: data.reviewer_id } : {}),
     ...(data.review_status != null ? { review_status: data.review_status } : {}),
+    // Auto-assign to the active sprint. TODO(sprint-persistence): the tasks
+    // table has no sprint_id column yet, so the API silently drops this. Once
+    // the migration + API land, this will actually link the task to a sprint.
+    sprint_id: currentSprintId,
   };
 
   const { task } = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`, {
@@ -322,6 +351,9 @@ async function fetchBlockers() {
   return (data.blockers ?? []).map((b) => ({
     blocker_id: b.blocker_id,
     description: b.description,
+    // The task title this blocker is filed against (null = project-wide).
+    // Used to show a blocker chip on the matching task card.
+    task: b.task ?? null,
     tag: b.helper || null,
     full_name: b.reported_by || b.full_name || "",
     is_resolved: Boolean(b.is_resolved),
@@ -471,35 +503,33 @@ function renderCheckins(checkins, members) {
 }
 
 // ── Task rendering helpers (shared by list + kanban) ──
-// Decorates a card with the page-specific status + delete controls in a
-// row below the task-card component. The shared component intentionally
-// doesn't provide a delete button, so we add it here.
+// onChange handler for the shared task-card's interactive controls. The card
+// can edit priority, story points, tags, blocker, assignee and status inline,
+// but only assigned_to + status have backend persistence right now — the rest
+// update locally and are intentionally not PATCHed. Blocker persistence is
+// owned by another branch, so we leave is_blocked/blocker_reason untouched too.
+async function persistTaskChange(taskId, fields) {
+  const payload = {};
+  if ("assigned_to" in fields) payload.assigned_to = fields.assigned_to;
+  if ("status" in fields) payload.status = fields.status;
+  if (Object.keys(payload).length === 0) return;
+
+  try {
+    await updateTask(taskId, payload);
+    await loadAll();
+  } catch (err) {
+    console.error("[scrum] task-card change failed", err);
+    alert(`Couldn't update task: ${err.message}`);
+    await loadAll();
+  }
+}
+
+// Adds the page-specific delete button in a row below the task-card. Assignee
+// and status editing now come from the shared component's interactive mode;
+// the component intentionally doesn't provide a delete button, so we add it.
 function appendTaskControls(card, task) {
   const row = document.createElement("div");
   row.className = "task-card-row-delete";
-
-  const statusSelect = document.createElement("select");
-  statusSelect.className = `status-select status-${task.status ?? "todo"}`;
-  statusSelect.dataset.taskId = task.task_id;
-  for (const col of STATUS_COLUMNS) {
-    const opt = document.createElement("option");
-    opt.value = col.key;
-    opt.textContent = col.label;
-    if (task.status === col.key) opt.selected = true;
-    statusSelect.appendChild(opt);
-  }
-  statusSelect.addEventListener("change", async (e) => {
-    const newStatus = e.target.value;
-    e.target.className = `status-select status-${newStatus}`;
-    try {
-      await updateTask(task.task_id, { status: newStatus });
-      await loadAll();
-    } catch (err) {
-      console.error("[scrum] updateTask failed", err);
-      alert(`Couldn't update task: ${err.message}`);
-      await loadAll();
-    }
-  });
 
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
@@ -516,7 +546,6 @@ function appendTaskControls(card, task) {
     }
   });
 
-  row.appendChild(statusSelect);
   row.appendChild(deleteBtn);
   card.appendChild(row);
 }
@@ -525,11 +554,21 @@ function appendTaskControls(card, task) {
 function buildTaskCard(task, { compact = false } = {}) {
   // Mix in the active sprint number so the card banner reads
   // "Urgent · Sprint 3" the way the task-card scrum variant expects.
+  const blockerReason = blockerByTask.get(task.title);
   const enriched = {
     ...task,
+    // The card's assignee dropdown keys off assigned_to; scrum rows carry the
+    // assignee as user_id, so mirror it across for correct pre-selection.
+    assigned_to: task.assigned_to ?? task.user_id ?? null,
     sprint: sprintState.number ? `Sprint ${sprintState.number}` : task.sprint,
+    // Surface an open check-in blocker (if any) as the card's blocker chip.
+    ...(blockerReason ? { is_blocked: true, blocker_reason: blockerReason } : null),
   };
-  const card = createTaskCard(enriched, "scrum", { compact });
+  const card = createTaskCard(enriched, "scrum", {
+    compact,
+    members: projectMembers,
+    onChange: persistTaskChange,
+  });
   appendTaskControls(card, task);
   return card;
 }
@@ -781,6 +820,12 @@ async function loadAll() {
       end_date: apiSprint.end_date ?? null,
     };
   }
+
+  // Remember the real sprint_id so the create-modal dropdown can send it.
+  currentSprintId = apiSprint?.sprint_id ?? currentSprintId;
+
+  // Index open blockers by task title so cards can show a blocker chip.
+  blockerByTask = buildBlockerIndex(blockers);
 
   renderSprintHeader(checkins);
   renderSprintProgress(tasks);
