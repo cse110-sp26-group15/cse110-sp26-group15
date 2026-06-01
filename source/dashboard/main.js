@@ -1,6 +1,9 @@
 import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
 import { renderAgents } from "../agent-card/agent-card.js";
 import { apiFetch, ApiError } from "../shared/utils.js";
+import { initUserMenu } from "../shared/user-menu.js";
+
+initUserMenu();
 
 // Hard-coded for now; will switch to the logged-in project once auth context
 // is plumbed through (same TODO as scrum.js / kanban.js).
@@ -17,11 +20,6 @@ document.querySelectorAll(".nav-item").forEach((item) => {
     e.preventDefault();
     document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
     item.classList.add("active");
-
-    const topbarTitle = document.querySelector(".topbar-title");
-    if (topbarTitle) {
-      topbarTitle.textContent = item.textContent.trim();
-    }
 
     switchView(item.textContent.trim());
   });

@@ -20,8 +20,16 @@ const submitBtn = document.getElementById("submit-btn");
 const banner = document.getElementById("error-banner");
 const toggleBtn = document.getElementById("toggle-password");
 const toggleLabel = document.getElementById("toggle-label");
-const forgotLink = document.getElementById("forgot-link");
 const slackBtn = document.getElementById("slack-btn");
+const slackNotice = document.getElementById("slack-notice");
+const rememberMe = document.getElementById("remember-me");
+
+// ── Remember Me — restore saved email on load ───────────
+const savedEmail = localStorage.getItem("sitrep_remembered_email");
+if (savedEmail) {
+  emailInput.value = savedEmail;
+  rememberMe.checked = true;
+}
 
 // ── Password show/hide ──────────────────────────────────
 toggleBtn.addEventListener("click", () => {
@@ -47,21 +55,13 @@ pwInput.addEventListener("blur", () => {
   }
 });
 
-// Clear field errors on input
 emailInput.addEventListener("input", () => clearFieldError(emailInput, emailError));
 pwInput.addEventListener("input", () => clearFieldError(pwInput, pwError));
 
-// ── Forgot password ─────────────────────────────────────
-forgotLink.addEventListener("click", (e) => {
-  e.preventDefault();
-  // TODO: Navigate to forgot-password page when implemented
-  alert("Password reset is not yet available. Please contact your admin.");
-});
-
-// ── Slack SSO ───────────────────────────────────────────
+// ── Slack SSO — show inline notice instead of alert ─────
 slackBtn.addEventListener("click", () => {
-  // TODO: Implement OAuth redirect when Slack integration is ready
-  alert("Slack sign-in coming soon.");
+  slackNotice.hidden = false;
+  slackNotice.scrollIntoView({ behavior: "smooth", block: "nearest" });
 });
 
 // ── Form submit ─────────────────────────────────────────
@@ -94,7 +94,14 @@ form.addEventListener("submit", async (e) => {
     const { token, user } = await apiLogin({ email, password });
     saveToken(token);
     saveCurrentUser(user);
-    // TODO: Redirect to dashboard once it exists; for now go to project setup
+
+    // Persist or clear remembered email based on checkbox
+    if (rememberMe.checked) {
+      localStorage.setItem("sitrep_remembered_email", email);
+    } else {
+      localStorage.removeItem("sitrep_remembered_email");
+    }
+
     navigateTo("../project-setup/");
   } catch (err) {
     showBanner(banner, err.message || "Something went wrong. Please try again.");
