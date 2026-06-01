@@ -1,8 +1,5 @@
 import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
 import { apiFetch, ApiError } from "../shared/utils.js";
-import { initUserMenu } from "../shared/user-menu.js";
-
-initUserMenu();
 
 // Hard-coded for now; will switch to the logged-in project once auth context
 // is plumbed through (same TODO as scrum.js / kanban.js).

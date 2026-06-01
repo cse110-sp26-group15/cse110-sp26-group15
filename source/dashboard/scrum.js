@@ -16,9 +16,6 @@
 
 import { createTaskCard } from "../task-card/task-card.js";
 import { apiFetch, ApiError } from "../shared/utils.js";
-import { initUserMenu } from "../shared/user-menu.js";
-
-initUserMenu();
 
 // task-form.js runs `document.addEventListener(...)` at module top, so we
 // can't import it statically — it would crash the node-side tests where

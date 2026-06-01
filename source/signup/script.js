@@ -12,8 +12,6 @@ import {
 } from "../shared/utils.js";
 
 const form = document.getElementById("signup-form");
-const nameInput = document.getElementById("full-name");
-const nameError = document.getElementById("name-error");
 const emailInput = document.getElementById("email");
 const emailError = document.getElementById("email-error");
 const pwInput = document.getElementById("password");
@@ -41,14 +39,6 @@ toggleConfirm.addEventListener("click", () => {
 });
 
 // ── Inline validation on blur ───────────────────────────
-nameInput.addEventListener("blur", () => {
-  if (!nameInput.value.trim()) {
-    setFieldError(nameInput, nameError, "Please enter your full name.");
-  } else {
-    clearFieldError(nameInput, nameError);
-  }
-});
-
 emailInput.addEventListener("blur", () => {
   if (!validateEmail(emailInput.value)) {
     setFieldError(emailInput, emailError, "Please enter a valid email address.");
@@ -74,7 +64,6 @@ confirmInput.addEventListener("blur", () => {
 });
 
 // Clear on input
-nameInput.addEventListener("input", () => clearFieldError(nameInput, nameError));
 emailInput.addEventListener("input", () => clearFieldError(emailInput, emailError));
 pwInput.addEventListener("input", () => clearFieldError(pwInput, pwError));
 confirmInput.addEventListener("input", () => clearFieldError(confirmInput, confirmError));
@@ -84,17 +73,11 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
   hideBanner(banner);
 
-  const fullName = nameInput.value.trim();
   const email = emailInput.value.trim();
   const password = pwInput.value;
   const confirm = confirmInput.value;
 
   let valid = true;
-
-  if (!fullName) {
-    setFieldError(nameInput, nameError, "Please enter your full name.");
-    valid = false;
-  }
 
   if (!validateEmail(email)) {
     setFieldError(emailInput, emailError, "Please enter a valid email address.");
@@ -118,14 +101,9 @@ form.addEventListener("submit", async (e) => {
   submitBtn.textContent = "Creating account…";
 
   try {
-    const { token, user } = await apiSignup({ email, password, full_name: fullName });
+    const { token, user } = await apiSignup({ email, password });
     saveToken(token);
-
-    // Persist full name to localStorage for display in sidebar/profile/settings.
-    // This supplements whatever the server returns in the user object.
-    localStorage.setItem("sitrep_display_name", fullName);
-
-    saveCurrentUser({ ...user, full_name: user?.full_name ?? fullName });
+    saveCurrentUser(user);
     navigateTo("../project-setup/");
   } catch (err) {
     showBanner(banner, err.message || "Something went wrong. Please try again.");

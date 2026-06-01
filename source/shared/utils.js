@@ -130,17 +130,12 @@ export async function apiLogin({ email, password }) {
 
 /**
  * POST /api/auth/signup
- * full_name is optional — included in the payload if provided but ignored
- * gracefully if the backend doesn't support it yet.
  */
-export async function apiSignup({ email, password, full_name }) {
-  const body = { email, password };
-  if (full_name) body.full_name = full_name;
-
+export async function apiSignup({ email, password }) {
   const res = await fetch("/api/auth/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ email, password }),
   });
 
   if (!res.ok) {

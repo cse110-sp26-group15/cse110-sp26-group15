@@ -8,6 +8,13 @@
 }
 
 /* ── Variables ─────────────────────────────────────────── */
+/* This page derives its whole palette from the shared design tokens in
+   ../shared/theme.css. Only the page-specific alias names are (re)defined
+   here, each pointing at a theme token; the former orange/green brand
+   collapses onto the theme --color-primary used across the dashboard.
+   Names that collide with theme tokens (--color-border, --color-text,
+   --color-error, --radius-*) are intentionally NOT redefined — their
+   usages below fall straight through to theme.css. */
 :root {
   --accent: var(--color-primary);
   --accent-hover: var(--color-primary-hover);
@@ -17,6 +24,8 @@
   --green: var(--color-primary);
   --green-hover: var(--color-primary-hover);
 
+  /* --color-bg shadows the theme token so the inset member panel keeps a
+     subtle contrast against the white surface. */
   --color-bg: var(--color-bg-subtle);
   --color-surface: var(--color-bg-surface);
   --color-muted: var(--color-text-muted);
@@ -44,7 +53,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
-  height: 60px;
+  height: 56px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
@@ -76,10 +85,9 @@ body {
   letter-spacing: -0.3px;
 }
 
-.topbar-tagline {
+.topbar-step {
   font-size: 13px;
   color: var(--color-muted);
-  font-style: italic;
 }
 
 /* ── Main centered area ──────────────────────────────── */
@@ -88,28 +96,27 @@ body {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 52px 24px 60px;
+  padding: 48px 24px;
 }
 
 /* ── Card ────────────────────────────────────────────── */
 .setup-card {
   width: 100%;
-  max-width: 620px;
+  max-width: 560px;
   background: var(--color-surface);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  padding: 48px 52px;
+  padding: 40px 44px;
 }
 
 .setup-card-header {
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .setup-title {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: -0.4px;
-  color: var(--color-text);
+  letter-spacing: -0.3px;
 }
 
 .setup-subtitle {
@@ -120,24 +127,24 @@ body {
 
 /* ── Fields ──────────────────────────────────────────── */
 .field {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .field label,
 .field-label-block {
   display: block;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .field input[type="text"],
 .field input[type="email"] {
   width: 100%;
-  padding: 11px 14px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   font-size: 14px;
   color: var(--color-text);
   background: var(--color-surface);
@@ -145,7 +152,6 @@ body {
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
-  font-family: var(--font-sans);
 }
 
 .field input:focus {
@@ -161,7 +167,7 @@ body {
 .field-error {
   font-size: 12px;
   color: var(--color-error);
-  margin-top: 5px;
+  margin-top: 4px;
   display: none;
 }
 
@@ -169,81 +175,45 @@ body {
   display: block;
 }
 
-/* ── Workflow card selector ───────────────────────────── */
-.workflow-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+/* ── Workflow segmented control ───────────────────────── */
+.workflow-selector {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
-.workflow-cards input[type="radio"] {
+.workflow-selector input[type="radio"] {
   display: none;
 }
 
-.workflow-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 18px 12px 16px;
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-lg);
+.workflow-selector label {
+  flex: 1;
+  text-align: center;
+  padding: 9px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-muted);
   cursor: pointer;
   transition:
-    border-color 0.15s,
     background 0.15s,
-    box-shadow 0.15s;
-  text-align: center;
+    color 0.15s;
   user-select: none;
 }
 
-.workflow-card:hover {
-  border-color: var(--accent);
+.workflow-selector input[type="radio"]:checked + label {
+  background: var(--accent);
+  color: var(--color-text-on-primary);
+}
+
+.workflow-selector label:hover {
   background: var(--accent-light);
+  color: var(--color-text-on-primary-muted);
 }
 
-.workflow-cards input[type="radio"]:checked + .workflow-card {
-  border-color: var(--accent);
-  background: var(--accent-light);
-  box-shadow: 0 0 0 1px var(--accent);
-}
-
-.wf-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-muted);
-  transition: color 0.15s;
-}
-
-.wf-icon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.workflow-cards input[type="radio"]:checked + .workflow-card .wf-icon {
-  color: var(--accent);
-  background: var(--color-surface);
-}
-
-.workflow-card:hover .wf-icon {
-  color: var(--accent);
-}
-
-.wf-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.wf-desc {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  line-height: 1.4;
+.workflow-selector input[type="radio"]:checked + label:hover {
+  background: var(--accent);
+  color: var(--color-text-on-primary);
 }
 
 /* ── Add member row ──────────────────────────────────── */
@@ -254,12 +224,11 @@ body {
 
 .member-add-row input {
   flex: 1;
-  padding: 11px 14px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   font-size: 14px;
   outline: none;
-  font-family: var(--font-sans);
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
@@ -276,16 +245,15 @@ body {
 }
 
 .btn-add-member {
-  padding: 11px 22px;
-  border-radius: var(--radius-md);
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
   background: var(--accent-light);
   color: var(--color-text-on-primary-muted);
-  border: 1.5px solid var(--accent-100);
+  border: 1px solid var(--accent-100);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  font-family: var(--font-sans);
   transition: background 0.15s;
 }
 
@@ -295,7 +263,7 @@ body {
 
 /* ── Member list ─────────────────────────────────────── */
 .member-list-wrap {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   padding: 14px 16px;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
@@ -360,7 +328,7 @@ body {
   padding: 10px 14px;
   font-size: 13px;
   color: var(--color-error);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   display: none;
 }
 
@@ -368,15 +336,15 @@ body {
   display: block;
 }
 
-/* ── Submit button ────────────────────────────────────── */
+/* ── Submit ───────────────────────────────────────────── */
 .setup-actions {
-  padding-top: 8px;
+  padding-top: 4px;
 }
 
 .btn {
   width: 100%;
-  padding: 13px 20px;
-  border-radius: var(--radius-md);
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -384,11 +352,6 @@ body {
   transition:
     background 0.15s,
     opacity 0.15s;
-  font-family: var(--font-sans);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
 }
 
 .btn-primary {
@@ -410,56 +373,13 @@ body {
   cursor: not-allowed;
 }
 
-.btn-arrow {
-  font-size: 16px;
-  line-height: 1;
-}
-
-/* ── Footer note ─────────────────────────────────────── */
-.setup-footer-note {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 16px;
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.note-icon {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  color: var(--color-text-subtle);
-}
-
 /* ── Responsive ───────────────────────────────────────── */
-@media (max-width: 680px) {
-  .setup-card {
-    padding: 32px 28px;
-  }
-}
-
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .setup-card {
     padding: 28px 20px;
   }
 
-  .workflow-cards {
-    grid-template-columns: 1fr;
-  }
-
-  .workflow-card {
-    flex-direction: row;
-    text-align: left;
-    gap: 12px;
-    padding: 14px 16px;
-  }
-
-  .wf-desc {
-    display: none;
-  }
-
-  .topbar-tagline {
+  .topbar-step {
     display: none;
   }
 }

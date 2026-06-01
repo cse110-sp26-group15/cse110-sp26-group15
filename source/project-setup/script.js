@@ -123,17 +123,11 @@ form.addEventListener("submit", async (e) => {
 
   submitBtn.disabled = true;
   submitBtn.classList.add("loading");
-  submitBtn.innerHTML = "Creating workspace…";
+  submitBtn.textContent = "Creating project…";
 
   try {
     const created_by = getCurrentUser()?.user_id ?? null;
-    const result = await apiCreateProject({ name, workflow, members: [...members], created_by });
-    // Persist project info so Profile/Settings pages can read it without an extra API call.
-    const projectData = result?.project ?? { name, workflow };
-    localStorage.setItem(
-      "sitrep_project",
-      JSON.stringify({ name: projectData.name ?? name, workflow: projectData.workflow ?? workflow })
-    );
+    await apiCreateProject({ name, workflow, members: [...members], created_by });
     const dashMap = {
       scrum: "../dashboard/scrum.html",
       kanban: "../dashboard/kanban.html",
@@ -145,6 +139,6 @@ form.addEventListener("submit", async (e) => {
   } finally {
     submitBtn.disabled = false;
     submitBtn.classList.remove("loading");
-    submitBtn.innerHTML = 'Create workspace <span class="btn-arrow" aria-hidden="true">→</span>';
+    submitBtn.textContent = "Create project";
   }
 });
