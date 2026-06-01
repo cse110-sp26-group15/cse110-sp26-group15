@@ -1,4 +1,20 @@
-// ── Task Card Component ───────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
+// Task Card Component
+//
+// Renders a single task as a self-contained <article> for the kanban, scrum,
+// and xp dashboards. The same element serves two modes:
+//
+//   • read-only  — plain labels (omit `onChange`).
+//   • interactive — inline <select>/<input> controls that call `onChange`
+//                   with only the field that changed (pass `onChange`).
+//
+// Missing task fields are tolerated: the card degrades gracefully rather than
+// throwing (e.g. no priority → "low", no description → the row is dropped).
+//
+// Public API lives at the bottom: createTaskCard() and setTaskCardStatus().
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── Constants ─────────────────────────────────────────
 const PRIORITY_ICONS = {
   urgent: "⚠",
   high: "↑",
@@ -6,12 +22,43 @@ const PRIORITY_ICONS = {
   low: "↓",
 };
 
+// Priority values in display order (also the <select> option order).
+const PRIORITY_ORDER = ["urgent", "high", "medium", "low"];
+
 const STATUS_LABELS = {
   todo: "todo",
   "in-progress": "in progress",
   done: "done",
   blocked: "blocked",
 };
+
+// ── DOM + formatting helpers ──────────────────────────
+/**
+ * Terse element factory. `opts` covers the attributes used across this file;
+ * remaining args are children (DOM nodes or strings → text nodes).
+ */
+function el(tag, opts = {}, ...children) {
+  const node = document.createElement(tag);
+  if (opts.className) node.className = opts.className;
+  if (opts.text != null) node.textContent = opts.text;
+  if (opts.title != null) node.title = opts.title;
+  if (opts.ariaLabel != null) node.setAttribute("aria-label", opts.ariaLabel);
+  if (opts.type != null) node.type = opts.type;
+  if (opts.placeholder != null) node.placeholder = opts.placeholder;
+  for (const child of children) {
+    if (child != null) node.append(child);
+  }
+  return node;
+}
+
+// Replaces whichever `${prefix}*` modifier class is present with `prefix+value`,
+// leaving every other class on the node untouched.
+function swapPrefixedClass(node, prefix, value) {
+  [...node.classList].forEach((c) => {
+    if (c.startsWith(prefix)) node.classList.remove(c);
+  });
+  node.classList.add(`${prefix}${value}`);
+}
 
 function formatDueDate(iso) {
   if (!iso) return "";
@@ -36,6 +83,31 @@ function capitalize(word) {
   return word[0].toUpperCase() + word.slice(1);
 }
 
+// Builds an avatar bubble showing a person's initials (or "?" when nobody).
+// `markEmpty` adds the --empty modifier for unassigned interactive slots.
+function buildAvatar(source, { markEmpty = false, extraClass = null } = {}) {
+  const avatar = el("span", {
+    className: "task-card__avatar",
+    text: source ? initials(source) : "?",
+  });
+  if (markEmpty && !source) avatar.classList.add("task-card__avatar--empty");
+  if (extraClass) avatar.classList.add(extraClass);
+  return avatar;
+}
+
+// Appends `{ value, label, selected }` options to a <select>.
+function addOptions(select, options) {
+  for (const { value, label, selected } of options) {
+    const opt = el("option", { text: label });
+    opt.value = value;
+    if (selected) opt.selected = true;
+    select.appendChild(opt);
+  }
+}
+
+// ── Change notification ───────────────────────────────
+// Invokes the consumer's onChange with the single changed field, swallowing
+// both sync throws and rejected promises so a card never breaks the page.
 function notifyChange(ctx, task, fields) {
   if (!ctx?.onChange) return;
   try {
@@ -48,77 +120,46 @@ function notifyChange(ctx, task, fields) {
   }
 }
 
-function buildPrioritySelect(task, currentPriority, iconEl, textEl, ctx) {
-  const select = document.createElement("select");
-  select.className = "task-card__select task-card__select--priority";
-  select.setAttribute("aria-label", "Priority");
-  ["urgent", "high", "medium", "low"].forEach((p) => {
-    const opt = document.createElement("option");
-    opt.value = p;
-    opt.textContent = capitalize(p);
-    if (p === currentPriority) opt.selected = true;
-    select.appendChild(opt);
+// ── Inline-edit helpers ───────────────────────────────
+// Wires Enter=submit / Escape=cancel / blur=submit onto a text input, with a
+// one-shot guard so blur-after-Enter doesn't fire the callback twice.
+function attachInlineText(input, { onSubmit, onCancel }) {
+  let done = false;
+  const finish = (fn) => {
+    if (done) return;
+    done = true;
+    fn();
+  };
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      finish(onSubmit);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      finish(onCancel);
+    }
   });
-
-  select.addEventListener("change", (e) => {
-    const newPriority = e.target.value;
-    [...ctx.card.classList].forEach((c) => {
-      if (c.startsWith("task-card--priority-")) ctx.card.classList.remove(c);
-    });
-    ctx.card.classList.add(`task-card--priority-${newPriority}`);
-    iconEl.textContent = PRIORITY_ICONS[newPriority] ?? "";
-    if (textEl) textEl.textContent = capitalize(newPriority);
-    notifyChange(ctx, task, { priority: newPriority });
-  });
-
-  return select;
+  input.addEventListener("blur", () => finish(onSubmit));
 }
 
-function buildStatusSelect(task, ctx) {
-  const select = document.createElement("select");
-  const currentStatus = task.status ?? "todo";
-  select.className = `task-card__select task-card__select--status task-card__status task-card__status--${currentStatus}`;
+// Wires a numeric input that commits on Enter/blur and reverts on Escape or
+// invalid input (empty, non-finite, negative). `onCommit` fires only when the
+// normalized value actually changed.
+function attachNumberCommit(input, { onCommit }) {
+  let lastValue = input.value;
 
-  Object.entries(STATUS_LABELS).forEach(([value, labelText]) => {
-    if (value === "blocked") return;
-    const opt = document.createElement("option");
-    opt.value = value;
-    opt.textContent = labelText;
-    if (value === currentStatus) opt.selected = true;
-    select.appendChild(opt);
-  });
-
-  select.addEventListener("change", (e) => {
-    const newStatus = e.target.value;
-    [...select.classList].forEach((c) => {
-      if (c.startsWith("task-card__status--")) select.classList.remove(c);
-    });
-    select.classList.add(`task-card__status--${newStatus}`);
-    notifyChange(ctx, task, { status: newStatus });
-  });
-
-  return select;
-}
-
-function attachNumberCommit(input, ctx, task, fieldName, getLastValue, setLastValue) {
   const commit = () => {
     const raw = input.value.trim();
-    if (raw === "") {
-      input.value = getLastValue();
-      return;
-    }
     const num = Number(raw);
-    if (!Number.isFinite(num) || num < 0) {
-      input.value = getLastValue();
+    if (raw === "" || !Number.isFinite(num) || num < 0) {
+      input.value = lastValue;
       return;
     }
     const normalized = String(num);
-    if (normalized !== getLastValue()) {
-      setLastValue(normalized);
-      input.value = normalized;
-      notifyChange(ctx, task, { [fieldName]: num });
-    } else {
-      input.value = normalized;
+    input.value = normalized;
+    if (normalized !== lastValue) {
+      lastValue = normalized;
+      onCommit(num);
     }
   };
 
@@ -128,151 +169,160 @@ function attachNumberCommit(input, ctx, task, fieldName, getLastValue, setLastVa
       input.blur();
     } else if (e.key === "Escape") {
       e.preventDefault();
-      input.value = getLastValue();
+      input.value = lastValue;
       input.blur();
     }
   });
   input.addEventListener("blur", commit);
 }
 
-function buildPointsInput(task, ctx) {
-  const input = document.createElement("input");
-  input.type = "number";
-  input.className = "task-card__points-input";
-  input.min = "0";
-  input.step = "1";
-  input.setAttribute("aria-label", "Story points");
-  input.value = String(task.story_points ?? "");
-
-  let lastValue = input.value;
-  attachNumberCommit(
-    input,
-    ctx,
-    task,
-    "story_points",
-    () => lastValue,
-    (v) => {
-      lastValue = v;
-    }
+// ── Interactive control builders ──────────────────────
+function buildPrioritySelect(task, currentPriority, iconEl, textEl, ctx) {
+  const select = el("select", {
+    className: "task-card__select task-card__select--priority",
+    ariaLabel: "Priority",
+  });
+  addOptions(
+    select,
+    PRIORITY_ORDER.map((p) => ({
+      value: p,
+      label: capitalize(p),
+      selected: p === currentPriority,
+    }))
   );
 
+  select.addEventListener("change", (e) => {
+    const newPriority = e.target.value;
+    swapPrefixedClass(ctx.card, "task-card--priority-", newPriority);
+    iconEl.textContent = PRIORITY_ICONS[newPriority] ?? "";
+    if (textEl) textEl.textContent = capitalize(newPriority);
+    notifyChange(ctx, task, { priority: newPriority });
+  });
+
+  return select;
+}
+
+function buildStatusSelect(task, ctx) {
+  const currentStatus = task.status ?? "todo";
+  const select = el("select", {
+    className: `task-card__select task-card__select--status task-card__status task-card__status--${currentStatus}`,
+  });
+  addOptions(
+    select,
+    Object.entries(STATUS_LABELS)
+      .filter(([value]) => value !== "blocked")
+      .map(([value, label]) => ({ value, label, selected: value === currentStatus }))
+  );
+
+  select.addEventListener("change", (e) => {
+    const newStatus = e.target.value;
+    swapPrefixedClass(select, "task-card__status--", newStatus);
+    notifyChange(ctx, task, { status: newStatus });
+  });
+
+  return select;
+}
+
+// Shared by the points (step 1) and hours (step 0.5) editors.
+function buildNumberInput({ className, ariaLabel, step, value, field, task, ctx }) {
+  const input = el("input", { type: "number", className, ariaLabel });
+  input.min = "0";
+  input.step = step;
+  input.value = String(value ?? "");
+  attachNumberCommit(input, {
+    onCommit: (num) => notifyChange(ctx, task, { [field]: num }),
+  });
   return input;
 }
 
-function buildHoursInput(task, ctx) {
-  const wrap = document.createElement("span");
-  wrap.className = "task-card__hours-edit";
-  wrap.appendChild(document.createTextNode("~"));
-
-  const input = document.createElement("input");
-  input.type = "number";
-  input.className = "task-card__hours-input";
-  input.min = "0";
-  input.step = "0.5";
-  input.setAttribute("aria-label", "Estimated hours");
-  input.value = String(task.estimate_hours ?? "");
-  wrap.appendChild(input);
-
-  wrap.appendChild(document.createTextNode("h"));
-
-  let lastValue = input.value;
-  attachNumberCommit(
-    input,
-    ctx,
+function buildPointsInput(task, ctx) {
+  return buildNumberInput({
+    className: "task-card__points-input",
+    ariaLabel: "Story points",
+    step: "1",
+    value: task.story_points,
+    field: "story_points",
     task,
-    "estimate_hours",
-    () => lastValue,
-    (v) => {
-      lastValue = v;
-    }
-  );
+    ctx,
+  });
+}
 
-  return wrap;
+function buildHoursInput(task, ctx) {
+  const input = buildNumberInput({
+    className: "task-card__hours-input",
+    ariaLabel: "Estimated hours",
+    step: "0.5",
+    value: task.estimate_hours,
+    field: "estimate_hours",
+    task,
+    ctx,
+  });
+  return el("span", { className: "task-card__hours-edit" }, "~", input, "h");
 }
 
 function buildTagsControl(task, projectType, ctx) {
-  const tagRow = document.createElement("div");
-  tagRow.className = "task-card__tags";
+  const tagRow = el("div", { className: "task-card__tags" });
 
+  // Scrum story-type pill is fixed (not user-editable) and sits before the
+  // editable tags, so it lives outside the re-rendered region below.
   if (projectType === "scrum" && task.story_type) {
-    const pill = document.createElement("span");
-    pill.className = "task-card__tag";
-    pill.textContent = task.story_type;
-    tagRow.appendChild(pill);
+    tagRow.appendChild(el("span", { className: "task-card__tag", text: task.story_type }));
   }
 
   const tags = [...(task.tags ?? [])];
 
+  // Re-renders just the editable pills + add affordance (the fixed pill stays).
   const render = () => {
-    [
-      ...tagRow.querySelectorAll(
-        ".task-card__tag--editable, .task-card__tag-add, .task-card__tag-input"
-      ),
-    ].forEach((el) => el.remove());
+    tagRow
+      .querySelectorAll(".task-card__tag--editable, .task-card__tag-add, .task-card__tag-input")
+      .forEach((node) => node.remove());
 
     tags.forEach((tag, idx) => {
-      const pill = document.createElement("span");
-      pill.className = "task-card__tag task-card__tag--editable";
-      pill.appendChild(document.createTextNode(tag));
-
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.className = "task-card__tag-remove";
-      remove.textContent = "×";
-      remove.title = `Remove "${tag}"`;
+      const remove = el("button", {
+        type: "button",
+        className: "task-card__tag-remove",
+        text: "×",
+        title: `Remove "${tag}"`,
+      });
       remove.addEventListener("click", () => {
         tags.splice(idx, 1);
         render();
         notifyChange(ctx, task, { tags: [...tags] });
       });
-      pill.appendChild(remove);
-
-      tagRow.appendChild(pill);
+      tagRow.appendChild(
+        el("span", { className: "task-card__tag task-card__tag--editable" }, tag, remove)
+      );
     });
 
-    const addBtn = document.createElement("button");
-    addBtn.type = "button";
-    addBtn.className = "task-card__tag-add";
-    addBtn.textContent = "+ Add tag";
+    const addBtn = el("button", {
+      type: "button",
+      className: "task-card__tag-add",
+      text: "+ Add tag",
+    });
     addBtn.addEventListener("click", () => {
       addBtn.remove();
-      const input = document.createElement("input");
-      input.type = "text";
-      input.className = "task-card__tag-input";
-      input.placeholder = "Tag";
+      const input = el("input", {
+        type: "text",
+        className: "task-card__tag-input",
+        placeholder: "Tag",
+      });
       input.maxLength = 24;
       tagRow.appendChild(input);
       input.focus();
 
-      let committed = false;
-      const submit = () => {
-        if (committed) return;
-        committed = true;
-        const v = input.value.trim();
-        if (v && !tags.includes(v)) {
-          tags.push(v);
-          render();
-          notifyChange(ctx, task, { tags: [...tags] });
-        } else {
-          render();
-        }
-      };
-      const cancel = () => {
-        if (committed) return;
-        committed = true;
-        render();
-      };
-
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          submit();
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-          cancel();
-        }
+      attachInlineText(input, {
+        onSubmit: () => {
+          const v = input.value.trim();
+          if (v && !tags.includes(v)) {
+            tags.push(v);
+            render();
+            notifyChange(ctx, task, { tags: [...tags] });
+          } else {
+            render();
+          }
+        },
+        onCancel: render,
       });
-      input.addEventListener("blur", submit);
     });
     tagRow.appendChild(addBtn);
   };
@@ -282,118 +332,85 @@ function buildTagsControl(task, projectType, ctx) {
 }
 
 function buildBlockerControl(task, ctx) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "task-card__blocker-control";
+  const wrapper = el("div", { className: "task-card__blocker-control" });
+  const state = { blocked: !!task.is_blocked, reason: task.blocker_reason ?? "" };
 
-  const state = {
-    blocked: !!task.is_blocked,
-    reason: task.blocker_reason ?? "",
-  };
-
+  // Forward-declared so the two render branches below can re-invoke it.
   let render;
 
   const renderBlocked = () => {
     wrapper.innerHTML = "";
-    const chip = document.createElement("div");
-    chip.className = "task-card__blocker";
-
-    const icon = document.createElement("span");
-    icon.className = "task-card__blocker-icon";
-    icon.textContent = "⊘";
-    chip.appendChild(icon);
-
-    chip.appendChild(document.createTextNode(state.reason || "Blocked"));
-
-    const remove = document.createElement("button");
-    remove.type = "button";
-    remove.className = "task-card__blocker-remove";
-    remove.textContent = "✕";
-    remove.title = "Remove blocker";
+    const remove = el("button", {
+      type: "button",
+      className: "task-card__blocker-remove",
+      text: "✕",
+      title: "Remove blocker",
+    });
     remove.addEventListener("click", () => {
       state.blocked = false;
       state.reason = "";
       render();
       notifyChange(ctx, task, { is_blocked: false, blocker_reason: null });
     });
-    chip.appendChild(remove);
 
-    wrapper.appendChild(chip);
+    const icon = el("span", { className: "task-card__blocker-icon", text: "⊘" });
+    wrapper.appendChild(
+      el("div", { className: "task-card__blocker" }, icon, state.reason || "Blocked", remove)
+    );
   };
 
   const renderAdd = () => {
     wrapper.innerHTML = "";
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "task-card__blocker-add";
-    button.textContent = "+ Add blocker";
+    const button = el("button", {
+      type: "button",
+      className: "task-card__blocker-add",
+      text: "+ Add blocker",
+    });
     button.addEventListener("click", () => {
       wrapper.innerHTML = "";
-      const input = document.createElement("input");
-      input.type = "text";
-      input.className = "task-card__blocker-input";
-      input.placeholder = "Why is this blocked?";
+      const input = el("input", {
+        type: "text",
+        className: "task-card__blocker-input",
+        placeholder: "Why is this blocked?",
+      });
       wrapper.appendChild(input);
       input.focus();
 
-      let committed = false;
-      const submit = () => {
-        if (committed) return;
-        committed = true;
-        const v = input.value.trim();
-        if (v) {
-          state.blocked = true;
-          state.reason = v;
-          render();
-          notifyChange(ctx, task, { is_blocked: true, blocker_reason: v });
-        } else {
-          render();
-        }
-      };
-      const cancel = () => {
-        if (committed) return;
-        committed = true;
-        render();
-      };
-
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          submit();
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-          cancel();
-        }
+      attachInlineText(input, {
+        onSubmit: () => {
+          const v = input.value.trim();
+          if (v) {
+            state.blocked = true;
+            state.reason = v;
+            render();
+            notifyChange(ctx, task, { is_blocked: true, blocker_reason: v });
+          } else {
+            render();
+          }
+        },
+        onCancel: render,
       });
-      input.addEventListener("blur", submit);
     });
     wrapper.appendChild(button);
   };
 
-  render = () => {
-    if (state.blocked) renderBlocked();
-    else renderAdd();
-  };
+  render = () => (state.blocked ? renderBlocked() : renderAdd());
   render();
   return wrapper;
 }
 
+// Assignee dropdown keyed by user_id. Updates `avatarEl` live on change.
 function buildAssigneeSelect(task, members, avatarEl, ctx) {
-  const select = document.createElement("select");
-  select.className = "task-card__select task-card__select--assignee";
-  select.setAttribute("aria-label", "Assignee");
-
-  const unassigned = document.createElement("option");
-  unassigned.value = "";
-  unassigned.textContent = "Unassigned";
-  select.appendChild(unassigned);
-
-  members.forEach((m) => {
-    const opt = document.createElement("option");
-    opt.value = String(m.user_id);
-    opt.textContent = m.full_name ?? "";
-    select.appendChild(opt);
+  const select = el("select", {
+    className: "task-card__select task-card__select--assignee",
+    ariaLabel: "Assignee",
   });
+  addOptions(select, [
+    { value: "", label: "Unassigned" },
+    ...members.map((m) => ({ value: String(m.user_id), label: m.full_name ?? "" })),
+  ]);
 
+  // Prefer the explicit id; fall back to matching the display name.
   let currentId = task.assigned_to != null ? String(task.assigned_to) : "";
   if (currentId === "" && task.full_name) {
     const match = members.find((m) => m.full_name === task.full_name);
@@ -413,23 +430,16 @@ function buildAssigneeSelect(task, members, avatarEl, ctx) {
   return select;
 }
 
+// XP pair-partner dropdown keyed by full name (no backend id for pairs).
 function buildPairSelect(task, members, avatarEl, ctx) {
-  const select = document.createElement("select");
-  select.className = "task-card__select task-card__select--assignee";
-  select.setAttribute("aria-label", "Pair partner");
-
-  const unassigned = document.createElement("option");
-  unassigned.value = "";
-  unassigned.textContent = "No pair";
-  select.appendChild(unassigned);
-
-  members.forEach((m) => {
-    const opt = document.createElement("option");
-    opt.value = m.full_name ?? "";
-    opt.textContent = m.full_name ?? "";
-    select.appendChild(opt);
+  const select = el("select", {
+    className: "task-card__select task-card__select--assignee",
+    ariaLabel: "Pair partner",
   });
-
+  addOptions(select, [
+    { value: "", label: "No pair" },
+    ...members.map((m) => ({ value: m.full_name ?? "", label: m.full_name ?? "" })),
+  ]);
   select.value = task.pair_assignee ?? "";
 
   select.addEventListener("change", (e) => {
@@ -445,113 +455,97 @@ function buildPairSelect(task, members, avatarEl, ctx) {
 // ── Sections ──────────────────────────────────────────
 function buildBanner(task, projectType, ctx) {
   const priority = task.priority ?? "low";
-  const banner = document.createElement("div");
-  banner.className = "task-card__banner";
+  const banner = el("div", { className: "task-card__banner" });
 
-  const label = document.createElement("span");
-  label.className = "task-card__priority";
-
-  const icon = document.createElement("span");
-  icon.className = "task-card__priority-icon";
-  icon.textContent = PRIORITY_ICONS[priority] ?? "";
+  const label = el("span", { className: "task-card__priority" });
+  const icon = el("span", {
+    className: "task-card__priority-icon",
+    text: PRIORITY_ICONS[priority] ?? "",
+  });
+  const sprintSuffix = projectType === "scrum" && task.sprint ? ` · ${task.sprint}` : "";
 
   if (ctx?.interactive) {
-    const target = document.createElement("span");
-    target.className = "task-card__priority-target";
-    target.appendChild(icon);
-
-    const textEl = document.createElement("span");
-    textEl.className = "task-card__priority-text";
-    textEl.textContent = capitalize(priority);
-    target.appendChild(textEl);
-
-    target.appendChild(buildPrioritySelect(task, priority, icon, textEl, ctx));
+    const textEl = el("span", { className: "task-card__priority-text", text: capitalize(priority) });
+    const target = el(
+      "span",
+      { className: "task-card__priority-target" },
+      icon,
+      textEl,
+      buildPrioritySelect(task, priority, icon, textEl, ctx)
+    );
     label.appendChild(target);
-
-    if (projectType === "scrum" && task.sprint) {
-      label.appendChild(document.createTextNode(` · ${task.sprint}`));
-    }
+    if (sprintSuffix) label.append(sprintSuffix);
   } else {
-    label.appendChild(icon);
-    let text = capitalize(priority);
-    if (projectType === "scrum" && task.sprint) {
-      text += ` · ${task.sprint}`;
-    }
-    label.appendChild(document.createTextNode(text));
+    label.append(icon, capitalize(priority) + sprintSuffix);
   }
   banner.appendChild(label);
 
-  const meta = document.createElement("div");
-  meta.className = "task-card__banner-meta";
-
-  const due = document.createElement("span");
-  due.className = "task-card__due-date";
-  due.textContent = formatDueDate(task.due_date);
-  meta.appendChild(due);
+  const meta = el("div", { className: "task-card__banner-meta" });
+  meta.appendChild(el("span", { className: "task-card__due-date", text: formatDueDate(task.due_date) }));
 
   if (projectType === "scrum" && task.story_points != null) {
-    if (ctx?.interactive) {
-      meta.appendChild(buildPointsInput(task, ctx));
-    } else {
-      const points = document.createElement("span");
-      points.className = "task-card__points";
-      points.textContent = String(task.story_points);
-      meta.appendChild(points);
-    }
+    meta.appendChild(
+      ctx?.interactive
+        ? buildPointsInput(task, ctx)
+        : el("span", { className: "task-card__points", text: String(task.story_points) })
+    );
   }
 
   if (projectType === "xp" && task.estimate_hours != null) {
-    if (ctx?.interactive) {
-      meta.appendChild(buildHoursInput(task, ctx));
-    } else {
-      const hours = document.createElement("span");
-      hours.className = "task-card__hours";
-      hours.textContent = `~${task.estimate_hours}h`;
-      meta.appendChild(hours);
-    }
+    meta.appendChild(
+      ctx?.interactive
+        ? buildHoursInput(task, ctx)
+        : el("span", { className: "task-card__hours", text: `~${task.estimate_hours}h` })
+    );
   }
 
   banner.appendChild(meta);
   return banner;
 }
 
-function buildBody(task, projectType, ctx) {
-  const body = document.createElement("div");
-  body.className = "task-card__body";
+// Read-only blocker chip (interactive cards use buildBlockerControl instead).
+function buildBlockerChip(task) {
+  const icon = el("span", { className: "task-card__blocker-icon", text: "⊘" });
+  return el("div", { className: "task-card__blocker" }, icon, task.blocker_reason ?? "Blocked");
+}
 
-  const title = document.createElement("h3");
-  title.className = "task-card__title";
-  title.textContent = task.title ?? "";
+// Read-only tag row, with the scrum story-type prepended.
+function buildTagRow(task, projectType) {
+  const tags = [...(task.tags ?? [])];
+  if (projectType === "scrum" && task.story_type) tags.unshift(task.story_type);
+  if (tags.length === 0) return null;
+
+  const tagRow = el("div", { className: "task-card__tags" });
+  for (const tag of tags) {
+    tagRow.appendChild(el("span", { className: "task-card__tag", text: tag }));
+  }
+  return tagRow;
+}
+
+function buildBody(task, projectType, ctx) {
+  const body = el("div", { className: "task-card__body" });
+
+  const title = el("h3", { className: "task-card__title", text: task.title ?? "" });
   body.appendChild(title);
 
   if (ctx?.interactive) {
     body.appendChild(buildBlockerControl(task, ctx));
   } else if (task.is_blocked) {
-    const blocker = document.createElement("div");
-    blocker.className = "task-card__blocker";
-
-    const blockerIcon = document.createElement("span");
-    blockerIcon.className = "task-card__blocker-icon";
-    blockerIcon.textContent = "⊘";
-    blocker.appendChild(blockerIcon);
-
-    blocker.appendChild(document.createTextNode(task.blocker_reason ?? "Blocked"));
-    body.appendChild(blocker);
+    body.appendChild(buildBlockerChip(task));
   }
 
   if (task.description) {
-    const description = document.createElement("p");
-    description.className = "task-card__description";
-    description.textContent = task.description;
-    description.title = "Click to expand";
+    const description = el("p", {
+      className: "task-card__description",
+      text: task.description,
+      title: "Click to expand",
+    });
     body.appendChild(description);
 
     title.classList.add("task-card__title--clickable");
     title.title = "Click to expand description";
 
-    const toggle = () => {
-      description.classList.toggle("task-card__description--expanded");
-    };
+    const toggle = () => description.classList.toggle("task-card__description--expanded");
     title.addEventListener("click", toggle);
     description.addEventListener("click", toggle);
   }
@@ -559,120 +553,93 @@ function buildBody(task, projectType, ctx) {
   if (ctx?.interactive) {
     body.appendChild(buildTagsControl(task, projectType, ctx));
   } else {
-    const tags = [...(task.tags ?? [])];
-    if (projectType === "scrum" && task.story_type) {
-      tags.unshift(task.story_type);
-    }
-    if (tags.length > 0) {
-      const tagRow = document.createElement("div");
-      tagRow.className = "task-card__tags";
-      tags.forEach((tag) => {
-        const pill = document.createElement("span");
-        pill.className = "task-card__tag";
-        pill.textContent = tag;
-        tagRow.appendChild(pill);
-      });
-      body.appendChild(tagRow);
-    }
+    const tagRow = buildTagRow(task, projectType);
+    if (tagRow) body.appendChild(tagRow);
   }
 
   return body;
 }
 
-function buildFooter(task, projectType, ctx) {
-  const footer = document.createElement("div");
-  footer.className = "task-card__footer";
+// Interactive XP footer: stacked assignee + pair groups whose dropdowns
+// mutually exclude each other's current pick (you can't pair with yourself).
+function buildXpAssigneeGroups(task, ctx) {
+  const buildGroup = (avatarSource, ariaName, selectBuilder) => {
+    const avatar = buildAvatar(avatarSource, { markEmpty: true });
+    const select = selectBuilder(avatar);
+    const group = el("div", { className: "task-card__assignee-group" }, avatar, select);
+    group.title = ariaName;
+    return { group, select };
+  };
 
-  const assignees = document.createElement("div");
-  assignees.className = "task-card__assignees";
+  const primary = buildGroup(task.full_name, "Assignee", (avatar) =>
+    buildAssigneeSelect(task, ctx.members, avatar, ctx)
+  );
+  const pair = buildGroup(task.pair_assignee, "Pair partner", (avatar) =>
+    buildPairSelect(task, ctx.members, avatar, ctx)
+  );
+
+  const syncDisabled = () => {
+    const primaryMember = ctx.members.find((m) => String(m.user_id) === primary.select.value);
+    const pairMember = ctx.members.find((m) => m.full_name === pair.select.value);
+    const blockedNameForPair = primaryMember ? primaryMember.full_name : "";
+    const blockedIdForPrimary = pairMember ? String(pairMember.user_id) : "";
+
+    [...pair.select.options].forEach((opt) => {
+      opt.disabled = opt.value !== "" && opt.value === blockedNameForPair;
+    });
+    [...primary.select.options].forEach((opt) => {
+      opt.disabled = opt.value !== "" && opt.value === blockedIdForPrimary;
+    });
+  };
+
+  primary.select.addEventListener("change", syncDisabled);
+  pair.select.addEventListener("change", syncDisabled);
+  syncDisabled();
+
+  return [primary.group, pair.group];
+}
+
+// Read-only assignee display: avatar(s) plus either an editable dropdown
+// (when members are known) or a plain name label.
+function buildReadonlyAssignees(task, projectType, ctx, canEditAssignee) {
+  const avatars = el("div", { className: "task-card__avatars" });
+  const primary = buildAvatar(task.full_name);
+  avatars.appendChild(primary);
+
+  let pairFirstName = null;
+  if (projectType === "xp" && task.pair_assignee) {
+    avatars.appendChild(buildAvatar(task.pair_assignee, { extraClass: "task-card__avatar--pair" }));
+    [pairFirstName] = task.pair_assignee.split(/\s+/);
+  }
+
+  const nodes = [avatars];
+  if (canEditAssignee) {
+    nodes.push(buildAssigneeSelect(task, ctx.members, primary, ctx));
+  } else {
+    let labelText = task.full_name ?? "Unassigned";
+    if (pairFirstName) {
+      const [primaryFirst] = (task.full_name ?? "").split(/\s+/);
+      labelText = `${primaryFirst || "Unassigned"} & ${pairFirstName}`;
+    }
+    nodes.push(el("span", { className: "task-card__assignee-name", text: labelText }));
+  }
+  return nodes;
+}
+
+function buildFooter(task, projectType, ctx) {
+  const footer = el("div", { className: "task-card__footer" });
+  const assignees = el("div", { className: "task-card__assignees" });
 
   const canEditAssignee = ctx?.interactive && Array.isArray(ctx.members);
   const isXpInteractive = projectType === "xp" && canEditAssignee && ctx.editPair;
 
   if (isXpInteractive) {
     assignees.classList.add("task-card__assignees--stacked");
-
-    const buildGroup = (avatarSource, ariaName, selectBuilder) => {
-      const group = document.createElement("div");
-      group.className = "task-card__assignee-group";
-
-      const avatar = document.createElement("span");
-      avatar.className = "task-card__avatar";
-      if (avatarSource) {
-        avatar.textContent = initials(avatarSource);
-      } else {
-        avatar.textContent = "?";
-        avatar.classList.add("task-card__avatar--empty");
-      }
-      group.appendChild(avatar);
-      const select = selectBuilder(avatar);
-      group.appendChild(select);
-      group.title = ariaName;
-      return { group, select };
-    };
-
-    const primary = buildGroup(task.full_name, "Assignee", (avatar) =>
-      buildAssigneeSelect(task, ctx.members, avatar, ctx)
-    );
-    const pair = buildGroup(task.pair_assignee, "Pair partner", (avatar) =>
-      buildPairSelect(task, ctx.members, avatar, ctx)
-    );
-
-    const syncDisabled = () => {
-      const primaryMember = ctx.members.find((m) => String(m.user_id) === primary.select.value);
-      const pairMember = ctx.members.find((m) => m.full_name === pair.select.value);
-      const blockedNameForPair = primaryMember ? primaryMember.full_name : "";
-      const blockedIdForPrimary = pairMember ? String(pairMember.user_id) : "";
-
-      [...pair.select.options].forEach((opt) => {
-        opt.disabled = opt.value !== "" && opt.value === blockedNameForPair;
-      });
-      [...primary.select.options].forEach((opt) => {
-        opt.disabled = opt.value !== "" && opt.value === blockedIdForPrimary;
-      });
-    };
-
-    primary.select.addEventListener("change", syncDisabled);
-    pair.select.addEventListener("change", syncDisabled);
-    syncDisabled();
-
-    assignees.appendChild(primary.group);
-    assignees.appendChild(pair.group);
+    buildXpAssigneeGroups(task, ctx).forEach((group) => assignees.appendChild(group));
   } else {
-    const avatars = document.createElement("div");
-    avatars.className = "task-card__avatars";
-
-    const primary = document.createElement("span");
-    primary.className = "task-card__avatar";
-    primary.textContent = initials(task.full_name);
-    avatars.appendChild(primary);
-
-    let pairFirstName = null;
-    if (projectType === "xp" && task.pair_assignee) {
-      const pair = document.createElement("span");
-      pair.className = "task-card__avatar task-card__avatar--pair";
-      pair.textContent = initials(task.pair_assignee);
-      avatars.appendChild(pair);
-
-      const [pairFirst] = task.pair_assignee.split(/\s+/);
-      pairFirstName = pairFirst;
-    }
-
-    assignees.appendChild(avatars);
-
-    if (canEditAssignee) {
-      assignees.appendChild(buildAssigneeSelect(task, ctx.members, primary, ctx));
-    } else {
-      let labelText = task.full_name ?? "Unassigned";
-      if (pairFirstName) {
-        const [primaryFirst] = (task.full_name ?? "").split(/\s+/);
-        labelText = `${primaryFirst || "Unassigned"} & ${pairFirstName}`;
-      }
-      const name = document.createElement("span");
-      name.className = "task-card__assignee-name";
-      name.textContent = labelText;
-      assignees.appendChild(name);
-    }
+    buildReadonlyAssignees(task, projectType, ctx, canEditAssignee).forEach((node) =>
+      assignees.appendChild(node)
+    );
   }
 
   footer.appendChild(assignees);
@@ -681,10 +648,12 @@ function buildFooter(task, projectType, ctx) {
     footer.appendChild(buildStatusSelect(task, ctx));
   } else {
     const statusKey = task.is_blocked ? "blocked" : (task.status ?? "todo");
-    const status = document.createElement("span");
-    status.className = `task-card__status task-card__status--${statusKey}`;
-    status.textContent = STATUS_LABELS[statusKey] ?? statusKey;
-    footer.appendChild(status);
+    footer.appendChild(
+      el("span", {
+        className: `task-card__status task-card__status--${statusKey}`,
+        text: STATUS_LABELS[statusKey] ?? statusKey,
+      })
+    );
   }
 
   return footer;
@@ -739,8 +708,10 @@ function buildFooter(task, projectType, ctx) {
 export function createTaskCard(task, projectType = "kanban", options = {}) {
   const { compact = false, members = null, onChange = null, editPair = true } = options;
   const priority = task.priority ?? "low";
-  const card = document.createElement("article");
-  card.className = `task-card task-card--priority-${priority} task-card--${projectType}`;
+
+  const card = el("article", {
+    className: `task-card task-card--priority-${priority} task-card--${projectType}`,
+  });
   if (compact) card.classList.add("task-card--compact");
   card.dataset.taskId = task.task_id;
 
@@ -776,10 +747,7 @@ export function setTaskCardStatus(card, status) {
   if (!pill) return;
   if (pill.classList.contains("task-card__status--blocked")) return;
 
-  [...pill.classList].forEach((c) => {
-    if (c.startsWith("task-card__status--")) pill.classList.remove(c);
-  });
-  pill.classList.add(`task-card__status--${status}`);
+  swapPrefixedClass(pill, "task-card__status--", status);
 
   if (pill.tagName === "SELECT") {
     pill.value = status;
