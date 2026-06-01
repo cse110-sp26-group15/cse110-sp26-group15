@@ -59,6 +59,20 @@
           <div class="form-error-banner" id="error-banner" role="alert" aria-live="polite"></div>
 
           <form id="signup-form" novalidate>
+            <!-- Full name -->
+            <div class="field">
+              <label for="full-name">Full name</label>
+              <input
+                type="text"
+                id="full-name"
+                name="full-name"
+                placeholder="Alex Smith"
+                autocomplete="name"
+                required
+              />
+              <p class="field-error" id="name-error">Please enter your full name.</p>
+            </div>
+
             <!-- Email -->
             <div class="field">
               <label for="email">Email</label>

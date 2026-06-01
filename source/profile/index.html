@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SitRep</title>
+    <title>Profile — SitRep</title>
     <script>
       (function () {
         var t = localStorage.getItem("sitrep_theme");
@@ -12,28 +12,25 @@
     </script>
     <link rel="stylesheet" href="../shared/theme.css" />
     <link rel="stylesheet" href="../shared/components.css" />
-    <link rel="stylesheet" href="main.css" />
-    <link rel="stylesheet" href="../task-card/task-card.css" />
-    <link rel="stylesheet" href="xp.css" />
-    <link rel="stylesheet" href="../blocker-card/blocker-card.css" />
+    <link rel="stylesheet" href="../dashboard/main.css" />
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="app-shell">
+      <!-- ── Sidebar (mirrors dashboard sidebar) ─────────── -->
       <aside class="sidebar">
         <div class="sidebar-header">
-          <a href="../project-setup/index.html" class="sidebar-logo">
+          <a href="#" class="sidebar-logo" id="sidebar-logo-link">
             <div class="logo-mark">S</div>
             <div class="logo-text">SitRep</div>
           </a>
         </div>
 
         <nav class="sidebar-nav">
-          <a href="#" class="nav-item active"> Dashboard </a>
-          <!-- Real link to the dedicated check-in page; main.js lets real
-               hrefs navigate and only intercepts in-page (href="#") tabs. -->
-          <a href="../check-in/check-in.html" class="nav-item"> My Check-ins </a>
-          <a href="#" class="nav-item"> Team </a>
-          <a href="#" class="nav-item"> Weekly Report </a>
+          <a href="#" class="nav-item" id="nav-dashboard">Dashboard</a>
+          <a href="#" class="nav-item">My Check-ins</a>
+          <a href="#" class="nav-item">Team</a>
+          <a href="#" class="nav-item">Weekly Report</a>
         </nav>
 
         <div class="sidebar-footer">
@@ -120,80 +117,90 @@
         </div>
       </aside>
 
+      <!-- ── Main content ─────────────────────────────────── -->
       <div class="main-content">
-        <main class="content-area" id="page-content">
-          <div id="dashboard-view" class="xp-dashboard page-view">
-            <header class="xp-page-header">
-              <div class="xp-page-heading">
-                <h1 class="xp-page-title">Team Dashboard</h1>
-                <p class="xp-page-subtitle">XP Mode · Rapid check-ins active</p>
+        <main class="content-area">
+          <!-- Page heading -->
+          <div class="profile-heading">
+            <h1 class="profile-title">Profile</h1>
+            <p class="profile-subtitle">View and manage your personal information.</p>
+          </div>
+
+          <!-- Personal Information -->
+          <section class="info-card" id="personal-section">
+            <div class="info-card-header">
+              <h2 class="info-card-title">Personal Information</h2>
+              <button type="button" class="btn btn--outline info-edit-btn" id="edit-personal-btn">
+                Edit
+              </button>
+            </div>
+
+            <!-- View mode -->
+            <div id="personal-view">
+              <div class="info-row">
+                <span class="info-label">Full Name</span>
+                <span class="info-value" id="display-name">—</span>
               </div>
-            </header>
-
-            <section
-              class="blocker-banner hidden"
-              id="blocker-banner"
-              role="alert"
-              aria-live="polite"
-            >
-              <span class="blocker-icon" aria-hidden="true">⚠</span>
-              <p class="blocker-summary" id="blocker-summary"></p>
-            </section>
-
-            <section class="xp-section" id="assigned-tasks-section">
-              <div class="section-header">
-                <h2 class="section-title">Assigned Tasks</h2>
-                <button class="btn btn--primary" id="add-task-btn" type="button">+ Add Task</button>
+              <div class="info-row info-row--last">
+                <span class="info-label">Email</span>
+                <span class="info-value" id="display-email">—</span>
               </div>
+            </div>
 
-              <div id="add-task-form" class="task-form hidden">
+            <!-- Edit mode (hidden by default) -->
+            <div id="personal-edit" hidden>
+              <div class="edit-field">
+                <label for="edit-name">Full Name</label>
                 <input
                   type="text"
-                  id="new-task-title"
-                  class="input task-input"
-                  placeholder="Task title"
+                  id="edit-name"
+                  class="input"
+                  autocomplete="name"
+                  placeholder="Your full name"
                 />
-                <button class="btn btn--primary" id="submit-task-btn" type="button">Create</button>
-                <button class="btn btn--secondary" id="cancel-task-btn" type="button">
+              </div>
+              <p class="edit-note">Email address cannot be changed here.</p>
+              <div class="edit-actions">
+                <button type="button" class="btn btn--primary" id="save-personal-btn">Save</button>
+                <button type="button" class="btn btn--outline" id="cancel-personal-btn">
                   Cancel
                 </button>
               </div>
+            </div>
+          </section>
 
-              <div id="task-list" class="task-list">
-                <p class="task-empty">Loading tasks...</p>
-              </div>
-            </section>
+          <!-- Workspace Information -->
+          <section class="info-card">
+            <div class="info-card-header">
+              <h2 class="info-card-title">Workspace Information</h2>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Project</span>
+              <span class="info-value" id="display-project">—</span>
+            </div>
+            <div class="info-row info-row--last">
+              <span class="info-label">Workflow</span>
+              <span class="info-value" id="display-workflow">—</span>
+            </div>
+          </section>
 
-            <section class="xp-section" id="pairing-section">
-              <div class="section-header">
-                <h2 class="section-title">Pair Programming / Agent Collaboration</h2>
-                <button class="btn-link" id="new-pair-btn" type="button">+ new pair</button>
-              </div>
-
-              <div id="pair-list" class="pair-grid">
-                <p class="task-empty">Loading pair sessions...</p>
-              </div>
-            </section>
-
-            <section class="xp-section" id="checkins-section">
-              <div class="section-header">
-                <h2 class="section-title">
-                  Rapid Check-ins
-                  <span class="section-subtitle">· lightweight, anytime updates</span>
-                </h2>
-              </div>
-
-              <div id="checkin-list" class="checkin-list">
-                <p class="task-empty">Loading check-ins...</p>
-              </div>
-            </section>
-          </div>
+          <!-- Security -->
+          <section class="info-card">
+            <div class="info-card-header">
+              <h2 class="info-card-title">Security</h2>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Password</span>
+              <span class="info-value info-value--masked">••••••••</span>
+            </div>
+            <div class="info-row info-row--last info-row--action">
+              <a href="../forgot-password/index.html" class="btn btn--outline">Change Password</a>
+            </div>
+          </section>
         </main>
       </div>
     </div>
 
-    <script type="module" src="main.js"></script>
-    <script type="module" src="../task-form/task-form.js"></script>
-    <script type="module" src="../blocker-card/blocker-card-init.js"></script>
+    <script type="module" src="script.js"></script>
   </body>
 </html>

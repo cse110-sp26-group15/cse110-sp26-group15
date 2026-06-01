@@ -1,0 +1,232 @@
+/* ── Settings page — content area only ──────────────────
+   Layout is from ../../dashboard/main.css.
+   Token refs from ../../shared/theme.css.
+   ─────────────────────────────────────────────────────── */
+
+/* ── Page heading ────────────────────────────────────── */
+.settings-heading {
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-title {
+  font-size: var(--text-h3);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.2px;
+  color: var(--color-text);
+}
+
+.settings-subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-top: var(--space-2xs);
+}
+
+/* ── Settings cards ──────────────────────────────────── */
+.settings-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  max-width: 640px;
+}
+
+.settings-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.settings-card-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+.settings-card-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.settings-card-title {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.settings-card-desc {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* ── Theme toggle (Light / Dark) ─────────────────────── */
+.theme-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.theme-btn {
+  padding: 6px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default);
+}
+
+.theme-btn:hover {
+  color: var(--color-text);
+}
+
+.theme-btn.active {
+  background: var(--color-bg-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Login prefs toggle row ──────────────────────────── */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  cursor: pointer;
+  padding: var(--space-xs) 0;
+}
+
+.toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toggle-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.toggle-desc {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Native checkbox styled as a toggle switch */
+.toggle-checkbox {
+  width: 36px;
+  height: 20px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--color-border-strong);
+  border-radius: var(--radius-full);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--duration-normal) var(--ease-default);
+}
+
+.toggle-checkbox::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--duration-normal) var(--ease-default);
+}
+
+.toggle-checkbox:checked {
+  background: var(--color-primary);
+}
+
+.toggle-checkbox:checked::before {
+  transform: translateX(16px);
+}
+
+/* ── Integration row ─────────────────────────────────── */
+.integration-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.integration-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.integration-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+/* Status chip */
+.status-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+}
+
+.status-chip--soon {
+  background: var(--color-warning-muted);
+  color: var(--color-warning-text);
+}
+
+/* ── About list ──────────────────────────────────────── */
+.about-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.about-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.about-row--last {
+  border-bottom: none;
+}
+
+.about-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.about-value {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
