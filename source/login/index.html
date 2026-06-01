@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="google-site-verification" content="P28zU-LO2OYKshg1EAVIoTvsrLX9wohwTSm-rr1BEqA" />
     <title>Sign In — SitRep</title>
+    <script>(function(){var t=localStorage.getItem("sitrep_theme");if(t==="dark")document.documentElement.setAttribute("data-theme","dark");})()</script>
     <link rel="stylesheet" href="../shared/theme.css" />
     <link rel="stylesheet" href="../shared/auth.css" />
     <link rel="stylesheet" href="style.css" />
@@ -97,8 +98,12 @@
                 </button>
               </div>
               <p class="field-error" id="password-error">Password must be at least 8 characters.</p>
-              <div class="field-footer">
-                <a href="#" class="link-muted" id="forgot-link">Forgot password?</a>
+              <div class="field-footer remember-row">
+                <label class="remember-label">
+                  <input type="checkbox" id="remember-me" name="remember-me" />
+                  <span>Remember me</span>
+                </label>
+                <a href="../forgot-password/" class="link-muted" id="forgot-link">Forgot password?</a>
               </div>
             </div>
 
@@ -110,6 +115,9 @@
             <button type="button" class="btn btn-secondary" id="slack-btn">
               Continue with Slack
             </button>
+            <p id="slack-notice" class="slack-notice" hidden>
+              Slack sign-in is not yet available. Please use your email and password to sign in.
+            </p>
           </form>
 
           <p class="auth-footer">Don't have an account? <a href="../signup/">Sign up</a></p>
