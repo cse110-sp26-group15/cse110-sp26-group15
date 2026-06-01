@@ -830,6 +830,37 @@ function deriveMembers(tasks, checkins) {
   return [...map.entries()].map(([user_id, full_name]) => ({ user_id, full_name }));
 }
 
+// ── In-page tab switching ────────────────────────────
+// Sidebar tabs whose target page isn't built yet (Team, Weekly Report)
+// land here. We hide the real dashboard view and reveal a lazy-rendered
+// placeholder so the click clearly does something. Maps a nav item's
+// `data-nav` slug → { id, subtitle }; missing entries fall back to the
+// dashboard view (so "Dashboard" click still works if it ever loses its
+// real href).
+const TAB_VIEWS = {
+  dashboard: { id: "dashboard-view", subtitle: null },
+  team: { id: "team-view", subtitle: "Team roster and roles" },
+  "weekly-report": { id: "weekly-report-view", subtitle: "Sprint summary report" },
+};
+
+function switchView(navSlug, label) {
+  const target = TAB_VIEWS[navSlug] ?? TAB_VIEWS.dashboard;
+  const root = document.getElementById("page-content");
+  if (!root) return;
+
+  root.querySelectorAll(".page-view").forEach((v) => v.classList.add("hidden"));
+
+  let view = document.getElementById(target.id);
+  if (!view) {
+    view = document.createElement("div");
+    view.id = target.id;
+    view.className = "page-view placeholder";
+    view.innerHTML = `<p>${escapeHtml(label)}</p><span>${escapeHtml(target.subtitle ?? "Coming soon")}</span>`;
+    root.appendChild(view);
+  }
+  view.classList.remove("hidden");
+}
+
 // ── Init (DOM-only) ──────────────────────────────────
 // Skip everything below when there's no document — lets the test suite
 // import this module purely for the helpers above.
@@ -839,14 +870,20 @@ function init() {
   if (stored) sprintState = stored;
 
   // ── Sidebar nav ────────────────────────────────────
-  // Real `href`s do the navigation; we only toggle the active state for
-  // hash links so they don't reload the page.
+  // Real `href`s do the navigation (e.g. My Check-ins → check-in.html).
+  // In-page tabs (href="#") swap the visible .page-view to a placeholder
+  // so the user sees the click took effect — full pages for Team /
+  // Weekly Report aren't built yet.
   document.querySelectorAll(".nav-item").forEach((item) => {
     item.addEventListener("click", (e) => {
       const href = item.getAttribute("href");
-      if (!href || href === "#") {
+      const isInPage = !href || href === "#";
+
+      if (isInPage) {
         e.preventDefault();
+        switchView(item.dataset.nav, item.textContent.trim());
       }
+
       document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
       item.classList.add("active");
 
