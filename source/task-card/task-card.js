@@ -13,6 +13,13 @@ const STATUS_LABELS = {
   blocked: "blocked",
 };
 
+const REVIEW_STATUS_LABELS = {
+  "not-required": "no review",
+  pending: "pending review",
+  approved: "approved",
+  "needs-revision": "needs revision",
+};
+
 function formatDueDate(iso) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -153,6 +160,7 @@ function buildFooter(task, projectType) {
 
   const primary = document.createElement("span");
   primary.className = "task-card__avatar";
+  if (task.is_agent) primary.classList.add("task-card__avatar--agent");
   primary.textContent = initials(task.full_name);
   avatars.appendChild(primary);
 
@@ -175,6 +183,15 @@ function buildFooter(task, projectType) {
   name.textContent = label;
   assignees.appendChild(name);
 
+  // AI badge — surfaces that this work is being done by an agent so the
+  // reviewer pill below makes sense without extra explanation.
+  if (task.is_agent) {
+    const aiBadge = document.createElement("span");
+    aiBadge.className = "task-card__ai-badge";
+    aiBadge.textContent = "AI";
+    assignees.appendChild(aiBadge);
+  }
+
   footer.appendChild(assignees);
 
   const statusKey = task.is_blocked ? "blocked" : (task.status ?? "todo");
@@ -184,6 +201,34 @@ function buildFooter(task, projectType) {
   footer.appendChild(status);
 
   return footer;
+}
+
+/**
+ * Build the optional "Reviewer · review_status" row. Returns null when
+ * the task has no reviewer and no meaningful review status — non-agent
+ * tasks without oversight stay visually clean.
+ */
+function buildReviewRow(task) {
+  const status = task.review_status ?? "not-required";
+  const hasReviewer = task.reviewer_id != null || task.reviewer_name;
+  if (!hasReviewer && status === "not-required") return null;
+
+  const row = document.createElement("div");
+  row.className = "task-card__review-row";
+
+  const reviewerLabel = document.createElement("span");
+  reviewerLabel.className = "task-card__reviewer";
+  reviewerLabel.textContent = task.reviewer_name
+    ? `Reviewer: ${task.reviewer_name}`
+    : "Reviewer: unassigned";
+  row.appendChild(reviewerLabel);
+
+  const pill = document.createElement("span");
+  pill.className = `task-card__review-pill task-card__review-pill--${status}`;
+  pill.textContent = REVIEW_STATUS_LABELS[status] ?? status;
+  row.appendChild(pill);
+
+  return row;
 }
 
 // ── Public API ────────────────────────────────────────
@@ -228,6 +273,8 @@ export function createTaskCard(task, projectType = "kanban", { compact = false }
 
   card.appendChild(buildBanner(task, projectType));
   card.appendChild(buildBody(task, projectType));
+  const reviewRow = buildReviewRow(task);
+  if (reviewRow) card.appendChild(reviewRow);
   card.appendChild(buildFooter(task, projectType));
 
   return card;

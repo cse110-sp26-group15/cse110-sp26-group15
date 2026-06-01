@@ -15,6 +15,7 @@
 // suite can exercise them without a DOM (mirrors scrum.js's pattern).
 
 import { createTaskCard } from "../task-card/task-card.js";
+import { renderAgents } from "../agent-card/agent-card.js";
 import { apiFetch, ApiError } from "../shared/utils.js";
 
 // ── Constants ────────────────────────────────────────
@@ -60,6 +61,10 @@ export function groupTasksByStatus(tasks) {
 // Cached member list so the task-form assignee dropdown can populate.
 let projectMembers = [];
 
+// AI agents on this project — exposed to the task-form modal so it can
+// auto-default + require a reviewer when an agent is selected.
+let projectAgents = [];
+
 // task-form.js is dynamically imported on first click so its top-level
 // `document.addEventListener` does not run in Node test environments.
 let taskFormModulePromise = null;
@@ -86,6 +91,11 @@ async function fetchMembers() {
   return data.members ?? [];
 }
 
+async function fetchAgents() {
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/agents`);
+  return data.agents ?? [];
+}
+
 /**
  * Create a task. `data` is the object returned by the task-form modal:
  *   { title, description, assigned_to, status }
@@ -100,6 +110,8 @@ async function createTask(data, { forceStatus } = {}) {
     description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
     status,
+    ...(data.reviewer_id != null ? { reviewer_id: data.reviewer_id } : {}),
+    ...(data.review_status != null ? { review_status: data.review_status } : {}),
   };
 
   const { task } = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`, {
@@ -291,9 +303,16 @@ function renderLoadError(message) {
 
 // ── Data loading ──────────────────────────────────────
 async function loadAll() {
-  let tasks, members;
+  let tasks, members, agents;
   try {
-    [tasks, members] = await Promise.all([fetchTasks(), fetchMembers()]);
+    [tasks, members, agents] = await Promise.all([
+      fetchTasks(),
+      fetchMembers(),
+      fetchAgents().catch((err) => {
+        console.warn("[kanban] fetchAgents failed; empty agents rail", err);
+        return [];
+      }),
+    ]);
   } catch (err) {
     const reason =
       err instanceof ApiError && err.status > 0
@@ -304,10 +323,13 @@ async function loadAll() {
     return;
   }
 
-  // Cache members so the task-form modal's assignee dropdown can populate.
+  // Cache members + agents so the task-form modal can populate the
+  // assignee dropdown and enforce the reviewer-required rule.
   projectMembers = members;
+  projectAgents = agents;
 
   renderKanban(tasks);
+  renderAgents(document.getElementById("agents-list"), projectAgents);
 }
 
 // ── Init ──────────────────────────────────────────────
@@ -329,9 +351,11 @@ function init() {
     openCreateTaskModal({ defaultStatus: "todo" });
   });
 
-  // Expose the member cache to the task-form modal's assignee dropdown.
+  // Expose the member + agent caches to the task-form modal so it can
+  // populate the assignee dropdown and enforce reviewer requirements.
   if (typeof window !== "undefined") {
     window.getProjectMembers = () => projectMembers;
+    window.getProjectAgents = () => projectAgents;
   }
 
   // First load — fetches tasks and renders the board.
