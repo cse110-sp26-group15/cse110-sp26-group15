@@ -22,6 +22,9 @@
 import { getCurrentUser, saveCurrentUser, navigateTo } from "./utils.js";
 
 export function initUserMenu() {
+  // Guard: do nothing in non-browser environments (e.g. Vitest / Node).
+  if (typeof document === "undefined") return;
+
   const trigger = document.getElementById("user-menu-trigger");
   const dropdown = document.getElementById("user-dropdown");
   const avatarEl = document.getElementById("user-avatar");
@@ -38,12 +41,13 @@ export function initUserMenu() {
   const email = user?.email ?? "";
 
   // Build initials from first letters of name words (max 2)
-  const initials = displayName
-    .split(/\s+/)
-    .map((w) => w[0] ?? "")
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "U";
+  const initials =
+    displayName
+      .split(/\s+/)
+      .map((w) => w[0] ?? "")
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
 
   if (avatarEl) avatarEl.textContent = initials;
   if (nameEl) nameEl.textContent = displayName;

@@ -130,7 +130,10 @@ form.addEventListener("submit", async (e) => {
     const result = await apiCreateProject({ name, workflow, members: [...members], created_by });
     // Persist project info so Profile/Settings pages can read it without an extra API call.
     const projectData = result?.project ?? { name, workflow };
-    localStorage.setItem("sitrep_project", JSON.stringify({ name: projectData.name ?? name, workflow: projectData.workflow ?? workflow }));
+    localStorage.setItem(
+      "sitrep_project",
+      JSON.stringify({ name: projectData.name ?? name, workflow: projectData.workflow ?? workflow })
+    );
     const dashMap = {
       scrum: "../dashboard/scrum.html",
       kanban: "../dashboard/kanban.html",
