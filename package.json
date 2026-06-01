@@ -17,7 +17,8 @@
     "db:migrate:remote": "wrangler d1 migrations apply cse110-sp26-group15 --remote",
     "db:seed:remote": "wrangler d1 execute cse110-sp26-group15 --remote --file=./db/seed.sql",
     "db:reset:remote": "wrangler d1 execute cse110-sp26-group15 --remote --file=./db/reset.sql",
-    "test": "vitest"
+    "test": "vitest",
+    "test:ci": "vitest run"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

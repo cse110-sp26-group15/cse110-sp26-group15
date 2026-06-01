@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile — SitRep</title>
+    <script>
+      (function () {
+        var t = localStorage.getItem("sitrep_theme");
+        if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
+      })();
+    </script>
+    <link rel="stylesheet" href="../shared/theme.css" />
+    <link rel="stylesheet" href="../shared/components.css" />
+    <link rel="stylesheet" href="../dashboard/main.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- ── Sidebar (mirrors dashboard sidebar) ─────────── -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <a href="#" class="sidebar-logo" id="sidebar-logo-link">
+            <div class="logo-mark">S</div>
+            <div class="logo-text">SitRep</div>
+          </a>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a href="#" class="nav-item" id="nav-dashboard">Dashboard</a>
+          <a href="#" class="nav-item">My Check-ins</a>
+          <a href="#" class="nav-item">Team</a>
+          <a href="#" class="nav-item">Weekly Report</a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-menu" id="user-menu">
+            <div class="user-dropdown" id="user-dropdown" hidden>
+              <a href="../profile/index.html" class="dropdown-item">
+                <svg
+                  class="dropdown-icon"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="8" cy="5.5" r="2.5" />
+                  <path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+                </svg>
+                Profile
+              </a>
+              <a href="../settings/index.html" class="dropdown-item">
+                <svg
+                  class="dropdown-icon"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="8" cy="8" r="2" />
+                  <path
+                    d="M8 2v1M8 13v1M2 8h1M13 8h1M3.5 3.5l.7.7M11.8 11.8l.7.7M12.5 3.5l-.7.7M4.2 11.8l-.7.7"
+                  />
+                </svg>
+                Settings
+              </a>
+              <div class="dropdown-divider"></div>
+              <button type="button" class="dropdown-item dropdown-item--danger" id="logout-btn">
+                <svg
+                  class="dropdown-icon"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M10 11l3-3-3-3M13 8H6M6 3H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3" />
+                </svg>
+                Log Out
+              </button>
+            </div>
+            <button
+              type="button"
+              class="user-menu-trigger"
+              id="user-menu-trigger"
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-label="Account menu"
+            >
+              <div class="avatar" id="user-avatar">U</div>
+              <div class="user-info">
+                <p class="user-name" id="user-name">User</p>
+                <p class="user-role" id="user-email"></p>
+              </div>
+              <svg
+                class="user-menu-chevron"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="4 6 8 10 12 6" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── Main content ─────────────────────────────────── -->
+      <div class="main-content">
+        <main class="content-area">
+          <!-- Page heading -->
+          <div class="profile-heading">
+            <h1 class="profile-title">Profile</h1>
+            <p class="profile-subtitle">View and manage your personal information.</p>
+          </div>
+
+          <!-- Personal Information -->
+          <section class="info-card" id="personal-section">
+            <div class="info-card-header">
+              <h2 class="info-card-title">Personal Information</h2>
+              <button type="button" class="btn btn--outline info-edit-btn" id="edit-personal-btn">
+                Edit
+              </button>
+            </div>
+
+            <!-- View mode -->
+            <div id="personal-view">
+              <div class="info-row">
+                <span class="info-label">Full Name</span>
+                <span class="info-value" id="display-name">—</span>
+              </div>
+              <div class="info-row info-row--last">
+                <span class="info-label">Email</span>
+                <span class="info-value" id="display-email">—</span>
+              </div>
+            </div>
+
+            <!-- Edit mode (hidden by default) -->
+            <div id="personal-edit" hidden>
+              <div class="edit-field">
+                <label for="edit-name">Full Name</label>
+                <input
+                  type="text"
+                  id="edit-name"
+                  class="input"
+                  autocomplete="name"
+                  placeholder="Your full name"
+                />
+              </div>
+              <p class="edit-note">Email address cannot be changed here.</p>
+              <div class="edit-actions">
+                <button type="button" class="btn btn--primary" id="save-personal-btn">Save</button>
+                <button type="button" class="btn btn--outline" id="cancel-personal-btn">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Workspace Information -->
+          <section class="info-card">
+            <div class="info-card-header">
+              <h2 class="info-card-title">Workspace Information</h2>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Project</span>
+              <span class="info-value" id="display-project">—</span>
+            </div>
+            <div class="info-row info-row--last">
+              <span class="info-label">Workflow</span>
+              <span class="info-value" id="display-workflow">—</span>
+            </div>
+          </section>
+
+          <!-- Security -->
+          <section class="info-card">
+            <div class="info-card-header">
+              <h2 class="info-card-title">Security</h2>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Password</span>
+              <span class="info-value info-value--masked">••••••••</span>
+            </div>
+            <div class="info-row info-row--last info-row--action">
+              <a href="../forgot-password/index.html" class="btn btn--outline">Change Password</a>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>

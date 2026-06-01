@@ -17,6 +17,9 @@
 import { createTaskCard } from "../task-card/task-card.js";
 import { renderAgents } from "../agent-card/agent-card.js";
 import { apiFetch, ApiError } from "../shared/utils.js";
+import { initUserMenu } from "../shared/user-menu.js";
+
+initUserMenu();
 
 // task-form.js runs `document.addEventListener(...)` at module top, so we
 // can't import it statically — it would crash the node-side tests where
@@ -499,7 +502,7 @@ function appendTaskControls(card, task) {
 
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
-  deleteBtn.className = "btn-delete";
+  deleteBtn.className = "btn task-card-delete";
   deleteBtn.dataset.taskId = task.task_id;
   deleteBtn.textContent = "Delete";
   deleteBtn.addEventListener("click", async () => {
@@ -882,12 +885,12 @@ function init() {
     window.getProjectAgents = () => projectAgents;
   }
 
-  // ── Check-in button (placeholder until check-in flow exists) ──
+  // ── Check-in button ────────────────────────────────
+  // Sends the user to the dedicated check-in page (source/check-in), which
+  // hosts the daily stand-up form. Same destination as the "My Check-ins"
+  // sidebar link, so both entry points land on the same flow.
   document.getElementById("checkin-today-btn")?.addEventListener("click", () => {
-    // The dedicated check-in page isn't built yet — this stub keeps the
-    // affordance discoverable so the next person to touch the flow has
-    // a place to wire it up.
-    alert("Check-in flow not yet implemented — wire up to the My Check-ins page.");
+    window.location.href = "../check-in/check-in.html";
   });
 
   // Apply the saved view mode (defaults to "list") and kick off the

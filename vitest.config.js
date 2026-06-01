@@ -1,13 +1,10 @@
 import { defineConfig } from "vitest/config";
 
-// The build step copies `source/` → `dist/`, which means every test
-// file ends up duplicated and vitest's default include picks up both
-// copies. Two concurrent copies of dashboard.test.js racing for the
-// local D1 produces SQLITE_BUSY flake — exclude dist/ so only the
-// canonical source/ tests run.
 export default defineConfig({
   test: {
-    include: ["source/**/*.test.{js,ts}"],
+    // Tests live under source/; dist/ is a build copy and must not be picked up
+    // or integration tests that seed D1 will run twice and race on the DB.
+    include: ["source/**/*.test.js"],
     exclude: ["dist/**", "node_modules/**"],
   },
 });
