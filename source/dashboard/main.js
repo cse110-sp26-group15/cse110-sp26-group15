@@ -239,7 +239,16 @@ function renderTaskList(tasks) {
   }
 
   for (const task of tasks) {
-    const card = createTaskCard(task, "xp");
+    const card = createTaskCard(task, "xp", {
+      members: projectMembers,
+      editPair: false,
+      onChange: async (taskId, fields) => {
+        await updateTask(taskId, fields);
+        if (fields.status !== undefined) {
+          await loadTasks();
+        }
+      },
+    });
     list.appendChild(card);
   }
 }

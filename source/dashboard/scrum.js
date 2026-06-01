@@ -458,6 +458,36 @@ function appendTaskControls(card, task) {
   const row = document.createElement("div");
   row.className = "task-card-row-delete";
 
+  const assigneeSelect = document.createElement("select");
+  assigneeSelect.className = "assignee-select";
+  assigneeSelect.dataset.taskId = task.task_id;
+  assigneeSelect.setAttribute("aria-label", "Assignee");
+  const unassigned = document.createElement("option");
+  unassigned.value = "";
+  unassigned.textContent = "Unassigned";
+  assigneeSelect.appendChild(unassigned);
+  for (const m of projectMembers) {
+    const opt = document.createElement("option");
+    opt.value = String(m.user_id);
+    opt.textContent = m.full_name ?? "";
+    if (task.user_id != null && Number(m.user_id) === Number(task.user_id)) {
+      opt.selected = true;
+    }
+    assigneeSelect.appendChild(opt);
+  }
+  assigneeSelect.addEventListener("change", async (e) => {
+    const raw = e.target.value;
+    const newId = raw === "" ? null : Number(raw);
+    try {
+      await updateTask(task.task_id, { assigned_to: newId });
+      await loadAll();
+    } catch (err) {
+      console.error("[scrum] updateTask (assignee) failed", err);
+      alert(`Couldn't reassign task: ${err.message}`);
+      await loadAll();
+    }
+  });
+
   const statusSelect = document.createElement("select");
   statusSelect.className = `status-select status-${task.status ?? "todo"}`;
   statusSelect.dataset.taskId = task.task_id;
@@ -496,6 +526,7 @@ function appendTaskControls(card, task) {
     }
   });
 
+  row.appendChild(assigneeSelect);
   row.appendChild(statusSelect);
   row.appendChild(deleteBtn);
   card.appendChild(row);

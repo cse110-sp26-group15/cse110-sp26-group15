@@ -587,7 +587,7 @@ function buildFooter(task, projectType, ctx) {
   assignees.className = "task-card__assignees";
 
   const canEditAssignee = ctx?.interactive && Array.isArray(ctx.members);
-  const isXpInteractive = projectType === "xp" && canEditAssignee;
+  const isXpInteractive = projectType === "xp" && canEditAssignee && ctx.editPair;
 
   if (isXpInteractive) {
     assignees.classList.add("task-card__assignees--stacked");
@@ -728,11 +728,16 @@ function buildFooter(task, projectType, ctx) {
  *        `fields` contains only the changed key, e.g. `{ status: "done" }`,
  *        `{ priority: "high" }`, or `{ assigned_to: 4 }` (null = unassigned).
  *        Pass this to make the card interactive; omit to render read-only.
+ * @param {boolean} [options.editPair=true]
+ *        XP only. When true (default), an interactive XP card renders both an
+ *        assignee and a pair-partner `<select>`. Set false to render just the
+ *        primary assignee dropdown (e.g. while `pair_assignee` has no backend
+ *        persistence) — the pair partner then shows as a read-only avatar.
  *
  * @returns {HTMLElement} A detached <article> ready to be appended.
  */
 export function createTaskCard(task, projectType = "kanban", options = {}) {
-  const { compact = false, members = null, onChange = null } = options;
+  const { compact = false, members = null, onChange = null, editPair = true } = options;
   const priority = task.priority ?? "low";
   const card = document.createElement("article");
   card.className = `task-card task-card--priority-${priority} task-card--${projectType}`;
@@ -744,6 +749,7 @@ export function createTaskCard(task, projectType = "kanban", options = {}) {
     members,
     onChange,
     interactive: typeof onChange === "function",
+    editPair,
   };
 
   card.appendChild(buildBanner(task, projectType, ctx));
