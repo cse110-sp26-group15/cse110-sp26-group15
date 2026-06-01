@@ -590,6 +590,14 @@
   border-style: solid;
 }
 
+/* Temporarily hidden: blockers are intended to be raised through the daily
+   check-in flow, not from task cards. The control is left in place (JS still
+   builds it) so this can be re-enabled by deleting this one rule. Existing
+   blockers added elsewhere still render as a chip on the card. */
+.task-card__blocker-add {
+  display: none;
+}
+
 .task-card__blocker-input {
   flex: 1;
   font-family: inherit;
@@ -627,4 +635,11 @@
 
 .task-card__blocker-remove:hover {
   opacity: 1;
+}
+
+/* Temporarily hidden: blockers are raised and resolved through the daily
+   check-in flow, not from task cards, so the chip is display-only. The button
+   is left in the DOM (JS still builds it) — re-enable by deleting this rule. */
+.task-card__blocker-remove {
+  display: none;
 }

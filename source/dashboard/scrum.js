@@ -243,6 +243,23 @@ let sprintState = { number: null, start_date: null, end_date: null };
 // row (localStorage picks carry only a number, never a sprint_id).
 let currentSprintId = null;
 
+// Maps a task title → the description of an open blocker filed against it (via
+// the daily check-in). Rebuilt each loadAll; used to show a blocker chip on
+// the matching task card. Blockers are read-only here — they're raised and
+// resolved through the check-in flow, not the cards.
+let blockerByTask = new Map();
+
+// Build the title→reason lookup from the open-blocker list. First (most
+// recent, since the API sorts DESC) open blocker per task wins.
+function buildBlockerIndex(blockers) {
+  const map = new Map();
+  for (const b of blockers ?? []) {
+    if (b.is_resolved || !b.task) continue;
+    if (!map.has(b.task)) map.set(b.task, b.description || "Blocked");
+  }
+  return map;
+}
+
 // "list" or "kanban" — controls which view of Sprint Tasks is visible.
 let viewMode = "list";
 
@@ -319,6 +336,9 @@ async function fetchBlockers() {
   return (data.blockers ?? []).map((b) => ({
     blocker_id: b.blocker_id,
     description: b.description,
+    // The task title this blocker is filed against (null = project-wide).
+    // Used to show a blocker chip on the matching task card.
+    task: b.task ?? null,
     tag: b.helper || null,
     full_name: b.reported_by || b.full_name || "",
     is_resolved: Boolean(b.is_resolved),
@@ -514,12 +534,17 @@ function appendTaskControls(card, task) {
 function buildTaskCard(task, { compact = false } = {}) {
   // Mix in the active sprint number so the card banner reads
   // "Urgent · Sprint 3" the way the task-card scrum variant expects.
+  const blockerReason = blockerByTask.get(task.title);
   const enriched = {
     ...task,
     // The card's assignee dropdown keys off assigned_to; scrum rows carry the
     // assignee as user_id, so mirror it across for correct pre-selection.
     assigned_to: task.assigned_to ?? task.user_id ?? null,
     sprint: sprintState.number ? `Sprint ${sprintState.number}` : task.sprint,
+    // Surface an open check-in blocker (if any) as the card's blocker chip.
+    ...(blockerReason
+      ? { is_blocked: true, blocker_reason: blockerReason }
+      : null),
   };
   const card = createTaskCard(enriched, "scrum", {
     compact,
@@ -772,6 +797,9 @@ async function loadAll() {
 
   // Remember the real sprint_id so the create-modal dropdown can send it.
   currentSprintId = apiSprint?.sprint_id ?? currentSprintId;
+
+  // Index open blockers by task title so cards can show a blocker chip.
+  blockerByTask = buildBlockerIndex(blockers);
 
   renderSprintHeader(checkins);
   renderSprintProgress(tasks);
