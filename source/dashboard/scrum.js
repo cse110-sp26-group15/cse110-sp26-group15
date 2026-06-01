@@ -238,6 +238,11 @@ export function writeSprintToStorage(sprint, storage = globalThis.localStorage) 
 // user saves the picker.
 let sprintState = { number: null, start_date: null, end_date: null };
 
+// Real sprint_id of the current sprint, when the API knows one. Used to wire
+// the create-modal's sprint dropdown. Null until /sprints/current returns a
+// row (localStorage picks carry only a number, never a sprint_id).
+let currentSprintId = null;
+
 // "list" or "kanban" — controls which view of Sprint Tasks is visible.
 let viewMode = "list";
 
@@ -267,6 +272,9 @@ async function fetchTasks() {
  *
  * `forceStatus` overrides whatever status the modal returned — used by
  * kanban-column + buttons so the task always lands in the right column.
+ *
+ * New tasks automatically join the currently-active sprint — there's no
+ * manual sprint picker, since a task created "now" belongs to "now"'s sprint.
  */
 async function createTask(data, { forceStatus } = {}) {
   const status = forceStatus ?? data.status ?? "todo";
@@ -275,6 +283,10 @@ async function createTask(data, { forceStatus } = {}) {
     description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
     status,
+    // Auto-assign to the active sprint. TODO(sprint-persistence): the tasks
+    // table has no sprint_id column yet, so the API silently drops this. Once
+    // the migration + API land, this will actually link the task to a sprint.
+    sprint_id: currentSprintId,
   };
 
   const { task } = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`, {
@@ -757,6 +769,9 @@ async function loadAll() {
       end_date: apiSprint.end_date ?? null,
     };
   }
+
+  // Remember the real sprint_id so the create-modal dropdown can send it.
+  currentSprintId = apiSprint?.sprint_id ?? currentSprintId;
 
   renderSprintHeader(checkins);
   renderSprintProgress(tasks);

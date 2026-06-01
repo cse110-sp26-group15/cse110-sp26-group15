@@ -760,8 +760,14 @@ export function createTaskCard(task, projectType = "kanban", options = {}) {
 }
 
 /**
- * Updates an existing card's status pill in place. Leaves the pill alone if
- * the card is currently in a blocked state (the blocker takes precedence).
+ * Updates an existing card's status control in place. Leaves it alone if the
+ * card is currently in a blocked state (the blocker takes precedence).
+ *
+ * Works for both card modes: the read-only `<span>` pill and the interactive
+ * `<select>` (which also carries the `task-card__select` classes). For the
+ * select we update `.value` — setting `textContent` would delete its
+ * `<option>`s — and only swap the `task-card__status--*` modifier class so the
+ * select styling survives.
  * @param {HTMLElement} card
  * @param {"todo"|"in-progress"|"done"} status
  */
@@ -769,6 +775,15 @@ export function setTaskCardStatus(card, status) {
   const pill = card.querySelector(".task-card__status");
   if (!pill) return;
   if (pill.classList.contains("task-card__status--blocked")) return;
-  pill.className = `task-card__status task-card__status--${status}`;
-  pill.textContent = STATUS_LABELS[status] ?? status;
+
+  [...pill.classList].forEach((c) => {
+    if (c.startsWith("task-card__status--")) pill.classList.remove(c);
+  });
+  pill.classList.add(`task-card__status--${status}`);
+
+  if (pill.tagName === "SELECT") {
+    pill.value = status;
+  } else {
+    pill.textContent = STATUS_LABELS[status] ?? status;
+  }
 }
