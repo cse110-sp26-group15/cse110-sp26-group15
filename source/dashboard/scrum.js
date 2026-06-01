@@ -542,9 +542,7 @@ function buildTaskCard(task, { compact = false } = {}) {
     assigned_to: task.assigned_to ?? task.user_id ?? null,
     sprint: sprintState.number ? `Sprint ${sprintState.number}` : task.sprint,
     // Surface an open check-in blocker (if any) as the card's blocker chip.
-    ...(blockerReason
-      ? { is_blocked: true, blocker_reason: blockerReason }
-      : null),
+    ...(blockerReason ? { is_blocked: true, blocker_reason: blockerReason } : null),
   };
   const card = createTaskCard(enriched, "scrum", {
     compact,

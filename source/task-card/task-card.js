@@ -465,7 +465,10 @@ function buildBanner(task, projectType, ctx) {
   const sprintSuffix = projectType === "scrum" && task.sprint ? ` · ${task.sprint}` : "";
 
   if (ctx?.interactive) {
-    const textEl = el("span", { className: "task-card__priority-text", text: capitalize(priority) });
+    const textEl = el("span", {
+      className: "task-card__priority-text",
+      text: capitalize(priority),
+    });
     const target = el(
       "span",
       { className: "task-card__priority-target" },
@@ -481,7 +484,9 @@ function buildBanner(task, projectType, ctx) {
   banner.appendChild(label);
 
   const meta = el("div", { className: "task-card__banner-meta" });
-  meta.appendChild(el("span", { className: "task-card__due-date", text: formatDueDate(task.due_date) }));
+  meta.appendChild(
+    el("span", { className: "task-card__due-date", text: formatDueDate(task.due_date) })
+  );
 
   if (projectType === "scrum" && task.story_points != null) {
     meta.appendChild(
