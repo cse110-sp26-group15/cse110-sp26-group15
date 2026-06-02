@@ -391,6 +391,71 @@
   color: var(--blocker-fg);
 }
 
+/* ── AI badge + reviewer row ─────────────────────────
+   Surfaced when the assignee is an AI agent (is_agent=true) or when a
+   review_status other than 'not-required' is set. */
+
+.task-card__avatar--agent {
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+}
+
+.task-card__ai-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #ede9fe;
+  color: #6d28d9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+.task-card__review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  margin: 0 -4px;
+  font-size: 11px;
+  border-top: 1px dashed var(--color-border-soft, #e1e4e8);
+}
+
+.task-card__reviewer {
+  color: var(--color-text-secondary, #57606a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-card__review-pill {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.task-card__review-pill--not-required {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+.task-card__review-pill--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+.task-card__review-pill--approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+.task-card__review-pill--needs-revision {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 /* ── Editable selects (interactive cards) ─────────── */
 .task-card__select {
   appearance: none;

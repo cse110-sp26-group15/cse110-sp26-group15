@@ -15,6 +15,8 @@
 // tests can exercise them without a DOM.
 
 import { createTaskCard } from "../task-card/task-card.js";
+import { renderAgents } from "../agent-card/agent-card.js";
+import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
 import { apiFetch, ApiError } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 
@@ -275,6 +277,11 @@ let currentTasks = [];
 // the assignee dropdown can be populated.
 let projectMembers = [];
 
+// Cache of AI agents on this project. Exposed via window.getProjectAgents
+// so the task-form modal can identify which assignees are agents and
+// auto-enforce the reviewer-required rule on the client side.
+let projectAgents = [];
+
 // ── API calls ────────────────────────────────────────
 // All requests go through apiFetch (10s timeout, throws ApiError on
 // non-2xx). loadAll() catches once at the top so a single failure
@@ -303,6 +310,11 @@ async function createTask(data, { forceStatus } = {}) {
     description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
     status,
+    // reviewer_id + review_status only flow through when the task-form
+    // modal sets them (agent-assigned tasks). Server enforces the rule
+    // either way; we just avoid sending null spam for human tasks.
+    ...(data.reviewer_id != null ? { reviewer_id: data.reviewer_id } : {}),
+    ...(data.review_status != null ? { review_status: data.review_status } : {}),
     // Auto-assign to the active sprint. TODO(sprint-persistence): the tasks
     // table has no sprint_id column yet, so the API silently drops this. Once
     // the migration + API land, this will actually link the task to a sprint.
@@ -356,6 +368,11 @@ async function fetchSprint() {
 async function fetchMembers() {
   const data = await apiFetch(`/api/projects/${PROJECT_ID}/members`);
   return data.members ?? [];
+}
+
+async function fetchAgents() {
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/agents`);
+  return data.agents ?? [];
 }
 
 // ── Sprint header + progress ─────────────────────────
@@ -749,7 +766,7 @@ function saveSprintPicker() {
 // Paint a visible error state across every panel so failures are loud,
 // not silent. Caller passes the message to surface.
 function renderLoadError(message) {
-  for (const id of ["task-list", "kanban-board", "checkin-grid", "blockers-list"]) {
+  for (const id of ["task-list", "kanban-board", "checkin-grid", "blockers-list", "agents-list"]) {
     const el = document.getElementById(id);
     if (el) el.innerHTML = `<p class="task-empty task-error">⚠ ${escapeHtml(message)}</p>`;
   }
@@ -761,14 +778,21 @@ function renderLoadError(message) {
 
 // ── Load + render orchestration ──────────────────────
 async function loadAll() {
-  let tasks, checkins, blockers, apiSprint, apiMembers;
+  let tasks, checkins, blockers, apiSprint, apiMembers, apiAgents;
   try {
-    [tasks, checkins, blockers, apiSprint, apiMembers] = await Promise.all([
+    [tasks, checkins, blockers, apiSprint, apiMembers, apiAgents] = await Promise.all([
       fetchTasks(),
       fetchCheckins(),
       fetchBlockers(),
       fetchSprint(),
       fetchMembers(),
+      // The agents endpoint is best-effort — a missing/empty response
+      // shouldn't blow up the dashboard. Catch + log so the rest of
+      // loadAll() proceeds even when agents 500s.
+      fetchAgents().catch((err) => {
+        console.warn("[scrum] fetchAgents failed; rendering empty agents rail", err);
+        return [];
+      }),
     ]);
   } catch (err) {
     const reason =
@@ -785,6 +809,7 @@ async function loadAll() {
   // Either way, cache the result so the create modal's assignee dropdown
   // can populate (it reads via window.getProjectMembers).
   projectMembers = apiMembers.length ? apiMembers : deriveMembers(tasks, checkins);
+  projectAgents = apiAgents;
 
   // If the user hasn't set a sprint yet, prefer whatever the API knows;
   // user-saved values always win once they exist.
@@ -807,6 +832,35 @@ async function loadAll() {
   renderBlockers(blockers);
   renderCheckins(checkins, projectMembers);
   renderTasks(tasks);
+  renderAgents(document.getElementById("agents-list"), projectAgents);
+  renderAgentContributionsMeta(projectAgents, tasks);
+}
+
+/**
+ * Paint a one-liner above the agents grid: "N agents · X tasks completed".
+ * Lets the team see at-a-glance whether agents are pulling their weight
+ * without a full weekly report. Numbers are derived client-side from the
+ * payload we already have so no extra request is needed.
+ *
+ * @param {object[]} agents
+ * @param {object[]} tasks
+ */
+function renderAgentContributionsMeta(agents, tasks) {
+  const meta = document.getElementById("agent-contributions-meta");
+  if (!meta) return;
+  if (!agents.length) {
+    meta.textContent = "";
+    return;
+  }
+  const agentIds = new Set(agents.map((a) => a.user_id));
+  const completed = tasks.filter((t) => agentIds.has(t.user_id) && t.status === "done").length;
+  const pendingReview = tasks.filter(
+    (t) => agentIds.has(t.user_id) && t.review_status === "pending"
+  ).length;
+  const parts = [`${agents.length} agent${agents.length === 1 ? "" : "s"}`];
+  parts.push(`${completed} task${completed === 1 ? "" : "s"} done`);
+  if (pendingReview > 0) parts.push(`${pendingReview} pending review`);
+  meta.textContent = parts.join(" · ");
 }
 
 // Derive team members from any rows that include user info — keeps the
@@ -822,6 +876,37 @@ function deriveMembers(tasks, checkins) {
   return [...map.entries()].map(([user_id, full_name]) => ({ user_id, full_name }));
 }
 
+// ── In-page tab switching ────────────────────────────
+// Sidebar tabs whose target page isn't built yet (Team, Weekly Report)
+// land here. We hide the real dashboard view and reveal a lazy-rendered
+// placeholder so the click clearly does something. Maps a nav item's
+// `data-nav` slug → { id, subtitle }; missing entries fall back to the
+// dashboard view (so "Dashboard" click still works if it ever loses its
+// real href).
+const TAB_VIEWS = {
+  dashboard: { id: "dashboard-view", subtitle: null },
+  team: { id: "team-view", subtitle: "Team roster and roles" },
+  "weekly-report": { id: "weekly-report-view", subtitle: "Sprint summary report" },
+};
+
+function switchView(navSlug, label) {
+  const target = TAB_VIEWS[navSlug] ?? TAB_VIEWS.dashboard;
+  const root = document.getElementById("page-content");
+  if (!root) return;
+
+  root.querySelectorAll(".page-view").forEach((v) => v.classList.add("hidden"));
+
+  let view = document.getElementById(target.id);
+  if (!view) {
+    view = document.createElement("div");
+    view.id = target.id;
+    view.className = "page-view placeholder";
+    view.innerHTML = `<p>${escapeHtml(label)}</p><span>${escapeHtml(target.subtitle ?? "Coming soon")}</span>`;
+    root.appendChild(view);
+  }
+  view.classList.remove("hidden");
+}
+
 // ── Init (DOM-only) ──────────────────────────────────
 // Skip everything below when there's no document — lets the test suite
 // import this module purely for the helpers above.
@@ -831,14 +916,20 @@ function init() {
   if (stored) sprintState = stored;
 
   // ── Sidebar nav ────────────────────────────────────
-  // Real `href`s do the navigation; we only toggle the active state for
-  // hash links so they don't reload the page.
+  // Real `href`s do the navigation (e.g. My Check-ins → check-in.html).
+  // In-page tabs (href="#") swap the visible .page-view to a placeholder
+  // so the user sees the click took effect — full pages for Team /
+  // Weekly Report aren't built yet.
   document.querySelectorAll(".nav-item").forEach((item) => {
     item.addEventListener("click", (e) => {
       const href = item.getAttribute("href");
-      if (!href || href === "#") {
+      const isInPage = !href || href === "#";
+
+      if (isInPage) {
         e.preventDefault();
+        switchView(item.dataset.nav, item.textContent.trim());
       }
+
       document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
       item.classList.add("active");
 
@@ -857,6 +948,21 @@ function init() {
     btn.addEventListener("click", () => setViewMode(btn.dataset.view));
   });
 
+  // ── Add-agent button (opens agent-form modal) ──────
+  // Members are filtered to non-agents inside openAgentModal — we pass
+  // the full cached list. createAgent posts to the API; on success we
+  // reload everything so the new agent shows in the rail + the
+  // assignee/owner pickers.
+  document.getElementById("add-agent-btn")?.addEventListener("click", () => {
+    openAgentModal({
+      members: projectMembers,
+      onSubmit: async (data) => {
+        await createAgent(PROJECT_ID, data);
+        await loadAll();
+      },
+    });
+  });
+
   // ── Add-task button (opens task-form modal) ────────
   // task-form.js is dynamic-imported on first click (so the node-side
   // tests don't crash on its top-level `document.addEventListener`).
@@ -872,6 +978,9 @@ function init() {
   // expose ours here so the dropdown isn't empty.
   if (typeof window !== "undefined") {
     window.getProjectMembers = () => projectMembers;
+    // The task-form modal also needs to know which members are AI agents
+    // so it can auto-default + require a reviewer when one is selected.
+    window.getProjectAgents = () => projectAgents;
   }
 
   // ── Check-in button ────────────────────────────────

@@ -432,8 +432,61 @@ function hideError() {
   errorEl.classList.add("hidden");
 }
 
+// ── Sidebar nav (mirrors scrum.js) ───────────────────
+// Team / Weekly Report don't have real pages yet — clicking them swaps
+// the check-in form for a lazy "Coming soon" placeholder so the sidebar
+// behaves consistently across the app.
+const TAB_VIEWS = {
+  team: { id: "team-view", subtitle: "Team roster and roles" },
+  "weekly-report": { id: "weekly-report-view", subtitle: "Sprint summary report" },
+};
+
+function switchView(navSlug, label) {
+  const target = TAB_VIEWS[navSlug];
+  const root = document.getElementById("page-content");
+  if (!root || !target) return;
+
+  root.querySelectorAll(".page-view").forEach((v) => v.classList.add("hidden"));
+
+  let view = document.getElementById(target.id);
+  if (!view) {
+    view = document.createElement("div");
+    view.id = target.id;
+    view.className = "page-view placeholder";
+    const safe = (s) =>
+      String(s ?? "").replace(
+        /[&<>"']/g,
+        (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+      );
+    view.innerHTML = `<p>${safe(label)}</p><span>${safe(target.subtitle)}</span>`;
+    root.appendChild(view);
+  }
+  view.classList.remove("hidden");
+}
+
+function wireSidebar() {
+  document.querySelectorAll(".nav-item").forEach((item) => {
+    item.addEventListener("click", (e) => {
+      const href = item.getAttribute("href");
+      const isInPage = !href || href === "#";
+
+      if (isInPage) {
+        e.preventDefault();
+        switchView(item.dataset.nav, item.textContent.trim());
+      }
+
+      document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
+      item.classList.add("active");
+
+      const topbarTitle = document.querySelector(".topbar-title");
+      if (topbarTitle) topbarTitle.textContent = item.textContent.trim();
+    });
+  });
+}
+
 // ── Init ─────────────────────────────────────────────
 async function init() {
+  wireSidebar();
   form = document.getElementById("checkin-form");
   promptBanner = document.getElementById("checkin-prompt");
   doneBanner = document.getElementById("checkin-done");

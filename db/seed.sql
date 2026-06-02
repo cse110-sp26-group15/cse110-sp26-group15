@@ -1,23 +1,27 @@
 -- ─────────────────────────────────────────────────────────────────────
 -- Seed data: one example of every UI surface in the SitRep app.
 --   • 3 projects, one per workflow (scrum / kanban / xp)
--- 	 • 6 users incl. an AI agent
---   • cross-project membership
+-- 	 • 5 humans + 2 AI agents, each agent owned by a human
+--   • cross-project membership (incl. agents)
 --   • sprints (active + past) for the scrum project
 --   • tasks in every status, some unassigned, some without GH links
+--   • agent-assigned tasks with reviewer + review_status set
 --   • check-ins exercising every status_mood badge the UI knows
 --   • blockers: resolved + unresolved, task-tagged + general, w/ + w/o helper
 -- Password for every test user: TestPassword123
 -- ─────────────────────────────────────────────────────────────────────
 
 -- ── Users ─────────────────────────────────────────────────────────────
+-- user_id 6 and 7 are AI agents (role='AI-agent'); the `agents` insert
+-- below carries their type, owner, and last-active metadata.
 INSERT INTO users (full_name, email, role, password_hash) VALUES
-  ('Alex Rivera',    'arivera@ucsd.edu', 'Lead Developer',   '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
-  ('Sam Chen',       'schen@ucsd.edu',   'UI/UX Designer',   '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
-  ('Jordan Smith',   'jsmith@ucsd.edu',  'Product Owner',    '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
-  ('Wayne Dyer',     'wdyer@ucsd.edu',   'Engineer',         '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
-  ('Mia Carter',     'mcarter@ucsd.edu', 'QA Engineer',      '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
-  ('SitRep-Bot-v1',  'agent@sesitrep.ai','AI-agent',         '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO');
+  ('Alex Rivera',       'arivera@ucsd.edu',     'Lead Developer', '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
+  ('Sam Chen',          'schen@ucsd.edu',       'UI/UX Designer', '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
+  ('Jordan Smith',      'jsmith@ucsd.edu',      'Product Owner',  '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
+  ('Wayne Dyer',        'wdyer@ucsd.edu',       'Engineer',       '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
+  ('Mia Carter',        'mcarter@ucsd.edu',     'QA Engineer',    '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
+  ('SitRep-Bot-v1',     'agent@sesitrep.ai',    'AI-agent',       '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO'),
+  ('Spec-Reviewer-Bot', 'reviewer@sesitrep.ai', 'AI-agent',       '$2b$10$QiMvio0SLlpZwxKBhfPS2.KxdzYrScPgFe60nT2sULploQ1Y.JerO');
 
 -- ── Projects (one of each workflow) ───────────────────────────────────
 INSERT INTO projects (name, description, workflow, created_by) VALUES
@@ -26,13 +30,21 @@ INSERT INTO projects (name, description, workflow, created_by) VALUES
   ('Research Spike',       'XP-style rapid iteration project.',      'xp',     2);
 
 -- ── Project members ───────────────────────────────────────────────────
--- Project 1 (scrum): everyone
--- Project 2 (kanban): Alex, Wayne, Mia
--- Project 3 (xp):    Sam, Jordan, AI bot
+-- Project 1 (scrum): everyone incl. both agents
+-- Project 2 (kanban): Alex, Wayne, Mia + Spec-Reviewer-Bot
+-- Project 3 (xp):    Sam, Jordan + SitRep-Bot-v1
 INSERT INTO project_members (project_id, user_id) VALUES
-  (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6),
-  (2, 1), (2, 4), (2, 5),
+  (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7),
+  (2, 1), (2, 4), (2, 5), (2, 7),
   (3, 2), (3, 3), (3, 6);
+
+-- ── Agents ────────────────────────────────────────────────────────────
+-- 1:1 extension of the AI-agent users above. owner_user_id is the human
+-- responsible for monitoring/managing each agent's work and is the
+-- default reviewer for tasks assigned to that agent.
+INSERT INTO agents (user_id, agent_type, owner_user_id, description, last_active_at) VALUES
+  (6, 'standup-summarizer', 1, 'Auto-summarises overnight commits and posts a check-in.', datetime('now','-2 hours')),
+  (7, 'spec-reviewer',      4, 'Reviews PR diffs against acceptance criteria.',            datetime('now','-15 minutes'));
 
 -- ── Sprints ───────────────────────────────────────────────────────────
 -- Active sprint contains today; previous sprint sits before it.
@@ -46,6 +58,8 @@ INSERT INTO sprints (project_id, number, start_date, end_date, goal) VALUES
 
 -- ── Tasks ─────────────────────────────────────────────────────────────
 -- Project 1: hits every status, mix of assigned + unassigned, with + without GH URL.
+-- Human-assigned tasks leave reviewer_id NULL and review_status defaults
+-- to 'not-required'. Agent-assigned tasks (further down) carry both.
 INSERT INTO tasks (project_id, assigned_to, title, status, github_issue_url) VALUES
   (1, 2, 'Create user personas',                  'done',        'https://github.com/org/repo/issues/1'),
   (1, 2, 'Develop wireframes',                    'in-progress', 'https://github.com/org/repo/issues/2'),
@@ -54,7 +68,6 @@ INSERT INTO tasks (project_id, assigned_to, title, status, github_issue_url) VAL
   (1, 4, 'Wire dashboard to live API',            'in-progress', 'https://github.com/org/repo/issues/12'),
   (1, NULL, 'Triage backlog for sprint 3',        'todo',        NULL),
   (1, 5, 'Write end-to-end smoke tests',          'todo',        'https://github.com/org/repo/issues/15'),
-  (1, 6, 'Generate weekly status digest',         'done',        NULL),
   -- Project 2 (kanban) — covers all four columns including any "blocked"
   -- column the kanban UI surfaces via task status / blocker join.
   (2, 4, 'Set up Expo build pipeline',            'done',        'https://github.com/org/mobile/issues/1'),
@@ -63,14 +76,23 @@ INSERT INTO tasks (project_id, assigned_to, title, status, github_issue_url) VAL
   (2, NULL, 'Pick app icon palette',              'todo',        NULL),
   -- Project 3 (xp) — sparse but exercises the XP "assigned tasks" list.
   (3, 2, 'Spike: voice-to-text check-ins',        'in-progress', NULL),
-  (3, 6, 'Agent: summarise overnight commits',    'done',        NULL),
   (3, 3, 'Recruit testers for rapid loop',        'todo',        NULL);
+
+-- Agent-assigned tasks. Each carries reviewer_id (the human accountable
+-- for the work) and a non-default review_status so the UI exercises the
+-- 'pending' / 'approved' / 'needs-revision' badge colors.
+INSERT INTO tasks (project_id, assigned_to, title, status, reviewer_id, review_status) VALUES
+  (1, 6, 'Generate weekly status digest',           'done',        1, 'approved'),
+  (1, 6, 'Agent: draft sprint retrospective notes', 'in-progress', 1, 'pending'),
+  (1, 7, 'Agent: audit PR #142 vs acceptance criteria', 'in-progress', 4, 'pending'),
+  (2, 7, 'Agent: classify mobile crash reports',    'todo',        4, 'pending'),
+  (3, 6, 'Agent: summarise overnight commits',      'done',        2, 'needs-revision');
 
 -- ── Check-ins ─────────────────────────────────────────────────────────
 -- Exercises every status_mood string the UI special-cases:
 --   scrum.js classifyMood():  "block", "help"/"overwhelm"/"stuck", default
 --   main.js badgeClassFor():  on-track, blocked, in-progress, needs-review, running
--- Plus one AI-agent check-in so the "AI" badge renders on the XP feed.
+-- Plus AI-agent check-ins so the "AI" badge renders on the feed.
 INSERT INTO checkins (user_id, project_id, status_mood, work_done, work_planned, checkin_date) VALUES
   (1, 1, 'on-track',          'Set up repo structure and linting.',          'Initialise SQLite database.',    date('now')),
   (2, 1, 'in-progress',       'Wired the task-card component into kanban.',  'Pair with Alex on auth flow.',   date('now')),
@@ -78,6 +100,7 @@ INSERT INTO checkins (user_id, project_id, status_mood, work_done, work_planned,
   (4, 1, 'blocked',           'Hit auth issues wiring up dashboard API.',    'Pair with Alex tomorrow.',       date('now')),
   (5, 1, 'A bit overwhelmed', 'Caught up on QA backlog.',                    'Triage flaky tests.',            date('now')),
   (6, 1, 'Optimized',         'Scanned repo for LoC count + PR compliance.', 'Monitor upcoming sprint tasks.', date('now')),
+  (7, 1, 'on-track',          'Audited 4 PRs against acceptance criteria.',  'Run nightly diff scan.',         date('now')),
   -- Project 2 (kanban)
   (4, 2, 'on-track',          'Shipped Expo build script.',                  'Polish login screen.',           date('now','-1 day')),
   (1, 2, 'running',           'Auth integration started.',                   'Wire token refresh path.',       date('now')),
@@ -90,9 +113,10 @@ INSERT INTO checkins (user_id, project_id, status_mood, work_done, work_planned,
 --   • is_resolved          → RESOLVED vs BLOCKED pill colour
 --   • task IS NULL/''      → "general" rail row vs task-scoped row
 --   • helper IS NULL/value → presence of the "Can help" avatar
--- Seed at least one of each combination.
+-- Seed at least one of each combination + one raised by an agent.
 INSERT INTO blockers (checkin_id, description, task, helper, is_resolved) VALUES
   (4, 'Auth middleware rewrite blocked on legal review.', 'Wire dashboard to live API', 'Alex Rivera', 0),
   (5, 'Need access to the staging Slack workspace.',       NULL,                        NULL,          0),
   (3, 'Figma file is missing dark-mode tokens.',           'Develop wireframes',        'Sam Chen',    1),
-  (7, 'Apple developer account renewal stuck in finance.', NULL,                        'Wayne Dyer',  0);
+  (7, 'Agent: missing context for 3 PRs — owner ping.',    'Agent: audit PR #142 vs acceptance criteria', 'Wayne Dyer', 0),
+  (8, 'Apple developer account renewal stuck in finance.', NULL,                        'Wayne Dyer',  0);
