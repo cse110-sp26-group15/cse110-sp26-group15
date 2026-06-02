@@ -486,20 +486,24 @@
 }
 
 /* ── Linked task highlight (applied by blocker-card-init) ── */
+/* Each iteration is a full fade-in/fade-out pulse; running it twice makes the
+   outline flash a couple of times when a blocker's linked task is opened.
+   2 × 0.8s = 1.6s, which matches FLASH_TASK_MS in blocker-card-init.js. */
 .task-card--blocker-highlight {
-  animation: blocker-highlight-flash 1.6s ease-out;
+  animation: blocker-highlight-flash 0.8s ease-out 2;
 }
 
 @keyframes blocker-highlight-flash {
-  0% {
-    background: var(--blocker-card-bg);
-    border-color: var(--blocker-card-border);
-    box-shadow: 0 0 0 3px var(--blocker-card-border);
-  }
+  0%,
   100% {
     background: var(--color-bg);
     border-color: var(--color-border);
     box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    background: var(--blocker-card-bg);
+    border-color: var(--blocker-card-border);
+    box-shadow: 0 0 0 3px var(--blocker-card-border);
   }
 }
 

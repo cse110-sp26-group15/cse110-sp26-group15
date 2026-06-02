@@ -36,14 +36,15 @@
         <div class="sidebar-header">
           <a href="../project-setup/index.html" class="sidebar-logo">
             <div class="logo-mark">S</div>
-            1
             <div class="logo-text">SitRep</div>
           </a>
         </div>
 
         <nav class="sidebar-nav">
-          <!-- scrum.html is the project-setup default dashboard target -->
-          <a href="../dashboard/scrum.html" class="nav-item">Dashboard</a>
+          <!-- Dashboard target is resolved at runtime in check-in.js from the
+               selected project workflow (scrum / kanban / xp). scrum.html is
+               only the static fallback used before that script runs. -->
+          <a href="../dashboard/scrum.html" class="nav-item" id="nav-dashboard">Dashboard</a>
           <a href="check-in.html" class="nav-item active">My Check-ins</a>
           <a href="#" class="nav-item">Team</a>
           <a href="#" class="nav-item">Weekly Report</a>
@@ -135,10 +136,6 @@
 
       <!-- ── Main content ──────────────────────────────────── -->
       <div class="main-content">
-        <header class="topbar">
-          <span class="topbar-title">My Check-ins</span>
-        </header>
-
         <main class="content-area" id="page-content">
           <div class="page-view checkin-page">
             <header class="section-header">

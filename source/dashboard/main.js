@@ -1,6 +1,7 @@
 import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
 import { apiFetch, ApiError } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
+import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 
 initUserMenu();
 
@@ -146,10 +147,18 @@ let blockerByTask = new Map();
 
 // Build the title→reason lookup from the open-blocker list. First open blocker
 // per task wins (the API returns them most-recent-first).
+//
+// Blockers the user resolved from the blocker rail are persisted to
+// localStorage (by blocker-card.js) but aren't yet reflected by the API, so we
+// also skip any blocker whose id is in that resolved set. This keeps the
+// "Blocked" chip off a task card after its blocker was resolved on a different
+// dashboard type and the user switched here.
 function buildBlockerIndex(openBlockers) {
   const map = new Map();
+  const resolvedIds = readResolvedBlockerIds();
   for (const b of openBlockers ?? []) {
     if (!b.task) continue; // skip project-wide (general) blockers
+    if (resolvedIds.has(b.blocker_id)) continue; // resolved via the blocker rail
     if (!map.has(b.task)) map.set(b.task, b.description || "Blocked");
   }
   return map;
