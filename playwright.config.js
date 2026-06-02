@@ -18,7 +18,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npx serve dist --listen 3000",
+    command: "node_modules/.bin/serve dist -l 3000",
     port: 3000,
     reuseExistingServer: !process.env.CI,
   },

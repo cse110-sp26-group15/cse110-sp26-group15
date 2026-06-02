@@ -92,6 +92,9 @@ test.describe("Signup page", () => {
     );
 
     await page.goto(SIGNUP_URL);
+    if (await page.locator("#full-name").count()) {
+      await page.locator("#full-name").fill("Test User");
+    }
     await page.locator("#email").fill("taken@example.com");
     await page.locator("#password").fill("password123");
     await page.locator("#confirm-password").fill("password123");
@@ -118,6 +121,9 @@ test.describe("Signup page", () => {
     );
 
     await page.goto(SIGNUP_URL);
+    if (await page.locator("#full-name").count()) {
+      await page.locator("#full-name").fill("Test User");
+    }
     await page.locator("#email").fill("new@example.com");
     await page.locator("#password").fill("password123");
     await page.locator("#confirm-password").fill("password123");

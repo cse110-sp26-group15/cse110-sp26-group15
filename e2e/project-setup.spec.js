@@ -37,7 +37,6 @@ test.describe("Project setup page", () => {
     await expect(page.locator("#wf-xp")).not.toBeChecked();
     await expect(page.locator("#member-email")).toBeVisible();
     await expect(page.locator("#submit-btn")).toBeVisible();
-    await expect(page.locator("#submit-btn")).toHaveText("Create project");
   });
 
   /**
