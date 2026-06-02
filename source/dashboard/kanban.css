@@ -249,7 +249,7 @@
 
 .checkin-time {
   font-size: var(--text-xs);
-  color: var(--color-text-subtle);
+  color: var(--color-text-muted);
   flex-shrink: 0;
   min-width: 56px;
   text-align: right;

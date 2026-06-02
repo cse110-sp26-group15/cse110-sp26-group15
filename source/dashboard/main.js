@@ -1,7 +1,7 @@
 import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
 import { renderAgents } from "../agent-card/agent-card.js";
 import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
-import { apiFetch, ApiError } from "../shared/utils.js";
+import { apiFetch, ApiError, showLoading, hideLoading } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 
 initUserMenu();
@@ -689,7 +689,7 @@ document.querySelectorAll(".kanban-col__cards").forEach((zone) => {
  * open-blocker summary banner.
  * @returns {Promise<void>}
  */
-async function init() {
+async function initImpl() {
   try {
     projectMembers = await fetchMembers();
   } catch (err) {
@@ -730,6 +730,17 @@ async function init() {
       },
     });
   });
+}
+
+// Public entry point — shows a loading overlay over the content area
+// while the initial data (members, tasks, board) loads, then removes it.
+async function init() {
+  showLoading();
+  try {
+    await initImpl();
+  } finally {
+    hideLoading();
+  }
 }
 
 init();
