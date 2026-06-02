@@ -374,6 +374,16 @@ async function handleSubmit(event) {
   const userId = user?.user_id ?? 1; // fallback for unauthenticated demos
   const blocker = readBlocker();
 
+  // Disable the submit button while the POST is in flight so a double-tap
+  // can't create duplicate check-ins; the shared .btn:disabled style
+  // (components.css) supplies the dimmed, not-allowed visual.
+  const submitBtn = document.getElementById("submit-checkin-btn");
+  const prevLabel = submitBtn?.textContent;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Saving…";
+  }
+
   try {
     const checkin = await postCheckin({
       user_id: userId,
@@ -403,6 +413,11 @@ async function handleSubmit(event) {
   } catch (err) {
     console.error("[check-in] submit failed", err);
     showError(`Couldn't save check-in: ${err.message}`);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = prevLabel;
+    }
   }
 }
 
@@ -477,9 +492,6 @@ function wireSidebar() {
 
       document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
       item.classList.add("active");
-
-      const topbarTitle = document.querySelector(".topbar-title");
-      if (topbarTitle) topbarTitle.textContent = item.textContent.trim();
     });
   });
 }

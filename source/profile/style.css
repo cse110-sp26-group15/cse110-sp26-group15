@@ -109,7 +109,7 @@
 
 .edit-note {
   font-size: var(--text-xs);
-  color: var(--color-text-subtle);
+  color: var(--color-text-muted);
   margin-bottom: var(--space-sm);
 }
 

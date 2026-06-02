@@ -66,14 +66,14 @@ body {
 }
 
 .sidebar-header {
-  padding: 20px 16px 16px;
+  padding: var(--space-lg) var(--space-md) var(--space-md);
   border-bottom: 1px solid var(--color-border);
 }
 
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-sm);
   text-decoration: none;
 }
 
@@ -104,7 +104,7 @@ body {
 }
 
 .nav-label {
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -116,13 +116,13 @@ body {
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  font-size: 13px;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
   color: var(--color-text-secondary);
   text-decoration: none;
-  margin-bottom: 2px;
+  margin-bottom: var(--space-2xs);
   transition:
     background 0.15s,
     color 0.15s;
@@ -149,7 +149,7 @@ body {
 .nav-divider {
   height: 1px;
   background: var(--color-border);
-  margin: 10px 8px;
+  margin: var(--space-sm) var(--space-xs);
 }
 
 /* ── Sidebar footer ────────────────────────────────── */
@@ -167,8 +167,8 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-md);
   cursor: pointer;
   background: none;
@@ -215,10 +215,10 @@ body {
 .dropdown-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
   width: 100%;
-  padding: 8px 10px;
-  border-radius: 5px;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
   font-size: var(--text-xs);
   font-family: var(--font-sans);
   font-weight: var(--font-weight-regular);
@@ -259,9 +259,9 @@ body {
 .user-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 6px;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
   cursor: pointer;
   text-decoration: none;
 }
@@ -279,7 +279,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: var(--font-weight-semibold);
   flex-shrink: 0;
 }
@@ -299,7 +299,7 @@ body {
 }
 
 .user-role {
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--color-text-muted);
   margin-top: 1px;
   white-space: nowrap;
@@ -322,7 +322,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
-  padding: 20px 24px;
+  padding: var(--space-lg) var(--space-lg);
   min-height: 0;
 }
 
@@ -330,12 +330,12 @@ body {
 .placeholder {
   height: 100%;
   border: 2px dashed var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-xs);
 }
 
 .placeholder p {
@@ -378,14 +378,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: var(--space-sm) var(--space-md);
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
 }
 
 .task-title {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--color-text-primary);
   flex: 1;
   min-width: 0;
@@ -397,7 +397,7 @@ body {
 .task-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-sm);
   flex-shrink: 0;
 }
 
@@ -407,7 +407,7 @@ body {
 }
 
 .task-empty {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   padding: var(--space-lg) 0;
   text-align: center;
@@ -416,7 +416,7 @@ body {
 /* ── Assignee dropdown ─────────────────────────────── */
 .assignee-select {
   padding: var(--space-2xs) var(--space-xs);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   font-size: var(--text-xs);
   cursor: pointer;
@@ -433,7 +433,7 @@ body {
 /* ── Status dropdown ───────────────────────────────── */
 .status-select {
   padding: var(--space-2xs) var(--space-xs);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   font-size: var(--text-xs);
   cursor: pointer;
@@ -466,7 +466,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-xs);
-  padding: 10px 16px;
+  padding: var(--space-sm) var(--space-md);
   background: var(--color-error-muted);
   border: 1px solid var(--color-error);
   border-radius: var(--radius-md);
@@ -483,7 +483,7 @@ body {
 }
 
 .blockers-banner__label {
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-on-error-muted);
   margin-right: var(--space-2xs);
@@ -492,11 +492,11 @@ body {
 .blockers-banner__list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-xs);
 }
 
 .blockers-banner__chip {
-  padding: 2px 10px;
+  padding: var(--space-2xs) var(--space-sm);
   background: var(--color-bg);
   border: 1px solid var(--color-error);
   border-radius: var(--radius-full);
@@ -519,7 +519,7 @@ body {
   flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   min-height: 0;
 }
@@ -528,13 +528,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: var(--space-sm) var(--space-md);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 
 .kanban-col__title {
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
@@ -545,11 +545,11 @@ body {
   justify-content: center;
   min-width: 20px;
   height: 20px;
-  padding: 0 6px;
+  padding: 0 var(--space-xs);
   border-radius: var(--radius-full);
   background: var(--color-border);
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -570,7 +570,7 @@ body {
 .kanban-col__cards {
   flex: 1;
   overflow-y: auto;
-  padding: 10px;
+  padding: var(--space-sm);
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
@@ -580,7 +580,7 @@ body {
   background: var(--color-accent-bg);
   outline: 2px dashed var(--color-accent);
   outline-offset: -4px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 
 .kanban-col__empty {
@@ -630,4 +630,167 @@ body {
 .kanban-col__cards {
   overflow-y: auto;
   min-height: 0;
+}
+
+/* ── Loading overlay + spinner ───────────────────────────────
+   Injected by showLoading() (shared/utils.js) over the content area
+   during the initial data fetch, then removed on completion. The
+   content area is the positioning context so the overlay sits over it. */
+.content-area {
+  position: relative;
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  background: var(--color-bg);
+}
+
+.loading-overlay__label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Respect reduced-motion: drop the spin and let the "Loading…" label
+   carry the state (the rest of the app collapses durations in theme.css,
+   but a keyframe animation needs its own opt-out). */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+/* ── Mobile top bar + overlay are desktop-hidden by default ── */
+.mobile-topbar,
+.sidebar-overlay {
+  display: none;
+}
+
+/* ── Focus-visible rings for the custom sidebar / table controls ──
+   Reuse the shared focus tokens so keyboard users get the same ring
+   the .btn / .input components already provide. The selects do
+   `outline: none` for their resting state, so without this they had
+   no visible keyboard focus indicator. */
+.nav-item:focus-visible,
+.user-menu-trigger:focus-visible,
+.dropdown-item:focus-visible,
+.sidebar-toggle:focus-visible,
+.status-select:focus-visible,
+.assignee-select:focus-visible {
+  outline: var(--focus-outline-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-outline-offset);
+  box-shadow: var(--shadow-focus);
+}
+
+.status-select:focus-visible,
+.assignee-select:focus-visible {
+  border-color: var(--color-border-focus);
+  outline-offset: 1px;
+}
+
+/* ── Responsive: collapse the sidebar into an off-canvas drawer ──
+   The hamburger top bar + overlay are injected by shared/user-menu.js
+   (initSidebarDrawer); these rules drive their appearance below 768px. */
+@media (max-width: 768px) {
+  /* Unlock the viewport so long dashboards can scroll on mobile. */
+  body {
+    height: auto;
+    overflow: auto;
+  }
+  .app-shell {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    padding: var(--space-xs) var(--space-md);
+    background: var(--color-bg-surface);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2xs);
+    border: none;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-default);
+  }
+  .sidebar-toggle:hover {
+    background: var(--color-bg-subtle);
+  }
+
+  /* Off-canvas sidebar slides in from the left. */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: var(--z-modal);
+    transform: translateX(-100%);
+    transition: transform var(--duration-normal) var(--ease-default);
+    box-shadow: var(--shadow-xl);
+  }
+  .app-shell.is-sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  /* Dimmer behind the open drawer. */
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+    background: hsla(222, 47%, 11%, 0.5);
+  }
+  .sidebar-overlay[hidden] {
+    display: none;
+  }
+
+  /* Relax the internal scroll containers so content flows naturally in
+     the now page-scrolled layout (no fixed parent height to fill). */
+  .main-content,
+  .content-area,
+  .kanban-board,
+  .kanban-col,
+  .kanban-col__cards,
+  .kanban-column,
+  .kanban-column-list,
+  .task-list {
+    overflow: visible;
+    min-height: 0;
+  }
+  .kanban-board {
+    grid-template-columns: 1fr;
+  }
 }

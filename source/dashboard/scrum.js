@@ -17,7 +17,7 @@
 import { createTaskCard } from "../task-card/task-card.js";
 import { renderAgents } from "../agent-card/agent-card.js";
 import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
-import { apiFetch, ApiError } from "../shared/utils.js";
+import { apiFetch, ApiError, showLoading, hideLoading } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 
 initUserMenu();
@@ -777,7 +777,19 @@ function renderLoadError(message) {
 }
 
 // ── Load + render orchestration ──────────────────────
-async function loadAll() {
+// Public entry point. The first load (from init) passes showSpinner so a
+// loading overlay covers the content area until data arrives; refreshes
+// after create/update call loadAll() with no arg and update silently.
+async function loadAll(showSpinner = false) {
+  if (showSpinner) showLoading();
+  try {
+    await loadAllImpl();
+  } finally {
+    if (showSpinner) hideLoading();
+  }
+}
+
+async function loadAllImpl() {
   let tasks, checkins, blockers, apiSprint, apiMembers, apiAgents;
   try {
     [tasks, checkins, blockers, apiSprint, apiMembers, apiAgents] = await Promise.all([
@@ -992,9 +1004,9 @@ function init() {
   });
 
   // Apply the saved view mode (defaults to "list") and kick off the
-  // first load.
+  // first load (with a loading overlay).
   setViewMode(viewMode);
-  loadAll();
+  loadAll(true);
 }
 
 if (typeof document !== "undefined") {
