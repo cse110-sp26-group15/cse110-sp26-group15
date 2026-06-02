@@ -113,9 +113,7 @@ test.describe("Check-in page", () => {
     await page.locator("#submit-checkin-btn").click();
 
     await expect(page.locator("#checkin-form-error")).toBeVisible();
-    await expect(page.locator("#checkin-form-error")).toContainText(
-      "Please fill in what you did"
-    );
+    await expect(page.locator("#checkin-form-error")).toContainText("Please fill in what you did");
   });
 
   /**
@@ -163,10 +161,18 @@ test.describe("Check-in page", () => {
     });
 
     await page.route(`**/api/projects/${PROJECT_ID}/tasks`, (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ tasks: [] }) })
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ tasks: [] }),
+      })
     );
     await page.route(`**/api/projects/${PROJECT_ID}/members`, (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ members: [] }) })
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ members: [] }),
+      })
     );
 
     await page.goto(CHECKIN_URL);
