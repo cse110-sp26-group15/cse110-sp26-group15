@@ -44,6 +44,23 @@ export async function onRequestPost(context) {
   }
 
   try {
+    // Enforce one check-in per user per day, scoped to this project (a user
+    // can still check in to other projects the same day). checkin_date is
+    // stored as a full timestamp, so we compare on the calendar date via
+    // SQLite's date(): an existing row whose date matches the new check-in's
+    // date (or today, when the client sends none) blocks the insert.
+    const existing = await env.DB.prepare(
+      `SELECT checkin_id FROM checkins
+        WHERE user_id = ? AND project_id = ?
+          AND date(checkin_date) = date(COALESCE(?, 'now'))`
+    )
+      .bind(user_id, projectId, checkin_date)
+      .first();
+
+    if (existing) {
+      return Response.json({ error: "You've already checked in today." }, { status: 409 });
+    }
+
     // Persist the exact moment the check-in was completed. The client sends an
     // ISO timestamp (its local "now"); when it's missing we fall back to the
     // server clock. The column default was date-only (CURRENT_DATE), which lost

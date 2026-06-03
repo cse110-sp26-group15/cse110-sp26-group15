@@ -99,18 +99,42 @@ export function initialsFor(name) {
 }
 
 /**
- * Formats an ISO date string as a readable completion date.
+ * Parses a check-in's date value into a Date. A bare "YYYY-MM-DD" string
+ * (what older rows / `date('now')` defaults store) is read at LOCAL midnight,
+ * not UTC — `new Date("2026-06-03")` would land on UTC midnight and render as
+ * the previous day for anyone west of UTC. Full ISO timestamps are read as-is.
+ * Returns null for empty/unparseable input.
+ * @param {string} raw
+ * @returns {Date|null}
+ */
+export function parseCheckinDate(raw) {
+  if (!raw) return null;
+  let d;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [y, m, day] = raw.split("-").map(Number);
+    d = new Date(y, m - 1, day);
+  } else {
+    d = new Date(raw);
+  }
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Formats a check-in date as a readable completion stamp. Date-only values
+ * render just the day (there's no time-of-day to show); full timestamps add
+ * the local time.
  * @param {string} dateStr
  * @returns {string}
  */
 export function formatDate(dateStr) {
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return "";
+  const d = parseCheckinDate(dateStr);
+  if (!d) return "";
   const date = d.toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return date;
   const time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
   return `${date} · ${time}`;
 }
@@ -135,7 +159,8 @@ export function isSameDay(a, b) {
 export function hasCheckinToday(checkins, userId) {
   const today = new Date();
   return checkins.some((c) => {
-    if (!isSameDay(new Date(c.checkin_date), today)) return false;
+    const when = parseCheckinDate(c.checkin_date);
+    if (!when || !isSameDay(when, today)) return false;
     if (userId == null) return true;
     return Number(c.user_id ?? c.user?.user_id) === Number(userId);
   });
@@ -469,7 +494,16 @@ async function handleSubmit(event) {
     await refresh(userId);
   } catch (err) {
     console.error("[check-in] submit failed", err);
-    showError(`Couldn't save check-in: ${err.message}`);
+    // The server enforces one check-in per day per project and replies 409 if
+    // the user already has one today (e.g. a stale tab, or a check-in made on
+    // another device). Surface that as a friendly note and refresh so the page
+    // flips to the "today's check-in is done" banner instead of looking broken.
+    if (err instanceof ApiError && err.status === 409) {
+      showError(err.message || "You've already checked in today.");
+      await refresh(userId);
+    } else {
+      showError(`Couldn't save check-in: ${err.message}`);
+    }
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;

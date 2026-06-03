@@ -69,6 +69,16 @@ describe("formatDate", () => {
     expect(formatDate("")).toBe("");
     expect(formatDate("not a date")).toBe("");
   });
+
+  it("reads a date-only string at local midnight (no UTC off-by-one)", () => {
+    // new Date("2026-05-29") would be UTC midnight and render as May 28 west of
+    // UTC; parsed at local midnight it must stay May 29 in every timezone.
+    const formatted = formatDate("2026-05-29");
+    expect(formatted).toContain("May");
+    expect(formatted).toContain("29");
+    // Date-only values carry no time of day, so none is shown.
+    expect(formatted).not.toContain(":");
+  });
 });
 
 // ── isSameDay / hasCheckinToday ──────────────────────
@@ -90,6 +100,24 @@ describe("hasCheckinToday", () => {
   it("ignores older check-ins and empty lists", () => {
     expect(hasCheckinToday([{ checkin_date: "2000-01-01T00:00:00Z" }])).toBe(false);
     expect(hasCheckinToday([])).toBe(false);
+  });
+
+  it("detects a date-only check-in stamped with today's local date", () => {
+    const now = new Date();
+    const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+      now.getDate()
+    ).padStart(2, "0")}`;
+    expect(hasCheckinToday([{ checkin_date: todayLocal }])).toBe(true);
+  });
+
+  it("scopes the today check to a specific user when given an id", () => {
+    const today = new Date().toISOString();
+    const checkins = [
+      { checkin_date: today, user_id: 1 },
+      { checkin_date: today, user_id: 2 },
+    ];
+    expect(hasCheckinToday(checkins, 2)).toBe(true);
+    expect(hasCheckinToday(checkins, 99)).toBe(false);
   });
 });
 
