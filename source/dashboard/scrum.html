@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="../task-form/task-form.css" />
     <link rel="stylesheet" href="scrum.css" />
     <link rel="stylesheet" href="../blocker-card/blocker-card.css" />
+    <link rel="stylesheet" href="../agent-card/agent-card.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -211,6 +212,26 @@
               </header>
               <div class="checkin-grid" id="checkin-grid">
                 <p class="muted-small">Loading check-ins…</p>
+              </div>
+            </section>
+
+            <!-- ── AI Agents ──────────────────────────────────
+                 Each card mirrors a team member's at-a-glance view:
+                 name, type, owning human, current task + review status,
+                 last activity, blocker count. Populated from the
+                 `agents` array on the dashboard payload. -->
+            <section class="panel">
+              <header class="panel-header">
+                <h2 class="panel-title">AI Agents</h2>
+                <div class="panel-header-actions">
+                  <span class="panel-link" id="agent-contributions-meta"></span>
+                  <button class="btn btn--primary" id="add-agent-btn" type="button">
+                    + Add Agent
+                  </button>
+                </div>
+              </header>
+              <div class="agents-grid" id="agents-list">
+                <p class="muted-small">Loading agents…</p>
               </div>
             </section>
 

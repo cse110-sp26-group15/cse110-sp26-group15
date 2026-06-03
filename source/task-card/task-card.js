@@ -32,6 +32,13 @@ const STATUS_LABELS = {
   blocked: "blocked",
 };
 
+const REVIEW_STATUS_LABELS = {
+  "not-required": "no review",
+  pending: "pending review",
+  approved: "approved",
+  "needs-revision": "needs revision",
+};
+
 // ── DOM + formatting helpers ──────────────────────────
 /**
  * Terse element factory. `opts` covers the attributes used across this file;
@@ -85,12 +92,15 @@ function capitalize(word) {
 
 // Builds an avatar bubble showing a person's initials (or "?" when nobody).
 // `markEmpty` adds the --empty modifier for unassigned interactive slots.
-function buildAvatar(source, { markEmpty = false, extraClass = null } = {}) {
+// `isAgent` adds the --agent modifier so the avatar renders with the AI
+// agent badge styling (used when the assignee is an AI agent).
+function buildAvatar(source, { markEmpty = false, extraClass = null, isAgent = false } = {}) {
   const avatar = el("span", {
     className: "task-card__avatar",
     text: source ? initials(source) : "?",
   });
   if (markEmpty && !source) avatar.classList.add("task-card__avatar--empty");
+  if (isAgent) avatar.classList.add("task-card__avatar--agent");
   if (extraClass) avatar.classList.add(extraClass);
   return avatar;
 }
@@ -608,7 +618,8 @@ function buildXpAssigneeGroups(task, ctx) {
 // (when members are known) or a plain name label.
 function buildReadonlyAssignees(task, projectType, ctx, canEditAssignee) {
   const avatars = el("div", { className: "task-card__avatars" });
-  const primary = buildAvatar(task.full_name);
+  // Pass through is_agent so the avatar gets the agent-badge modifier.
+  const primary = buildAvatar(task.full_name, { isAgent: task.is_agent });
   avatars.appendChild(primary);
 
   let pairFirstName = null;
@@ -647,6 +658,15 @@ function buildFooter(task, projectType, ctx) {
     );
   }
 
+  // AI badge — surfaces that this work is being done by an agent so the
+  // reviewer pill below makes sense without extra explanation.
+  if (task.is_agent) {
+    const aiBadge = document.createElement("span");
+    aiBadge.className = "task-card__ai-badge";
+    aiBadge.textContent = "AI";
+    assignees.appendChild(aiBadge);
+  }
+
   footer.appendChild(assignees);
 
   if (ctx?.interactive) {
@@ -662,6 +682,34 @@ function buildFooter(task, projectType, ctx) {
   }
 
   return footer;
+}
+
+/**
+ * Build the optional "Reviewer · review_status" row. Returns null when
+ * the task has no reviewer and no meaningful review status — non-agent
+ * tasks without oversight stay visually clean.
+ */
+function buildReviewRow(task) {
+  const status = task.review_status ?? "not-required";
+  const hasReviewer = task.reviewer_id != null || task.reviewer_name;
+  if (!hasReviewer && status === "not-required") return null;
+
+  const row = document.createElement("div");
+  row.className = "task-card__review-row";
+
+  const reviewerLabel = document.createElement("span");
+  reviewerLabel.className = "task-card__reviewer";
+  reviewerLabel.textContent = task.reviewer_name
+    ? `Reviewer: ${task.reviewer_name}`
+    : "Reviewer: unassigned";
+  row.appendChild(reviewerLabel);
+
+  const pill = document.createElement("span");
+  pill.className = `task-card__review-pill task-card__review-pill--${status}`;
+  pill.textContent = REVIEW_STATUS_LABELS[status] ?? status;
+  row.appendChild(pill);
+
+  return row;
 }
 
 // ── Public API ────────────────────────────────────────
@@ -730,6 +778,10 @@ export function createTaskCard(task, projectType = "kanban", options = {}) {
 
   card.appendChild(buildBanner(task, projectType, ctx));
   card.appendChild(buildBody(task, projectType, ctx));
+  // Review row (AI-agent reviewer + status) only appears when the task has
+  // reviewer metadata — buildReviewRow returns null for human tasks.
+  const reviewRow = buildReviewRow(task);
+  if (reviewRow) card.appendChild(reviewRow);
   card.appendChild(buildFooter(task, projectType, ctx));
 
   return card;
