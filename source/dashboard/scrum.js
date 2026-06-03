@@ -19,6 +19,7 @@ import { renderAgents } from "../agent-card/agent-card.js";
 import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
 import { apiFetch, ApiError, showLoading, hideLoading } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
+import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 
 initUserMenu();
 
@@ -156,6 +157,47 @@ export function computeDayOfSprint(startDate, endDate, today = new Date()) {
 }
 
 /**
+ * Classify how a sprint is tracking by comparing weighted work completed
+ * against time spent, using the Weighted Sprint Health Score:
+ *
+ *   D = % of tasks Done
+ *   P = % of tasks In Progress
+ *   T = % of sprint time elapsed = (day / total) × 100
+ *   Weighted Completion = D + (0.5 × P)
+ *   Sprint Health Score = Weighted Completion / T
+ *
+ * In-progress tasks count as half-done, so a sprint with work underway
+ * scores higher than one that hasn't started. A score above 1 means more
+ * of the (weighted) work is done than time has passed (ahead); below 1
+ * means the sprint is lagging the clock (behind).
+ *
+ *   • score > 1.20          → "ahead"
+ *   • 0.80 ≤ score ≤ 1.20   → "on track"
+ *   • score < 0.80          → "behind"
+ *
+ * @param {number} pctDone  D: percentage of tasks done (0–100).
+ * @param {number} pctInProgress  P: percentage of tasks in progress (0–100).
+ * @param {{day: number, total: number}|null} dayInfo  Output of computeDayOfSprint.
+ * @returns {{label: string, cls: string, score: number}|null}
+ *   null when health can't be computed (no valid date range, or no time
+ *   has elapsed yet so the ratio would divide by zero).
+ */
+export function computeSprintHealth(pctDone, pctInProgress, dayInfo) {
+  if (!dayInfo || dayInfo.total <= 0) return null;
+  // T: percentage of the sprint's time that has elapsed.
+  const pctTimeElapsed = (dayInfo.day / dayInfo.total) * 100;
+  if (pctTimeElapsed <= 0) return null;
+
+  // Weighted Completion = D + (0.5 × P): done tasks count fully, in-progress
+  // tasks count half.
+  const weightedCompletion = pctDone + 0.5 * pctInProgress;
+  const score = weightedCompletion / pctTimeElapsed;
+  if (score > 1.2) return { label: "ahead", cls: "progress-status--ahead", score };
+  if (score < 0.8) return { label: "behind", cls: "progress-status--behind", score };
+  return { label: "on track", cls: "progress-status--on-track", score };
+}
+
+/**
  * Compute the sprint progress bar percentages from the task list.
  *
  * Returns the same `done`/`total`/`pct` numbers regardless of whether
@@ -256,10 +298,17 @@ let blockerByTask = new Map();
 
 // Build the title→reason lookup from the open-blocker list. First (most
 // recent, since the API sorts DESC) open blocker per task wins.
+//
+// Blockers the user resolved from the blocker rail are persisted to
+// localStorage (by blocker-card.js) but aren't yet reflected by the API, so we
+// also skip any blocker whose id is in that resolved set. This keeps the
+// "Blocked" chip off a task card after its blocker was resolved on a different
+// dashboard type and the user switched back here.
 function buildBlockerIndex(blockers) {
   const map = new Map();
+  const resolvedIds = readResolvedBlockerIds();
   for (const b of blockers ?? []) {
-    if (b.is_resolved || !b.task) continue;
+    if (b.is_resolved || resolvedIds.has(b.blocker_id) || !b.task) continue;
     if (!map.has(b.task)) map.set(b.task, b.description || "Blocked");
   }
   return map;
@@ -271,6 +320,12 @@ let viewMode = "list";
 // Cache of the most recently-fetched task list, so the kanban view can
 // re-render after a status change without an extra round trip.
 let currentTasks = [];
+
+// Cache of the most recently-fetched check-ins plus whether the Daily Standup
+// grid is currently showing history (past days) rather than today. Both back
+// the "View history" toggle (toggleCheckinHistory).
+let checkinsCache = [];
+let showingCheckinHistory = false;
 
 // Cache of project members — populated by fetchMembers() during loadAll
 // and exposed to the task-form modal via `window.getProjectMembers` so
@@ -404,10 +459,21 @@ function renderSprintProgress(tasks) {
   fill.style.width = `${pct}%`;
   text.textContent = `${done} / ${total} tasks · ${pct}% complete`;
 
-  // Show "Day X of Y" only when the date range is valid; otherwise hide
-  // the badge so it doesn't display a stale value.
   const dayInfo = computeDayOfSprint(sprintState.start_date, sprintState.end_date);
-  if (dayInfo) {
+
+  // Once the sprint's end date is before the current day, the running
+  // "Day X of Y" count no longer makes sense — show "Sprint N has ended"
+  // instead. Otherwise show "Day X of Y" while a valid range is configured,
+  // and hide the badge when no range is set so it doesn't show a stale value.
+  const endDate = parseISODate(sprintState.end_date);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (endDate && endDate < startOfToday) {
+    badge.hidden = false;
+    badge.textContent = sprintState.number
+      ? `Sprint ${sprintState.number} has ended`
+      : "Sprint has ended";
+  } else if (dayInfo) {
     badge.hidden = false;
     badge.textContent = `Day ${dayInfo.day} of ${dayInfo.total}`;
   } else {
@@ -415,51 +481,52 @@ function renderSprintProgress(tasks) {
     badge.textContent = "";
   }
 
-  statusEl.textContent = pct >= 100 ? "complete" : "on track";
-}
-
-// ── Blockers ─────────────────────────────────────────
-function renderBlockers(blockers) {
-  const panel = document.getElementById("blockers-panel");
-  const list = document.getElementById("blockers-list");
-  const title = document.getElementById("blockers-title");
-  if (!panel || !list || !title) return;
-
-  const open = blockers.filter((b) => !b.is_resolved);
-  title.textContent = `⚠ Blockers (${open.length})`;
-
-  if (open.length === 0) {
-    panel.classList.add("is-empty");
-    list.innerHTML = `<p class="muted-small">No open blockers.</p>`;
-    return;
+  // Label + color the status from the Weighted Sprint Health Score (ahead /
+  // on track / behind). Clear any previous health class first so re-renders
+  // don't stack them, then apply the one matching the current score.
+  statusEl.classList.remove(
+    "progress-status--ahead",
+    "progress-status--on-track",
+    "progress-status--behind"
+  );
+  // P: percentage of tasks currently in progress, used for the weighted score.
+  const inProgress = tasks.filter((t) => t.status === "in-progress").length;
+  const pctInProgress = total === 0 ? 0 : (inProgress / total) * 100;
+  const health = computeSprintHealth(pct, pctInProgress, dayInfo);
+  if (pct >= 100) {
+    // Sprint is complete — show no status at all.
+    statusEl.textContent = "";
+  } else if (health) {
+    statusEl.textContent = health.label;
+    statusEl.classList.add(health.cls);
+  } else {
+    statusEl.textContent = "on track";
   }
-
-  panel.classList.remove("is-empty");
-  list.innerHTML = open
-    .map(
-      (b) => `
-      <div class="blocker-item" data-blocker-id="${escapeHtml(b.blocker_id)}">
-        <span class="blocker-dot"></span>
-        <span class="blocker-desc">${escapeHtml(b.description)}</span>
-        ${b.tag ? `<span class="blocker-tag">tag: ${escapeHtml(b.tag)}</span>` : ""}
-        <span class="blocker-author">${escapeHtml(b.full_name ?? "")}</span>
-      </div>`
-    )
-    .join("");
 }
 
 // ── Check-in cards ───────────────────────────────────
-function renderCheckins(checkins, members) {
-  const grid = document.getElementById("checkin-grid");
-  if (!grid) return;
-  const checkedInUserIds = new Set(checkins.map((c) => c.user_id));
+// Decide whether a check-in belongs to "today" in the viewer's local
+// timezone. Date-only strings ("YYYY-MM-DD") are read at local midnight;
+// full ISO timestamps are read as-is. A check-in with no date is treated
+// as today (the API defaults the column to the current date on insert).
+function isCheckinToday(checkin, now = new Date()) {
+  const raw = checkin.checkin_date;
+  if (!raw) return true;
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? parseISODate(raw) : new Date(raw);
+  if (!d || Number.isNaN(d.getTime())) return true;
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
 
-  const checkinCards = checkins
-    .map((c) => {
-      const mood = classifyMood(c.status_mood);
-      const time = c.checkin_date ? formatDate(c.checkin_date) : "today";
-      const work = c.work_done || c.work_planned || "—";
-      return `
+// Build the HTML for a single check-in card.
+function buildCheckinCardHtml(c) {
+  const mood = classifyMood(c.status_mood);
+  const time = c.checkin_date ? formatDate(c.checkin_date) : "today";
+  const work = c.work_done || c.work_planned || "—";
+  return `
         <div class="checkin-card" data-checkin-id="${escapeHtml(c.checkin_id)}">
           <div class="checkin-top">
             <div class="checkin-user">
@@ -478,8 +545,19 @@ function renderCheckins(checkins, members) {
             }
           </div>
         </div>`;
-    })
-    .join("");
+}
+
+// Render the Daily Standup grid. Only today's check-ins are shown here;
+// members who haven't checked in today get an "is-empty" placeholder card.
+// Past days are reachable through the "View history" link (toggleCheckinHistory).
+function renderCheckins(checkins, members) {
+  const grid = document.getElementById("checkin-grid");
+  if (!grid) return;
+
+  const todays = checkins.filter((c) => isCheckinToday(c));
+  const checkedInUserIds = new Set(todays.map((c) => c.user_id));
+
+  const checkinCards = todays.map(buildCheckinCardHtml).join("");
 
   const missing = members
     .filter((m) => !checkedInUserIds.has(m.user_id))
@@ -495,11 +573,48 @@ function renderCheckins(checkins, members) {
     )
     .join("");
 
-  if (!checkins.length && !members.length) {
+  if (!todays.length && !members.length) {
     grid.innerHTML = `<p class="muted-small">No check-ins for today yet.</p>`;
     return;
   }
   grid.innerHTML = checkinCards + missing;
+}
+
+// Keep the "View history" link's empty-state in sync with the cache. When the
+// grid is showing today and there are no past check-ins, mark the link inert so
+// it surfaces a hover tooltip ("No previous check-ins to display.", styled in
+// scrum.css) instead of toggling. Any other state clears the marker so the link
+// behaves as a normal toggle.
+function updateHistoryLinkState() {
+  const link = document.getElementById("checkin-history-link");
+  if (!link) return;
+  const hasPast = checkinsCache.some((c) => !isCheckinToday(c));
+  const inert = !showingCheckinHistory && !hasPast;
+  link.classList.toggle("panel-link--no-history", inert);
+  link.setAttribute("aria-disabled", inert ? "true" : "false");
+}
+
+// Toggle the Daily Standup grid between today's check-ins and the history of
+// past days. When there are no past days to show, clicking is a no-op — the
+// "View history" link instead reveals a hover tooltip (see updateHistoryLinkState).
+function toggleCheckinHistory() {
+  const grid = document.getElementById("checkin-grid");
+  const link = document.getElementById("checkin-history-link");
+  if (!grid) return;
+
+  if (!showingCheckinHistory) {
+    const past = checkinsCache.filter((c) => !isCheckinToday(c));
+    // Nothing to show — do nothing; the hover tooltip explains why.
+    if (past.length === 0) return;
+    showingCheckinHistory = true;
+    if (link) link.textContent = "View today";
+    grid.innerHTML = past.map(buildCheckinCardHtml).join("");
+  } else {
+    showingCheckinHistory = false;
+    if (link) link.textContent = "View history";
+    renderCheckins(checkinsCache, projectMembers);
+  }
+  updateHistoryLinkState();
 }
 
 // ── Task rendering helpers (shared by list + kanban) ──
@@ -770,8 +885,6 @@ function renderLoadError(message) {
     const el = document.getElementById(id);
     if (el) el.innerHTML = `<p class="task-empty task-error">⚠ ${escapeHtml(message)}</p>`;
   }
-  const title = document.getElementById("blockers-title");
-  if (title) title.textContent = "⚠ Blockers (unavailable)";
   const meta = document.getElementById("sprint-meta");
   if (meta) meta.textContent = "Sprint data unavailable";
 }
@@ -839,9 +952,17 @@ async function loadAllImpl() {
   // Index open blockers by task title so cards can show a blocker chip.
   blockerByTask = buildBlockerIndex(blockers);
 
+  // Cache check-ins and reset the Daily Standup grid to today's view; the
+  // "View history" toggle reads this cache to show past days on demand.
+  checkinsCache = checkins;
+  showingCheckinHistory = false;
+  const historyLink = document.getElementById("checkin-history-link");
+  if (historyLink) historyLink.textContent = "View history";
+  // Refresh the "View history" empty-state (hover tooltip vs. active toggle).
+  updateHistoryLinkState();
+
   renderSprintHeader(checkins);
   renderSprintProgress(tasks);
-  renderBlockers(blockers);
   renderCheckins(checkins, projectMembers);
   renderTasks(tasks);
   renderAgents(document.getElementById("agents-list"), projectAgents);
@@ -994,6 +1115,13 @@ function init() {
     // so it can auto-default + require a reviewer when one is selected.
     window.getProjectAgents = () => projectAgents;
   }
+
+  // ── Daily Standup "View history" toggle ────────────
+  // Swaps the standup grid between today's check-ins and past days.
+  document.getElementById("checkin-history-link")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    toggleCheckinHistory();
+  });
 
   // ── Check-in button ────────────────────────────────
   // Sends the user to the dedicated check-in page (source/check-in), which
