@@ -504,6 +504,8 @@ function renderSprintProgress(tasks) {
 
   const { done, total, pct } = computeSprintProgress(tasks);
   fill.style.width = `${pct}%`;
+  // Keep the progressbar's accessible value in sync with the visual fill.
+  fill.parentElement?.setAttribute("aria-valuenow", String(pct));
   // At 100% the bar turns green to signal the sprint is fully complete.
   fill.classList.toggle("progress-bar-fill--complete", pct >= 100);
   text.textContent = `${done} / ${total} tasks · ${pct}% complete`;

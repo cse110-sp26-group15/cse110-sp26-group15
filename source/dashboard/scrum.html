@@ -200,7 +200,14 @@
                 <h2 class="panel-title" id="sprint-progress-title">Sprint Progress</h2>
               </header>
               <div class="sprint-progress-row">
-                <div class="progress-bar" aria-label="Sprint progress">
+                <div
+                  class="progress-bar"
+                  role="progressbar"
+                  aria-label="Sprint progress"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuenow="0"
+                >
                   <div class="progress-bar-fill" id="sprint-progress-fill" style="width: 0%"></div>
                 </div>
                 <div class="progress-meta">

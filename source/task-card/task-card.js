@@ -216,6 +216,7 @@ function buildStatusSelect(task, ctx) {
   const currentStatus = task.status ?? "todo";
   const select = el("select", {
     className: `task-card__select task-card__select--status task-card__status task-card__status--${currentStatus}`,
+    ariaLabel: "Status",
   });
   addOptions(
     select,

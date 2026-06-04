@@ -209,11 +209,13 @@
 
 .agent-card__empty {
   grid-column: 1 / -1;
-  padding: 18px;
+  padding: var(--space-lg);
   text-align: center;
-  font-size: 13px;
-  color: var(--color-text-secondary, #57606a);
-  background: var(--color-bg-soft, #f6f8fa);
-  border: 1px dashed var(--color-border, #e1e4e8);
-  border-radius: var(--radius-md, 8px);
+  font-size: var(--text-sm);
+  /* Theme tokens so this matches the other empty states (e.g. .task-empty,
+     the blocker placeholder) and keeps AA contrast in both light and dark
+     mode. The old hardcoded near-white background broke dark mode. */
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
 }
