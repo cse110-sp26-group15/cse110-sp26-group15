@@ -446,12 +446,17 @@
 }
 
 .btn-mini.danger {
-  color: var(--color-error);
+  /* Match the light-red danger look used across the rest of the UI
+     (e.g. .input.is-invalid) instead of the plain white surface. */
+  background: var(--color-error-muted);
+  color: var(--color-text-on-error-muted);
   border-color: var(--color-error);
 }
 
 .btn-mini.danger:hover {
-  background: var(--color-error-muted);
+  /* Deepen to a solid error fill on hover for clear feedback. */
+  background: var(--color-error);
+  color: var(--color-text-on-error);
 }
 
 /* main.css defines the three baseline status-select colors but not the
