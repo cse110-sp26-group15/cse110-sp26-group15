@@ -402,31 +402,29 @@
 }
 
 /* ── Status badge ──────────────────────────────────── */
+/* Plain colored status text — no pill (no background, padding, or border) so it
+   reads as a label, not a clickable control. The status color is carried by the
+   text alone. */
 .status-badge {
   display: inline-block;
   font-size: var(--text-xs);
   font-weight: var(--font-weight-medium);
-  padding: var(--space-2xs) var(--space-sm);
-  border-radius: var(--radius-full);
-  border: 1px solid transparent;
   white-space: nowrap;
 }
 
-/* Borders are intentionally left transparent (inherited from .status-badge) so
-   these read as status labels, not clickable controls. */
 .status-badge.status-on-track {
-  background: var(--color-success-muted);
   color: var(--color-text-on-success-muted);
 }
 
 .status-badge.status-blocked {
-  background: var(--color-error-muted);
   color: var(--color-text-on-error-muted);
 }
 
 .status-badge.status-needs-help {
-  background: var(--color-warning-muted);
-  color: var(--color-text-on-warning-muted);
+  /* Use the brighter amber fill token (not the dark warning-text) so "needs
+     help" reads as orange and stays distinct from the blocked red in light
+     mode. */
+  color: var(--color-warning-bg);
 }
 
 /* ── Small action buttons inside checkin cards ─────── */

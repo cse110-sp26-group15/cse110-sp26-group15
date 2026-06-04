@@ -699,7 +699,7 @@ function appendTaskControls(card, task) {
   deleteBtn.type = "button";
   deleteBtn.className = "btn task-card-delete";
   deleteBtn.dataset.taskId = task.task_id;
-  deleteBtn.textContent = "Delete";
+  deleteBtn.textContent = "delete";
   deleteBtn.addEventListener("click", async () => {
     try {
       await deleteTask(task.task_id);
