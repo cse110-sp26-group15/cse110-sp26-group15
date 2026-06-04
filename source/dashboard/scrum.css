@@ -621,3 +621,19 @@
 .task-form {
   flex-wrap: wrap;
 }
+
+/* ── Bottom spacing ────────────────────────────────── */
+/* Add breathing room below the last panel (Sprint Tasks) so the bottom of
+   the list scrolls comfortably into view instead of sitting flush against
+   the edge of the scroll area.
+
+   #dashboard-view is a flex:1 column that the flexbox shrinks to the visible
+   height while its panels overflow into .content-area's scroll, so a
+   padding-bottom here would render up at the fold instead of after the last
+   panel. A non-shrinking spacer flex item lives in the overflow flow, so it
+   reliably reserves space below the final panel. */
+#dashboard-view::after {
+  content: "";
+  display: block;
+  flex: 0 0 var(--space-md);
+}
