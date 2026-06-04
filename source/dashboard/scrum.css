@@ -66,6 +66,24 @@
   min-width: 140px;
 }
 
+/* The sprint number is auto-assigned, so it's shown as read-only text rather
+   than an input. Match the input's height/weight so the row stays aligned. */
+.sprint-number-display {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* `.btn` sets display:inline-flex, which overrides the browser default for the
+   `hidden` attribute — so a hidden .btn would still show. Re-assert none here so
+   scrum.js can fully remove the "New sprint" button while a sprint is running. */
+.btn[hidden] {
+  display: none;
+}
+
 .sprint-picker-buttons {
   display: flex;
   gap: var(--space-xs);

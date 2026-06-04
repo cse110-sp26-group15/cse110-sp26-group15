@@ -141,7 +141,13 @@
                 <p class="sprint-meta" id="sprint-meta">Sprint — · loading…</p>
               </div>
               <div class="sprint-header-actions">
-                <!-- Toggle the sprint configuration panel below the header. -->
+                <!-- Start the next sprint (number auto-increments). Disabled by
+                     scrum.js while a sprint is in progress — one sprint at a
+                     time. "Edit sprint" tweaks the current sprint's dates only;
+                     both open the same picker panel below the header. -->
+                <button class="btn btn--secondary" id="new-sprint-btn" type="button">
+                  New sprint
+                </button>
                 <button class="btn btn--secondary" id="edit-sprint-btn" type="button">
                   Edit sprint
                 </button>
@@ -157,10 +163,13 @@
                  persisted to localStorage so it survives reloads. -->
             <section class="sprint-picker hidden" id="sprint-picker">
               <div class="sprint-picker-row">
-                <label class="sprint-picker-field">
+                <!-- The sprint number is auto-assigned (auto-increments on a
+                     new sprint, fixed when editing), so it's shown read-only
+                     rather than entered. -->
+                <div class="sprint-picker-field">
                   <span>Sprint #</span>
-                  <input type="number" id="sprint-number-input" class="input" min="1" step="1" />
-                </label>
+                  <span class="sprint-number-display" id="sprint-number-display">—</span>
+                </div>
                 <label class="sprint-picker-field">
                   <span>Start date</span>
                   <input type="date" id="sprint-start-input" class="input" />

@@ -143,6 +143,41 @@ export function todayISODate() {
 }
 
 /**
+ * Add `days` to a YYYY-MM-DD string and return the result as YYYY-MM-DD.
+ * Returns null for empty/invalid input. Used to suggest a default 1-week
+ * range when starting a new sprint.
+ */
+export function addDaysISO(iso, days) {
+  const date = parseISODate(iso);
+  if (!date) return null;
+  date.setDate(date.getDate() + days);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * True when a sprint is currently running. Used to lock the "New sprint" action
+ * so a fresh sprint can't be started mid-sprint (one sprint at a time).
+ *
+ * A sprint counts as "in progress" when it's configured (has a start date or a
+ * number) and hasn't ended yet — i.e. it has no end date (open-ended sprint) or
+ * its end date is today or later. Returns false when there's no sprint at all
+ * or the sprint's end date has already passed, so a new sprint can be started.
+ */
+export function isSprintInProgress(sprint) {
+  if (!sprint) return false;
+  // Nothing configured yet → not in progress.
+  if (!sprint.start_date && !sprint.number) return false;
+  const end = parseISODate(sprint.end_date);
+  // Configured but no (valid) end date → treat as still running.
+  if (!end) return true;
+  // Otherwise it runs until the end date passes.
+  return end >= parseISODate(todayISODate());
+}
+
+/**
  * Calculate the current day of a sprint, given its start and end dates.
  *
  * @param {string|Date} startDate  Sprint start (inclusive).
@@ -834,17 +869,52 @@ async function openCreateTaskModal({ lockedStatus, defaultStatus = "todo" } = {}
 }
 
 // ── Sprint picker ────────────────────────────────────
-function openSprintPicker() {
+// The sprint number is auto-assigned, never typed: "New sprint" increments it,
+// "Edit sprint" keeps it. We stash the number the open picker will save here so
+// saveSprintPicker doesn't have to recompute it.
+let pickerSprintNumber = null;
+
+// Show/hide the "New sprint" button based on whether a sprint is running.
+// One sprint at a time — the button is removed entirely while a sprint is in
+// progress and only reappears once it has ended (or if there's no sprint yet).
+function updateSprintButtons() {
+  const newBtn = document.getElementById("new-sprint-btn");
+  if (!newBtn) return;
+  newBtn.hidden = isSprintInProgress(sprintState);
+}
+
+/**
+ * Open the sprint picker.
+ *
+ * @param {"new"|"edit"} mode  "new" auto-increments the sprint number and
+ *        suggests the next 1-week range; "edit" keeps the current number and
+ *        prefills the current dates. The number is read-only either way.
+ */
+function openSprintPicker(mode = "edit") {
   const picker = document.getElementById("sprint-picker");
-  const numberInput = document.getElementById("sprint-number-input");
+  const numberDisplay = document.getElementById("sprint-number-display");
   const startInput = document.getElementById("sprint-start-input");
   const endInput = document.getElementById("sprint-end-input");
-  if (!picker || !numberInput || !startInput || !endInput) return;
+  if (!picker || !numberDisplay || !startInput || !endInput) return;
 
-  // Prefill with the current state so editing is non-destructive.
-  numberInput.value = sprintState.number ?? "";
-  startInput.value = sprintState.start_date ?? "";
-  endInput.value = sprintState.end_date ?? "";
+  // Guard: can't start a new sprint while one is in progress.
+  if (mode === "new" && isSprintInProgress(sprintState)) return;
+
+  if (mode === "new") {
+    // Auto-increment from the current sprint (1 for the very first sprint), and
+    // suggest a 1-week range starting today, which the user can adjust.
+    pickerSprintNumber = (sprintState.number ?? 0) + 1;
+    const start = todayISODate();
+    startInput.value = start;
+    endInput.value = addDaysISO(start, 6) ?? "";
+  } else {
+    // Editing: keep the current number and prefill the current dates so the
+    // edit is non-destructive. Fall back to sprint 1 if none is set yet.
+    pickerSprintNumber = sprintState.number ?? 1;
+    startInput.value = sprintState.start_date ?? "";
+    endInput.value = sprintState.end_date ?? "";
+  }
+  numberDisplay.textContent = String(pickerSprintNumber);
 
   // A sprint can't start before today: grey out past days in the date pickers.
   // saveSprintPicker re-checks this since `min` only guides the calendar UI.
@@ -853,7 +923,7 @@ function openSprintPicker() {
   endInput.min = today;
 
   picker.classList.remove("hidden");
-  numberInput.focus();
+  startInput.focus();
 }
 
 function closeSprintPicker() {
@@ -867,13 +937,14 @@ function closeSprintPicker() {
 }
 
 function saveSprintPicker() {
-  const numberInput = document.getElementById("sprint-number-input");
   const startInput = document.getElementById("sprint-start-input");
   const endInput = document.getElementById("sprint-end-input");
   const err = document.getElementById("sprint-picker-error");
-  if (!numberInput || !startInput || !endInput || !err) return;
+  if (!startInput || !endInput || !err) return;
 
-  const number = numberInput.value ? Number(numberInput.value) : null;
+  // Number is auto-assigned by openSprintPicker (new = +1, edit = unchanged),
+  // never typed.
+  const number = pickerSprintNumber;
   const start = startInput.value || null;
   const end = endInput.value || null;
 
@@ -902,6 +973,8 @@ function saveSprintPicker() {
   // Also re-render tasks so the "Sprint N" banner label on each card
   // reflects the new sprint number.
   renderTasks(currentTasks);
+  // Lock/unlock "New sprint" now that the sprint's dates may have changed.
+  updateSprintButtons();
 }
 
 // Paint a visible error state across every panel so failures are loud,
@@ -993,6 +1066,8 @@ async function loadAllImpl() {
   renderTasks(tasks);
   renderAgents(document.getElementById("agents-list"), projectAgents);
   renderAgentContributionsMeta(projectAgents, tasks);
+  // Lock "New sprint" if the loaded sprint is still in progress.
+  updateSprintButtons();
 }
 
 /**
@@ -1073,6 +1148,9 @@ function init() {
   // Restore sprint state from localStorage (if anything is saved).
   const stored = readSprintFromStorage();
   if (stored) sprintState = stored;
+  // Set the initial "New sprint" enabled/disabled state from the restored
+  // sprint (loadAll refreshes it again, but this covers a failed initial load).
+  updateSprintButtons();
 
   // ── Sidebar nav ────────────────────────────────────
   // Real `href`s do the navigation (e.g. My Check-ins → check-in.html).
@@ -1098,7 +1176,10 @@ function init() {
   });
 
   // ── Sprint picker controls ─────────────────────────
-  document.getElementById("edit-sprint-btn")?.addEventListener("click", openSprintPicker);
+  // "New sprint" auto-increments the number; "Edit sprint" keeps it. Wrapped in
+  // arrows so the click event isn't passed as the mode argument.
+  document.getElementById("new-sprint-btn")?.addEventListener("click", () => openSprintPicker("new"));
+  document.getElementById("edit-sprint-btn")?.addEventListener("click", () => openSprintPicker("edit"));
   document.getElementById("save-sprint-btn")?.addEventListener("click", saveSprintPicker);
   document.getElementById("cancel-sprint-btn")?.addEventListener("click", closeSprintPicker);
 
