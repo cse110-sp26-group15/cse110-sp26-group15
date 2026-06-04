@@ -412,22 +412,21 @@
   white-space: nowrap;
 }
 
+/* Borders are intentionally left transparent (inherited from .status-badge) so
+   these read as status labels, not clickable controls. */
 .status-badge.status-on-track {
   background: var(--color-success-muted);
   color: var(--color-text-on-success-muted);
-  border-color: var(--color-success);
 }
 
 .status-badge.status-blocked {
   background: var(--color-error-muted);
   color: var(--color-text-on-error-muted);
-  border-color: var(--color-error);
 }
 
 .status-badge.status-needs-help {
   background: var(--color-warning-muted);
   color: var(--color-text-on-warning-muted);
-  border-color: var(--color-warning-bg);
 }
 
 /* ── Small action buttons inside checkin cards ─────── */
