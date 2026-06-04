@@ -131,6 +131,18 @@ export function parseISODate(s) {
 }
 
 /**
+ * Today's date as a local YYYY-MM-DD string. Used to gate the sprint picker
+ * so a sprint can't be started before the current day.
+ */
+export function todayISODate() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
  * Calculate the current day of a sprint, given its start and end dates.
  *
  * @param {string|Date} startDate  Sprint start (inclusive).
@@ -834,6 +846,12 @@ function openSprintPicker() {
   startInput.value = sprintState.start_date ?? "";
   endInput.value = sprintState.end_date ?? "";
 
+  // A sprint can't start before today: grey out past days in the date pickers.
+  // saveSprintPicker re-checks this since `min` only guides the calendar UI.
+  const today = todayISODate();
+  startInput.min = today;
+  endInput.min = today;
+
   picker.classList.remove("hidden");
   numberInput.focus();
 }
@@ -858,6 +876,14 @@ function saveSprintPicker() {
   const number = numberInput.value ? Number(numberInput.value) : null;
   const start = startInput.value || null;
   const end = endInput.value || null;
+
+  // Validate: a sprint can't start before today. Checked here (not just via the
+  // input's `min`) because a user can still type a past date into the field.
+  if (start && parseISODate(start) < parseISODate(todayISODate())) {
+    err.hidden = false;
+    err.textContent = "Sprint can't start before today.";
+    return;
+  }
 
   // Validate: when both dates are set, end ≥ start.
   if (start && end && parseISODate(start) > parseISODate(end)) {
