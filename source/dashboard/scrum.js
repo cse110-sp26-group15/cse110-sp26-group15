@@ -373,6 +373,9 @@ let currentTasks = [];
 // the "View history" toggle (toggleCheckinHistory).
 let checkinsCache = [];
 let showingCheckinHistory = false;
+// Open blockers from the last load, kept so the check-in modal can show the
+// blocker(s) raised from a given check-in (matched by checkin_id).
+let blockersCache = [];
 
 // Cache of project members — populated by fetchMembers() during loadAll
 // and exposed to the task-form modal via `window.getProjectMembers` so
@@ -457,6 +460,9 @@ async function fetchBlockers() {
     // Used to show a blocker chip on the matching task card.
     task: b.task ?? null,
     tag: b.helper || null,
+    // The check-in this blocker was raised from — lets the check-in modal show
+    // the blocker's details for that person.
+    checkin_id: b.checkin_id ?? null,
     full_name: b.reported_by || b.full_name || "",
     is_resolved: Boolean(b.is_resolved),
   }));
@@ -572,11 +578,24 @@ function isCheckinToday(checkin, now = new Date()) {
   );
 }
 
+// Open blockers raised from a given check-in (matched by checkin_id). Single
+// source of truth so the card's "view blocker" button and the modal's blocker
+// section always agree — driving them off different signals (mood vs. blocker
+// data) is what let a "view update" card still show a blocker in the modal.
+function blockersForCheckin(checkinId) {
+  return blockersCache.filter(
+    (b) => !b.is_resolved && b.checkin_id != null && String(b.checkin_id) === String(checkinId)
+  );
+}
+
 // Build the HTML for a single check-in card.
 function buildCheckinCardHtml(c) {
   const mood = classifyMood(c.status_mood);
   const time = c.checkin_date ? formatDate(c.checkin_date) : "today";
   const work = c.work_done || c.work_planned || "—";
+  // Label the footer button by whether this check-in actually has an open
+  // blocker, not by mood — so it matches what the modal will show.
+  const hasBlocker = blockersForCheckin(c.checkin_id).length > 0;
   return `
         <div class="checkin-card" data-checkin-id="${escapeHtml(c.checkin_id)}">
           <div class="checkin-top">
@@ -590,12 +609,106 @@ function buildCheckinCardHtml(c) {
           <div class="checkin-footer">
             <span class="checkin-meta">${escapeHtml(time)}${c.status_mood ? " · " + escapeHtml(c.status_mood) : ""}</span>
             ${
-              mood.cls === "status-blocked"
-                ? `<button class="btn-mini danger">view blocker</button>`
-                : `<button class="btn-mini">view update</button>`
+              hasBlocker
+                ? `<button class="btn-mini danger" data-action="view-checkin">view blocker</button>`
+                : `<button class="btn-mini" data-action="view-checkin">view update</button>`
             }
           </div>
         </div>`;
+}
+
+// Open a read-only modal showing the full details of a single check-in.
+// Reuses the shared task-form modal styles (tf-*, loaded via task-form.css on
+// this page) so it matches the app's other dialogs.
+function openCheckinModal(checkin) {
+  if (!checkin) return;
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "tf-backdrop";
+
+  const modal = document.createElement("div");
+  modal.className = "tf-modal checkin-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-label", "Check-in details");
+
+  const mood = classifyMood(checkin.status_mood);
+  const when = checkin.checkin_date ? formatDate(checkin.checkin_date) : "today";
+  const moodSuffix = checkin.status_mood ? " · " + escapeHtml(checkin.status_mood) : "";
+
+  // Open blockers raised from this check-in. Same source as the card's
+  // "view blocker" button so the two never disagree.
+  const relatedBlockers = blockersForCheckin(checkin.checkin_id);
+  const blockerSection = relatedBlockers.length
+    ? `
+      <div class="checkin-modal-section">
+        <span class="checkin-modal-label">Blocker${relatedBlockers.length > 1 ? "s" : ""}</span>
+        ${relatedBlockers
+          .map(
+            (b) => `
+          <div class="checkin-modal-blocker">
+            <p class="checkin-modal-text">${escapeHtml(b.description || "—")}</p>
+            ${b.task ? `<span class="checkin-modal-meta">Task: ${escapeHtml(b.task)}</span>` : ""}
+            ${b.tag ? `<span class="checkin-modal-meta">Helper: ${escapeHtml(b.tag)}</span>` : ""}
+          </div>`
+          )
+          .join("")}
+      </div>`
+    : "";
+
+  modal.innerHTML = `
+    <div class="tf-header">
+      <h2 class="tf-title">${escapeHtml(checkin.full_name ?? "Unknown")} · Check-in</h2>
+      <button type="button" class="tf-close" aria-label="Close">✕</button>
+    </div>
+    <div class="tf-body">
+      <div class="checkin-modal-row">
+        <span class="checkin-modal-label">Status</span>
+        <span class="status-badge ${mood.cls}">${escapeHtml(mood.label)}</span>
+      </div>
+      <div class="checkin-modal-row">
+        <span class="checkin-modal-label">When</span>
+        <span>${escapeHtml(when)}${moodSuffix}</span>
+      </div>
+      ${blockerSection}
+      <div class="checkin-modal-section">
+        <span class="checkin-modal-label">Work done</span>
+        <p class="checkin-modal-text">${escapeHtml(checkin.work_done || "—")}</p>
+      </div>
+      <div class="checkin-modal-section">
+        <span class="checkin-modal-label">Work planned</span>
+        <p class="checkin-modal-text">${escapeHtml(checkin.work_planned || "—")}</p>
+      </div>
+    </div>`;
+
+  backdrop.appendChild(modal);
+  document.body.appendChild(backdrop);
+
+  function close() {
+    document.removeEventListener("keydown", onKeyDown);
+    backdrop.remove();
+  }
+  function onKeyDown(e) {
+    if (e.key === "Escape") close();
+  }
+  modal.querySelector(".tf-close")?.addEventListener("click", close);
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) close();
+  });
+  document.addEventListener("keydown", onKeyDown);
+  modal.querySelector(".tf-close")?.focus();
+}
+
+// Delegated handler for the Daily Standup grid: "view update" / "view blocker"
+// both open the check-in details modal for that card's person. Looks the
+// check-in up in checkinsCache by id, so it works for today's grid and history.
+function onCheckinGridClick(e) {
+  const btn = e.target.closest('[data-action="view-checkin"]');
+  if (!btn) return;
+  const id = btn.closest(".checkin-card")?.dataset.checkinId;
+  if (id == null) return;
+  const checkin = checkinsCache.find((c) => String(c.checkin_id) === String(id));
+  if (checkin) openCheckinModal(checkin);
 }
 
 // Render the Daily Standup grid. Only today's check-ins are shown here;
@@ -1054,6 +1167,8 @@ async function loadAllImpl() {
 
   // Index open blockers by task title so cards can show a blocker chip.
   blockerByTask = buildBlockerIndex(blockers);
+  // Cache the raw blockers so the check-in modal can surface details per person.
+  blockersCache = blockers;
 
   // Cache check-ins and reset the Daily Standup grid to today's view; the
   // "View history" toggle reads this cache to show past days on demand.
@@ -1191,6 +1306,10 @@ function init() {
   document.querySelectorAll(".view-toggle-btn").forEach((btn) => {
     btn.addEventListener("click", () => setViewMode(btn.dataset.view));
   });
+
+  // ── Daily Standup: "view update" → check-in details modal ──
+  // Delegated so it covers cards re-rendered for today and the history view.
+  document.getElementById("checkin-grid")?.addEventListener("click", onCheckinGridClick);
 
   // ── Add-agent button (opens agent-form modal) ──────
   // Members are filtered to non-agents inside openAgentModal — we pass

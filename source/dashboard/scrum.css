@@ -401,6 +401,64 @@
   color: var(--color-text-muted);
 }
 
+/* ── Check-in details modal ("view update") ─────────── */
+/* Shared .tf-modal uses --color-bg, which is nearly identical to the page
+   background in dark mode, so the window blends into the dimmed backdrop. Use a
+   lighter surface + border here so it reads as a distinct dialog above the dim
+   (the tf-backdrop dimming itself is the same as the add-task modal). */
+.tf-modal.checkin-modal {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+}
+
+.checkin-modal-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.checkin-modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.checkin-modal-label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+}
+
+.checkin-modal-text {
+  margin: 0;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Blocker detail block inside the check-in modal: tinted panel so it stands
+   out from the plain work-done/planned text. */
+.checkin-modal-blocker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-sm);
+  background: var(--color-error-muted);
+  border-left: 3px solid var(--color-error);
+  border-radius: var(--radius-sm);
+}
+
+.checkin-modal-blocker .checkin-modal-text {
+  color: var(--color-text-on-error-muted);
+}
+
+.checkin-modal-meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-on-error-muted);
+}
+
 /* ── Status badge ──────────────────────────────────── */
 /* Plain colored status text — no pill (no background, padding, or border) so it
    reads as a label, not a clickable control. The status color is carried by the
