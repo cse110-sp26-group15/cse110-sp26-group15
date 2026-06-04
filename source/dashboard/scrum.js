@@ -623,13 +623,15 @@ function openCheckinModal(checkin) {
       <button type="button" class="tf-close" aria-label="Close">✕</button>
     </div>
     <div class="tf-body">
-      <div class="checkin-modal-row">
-        <span class="checkin-modal-label">Status</span>
-        <span class="status-badge ${mood.cls}">${escapeHtml(mood.label)}</span>
-      </div>
-      <div class="checkin-modal-row">
-        <span class="checkin-modal-label">When</span>
-        <span>${escapeHtml(when)}${moodSuffix}</span>
+      <div class="checkin-modal-summary">
+        <div class="checkin-modal-row">
+          <span class="checkin-modal-label">Status</span>
+          <span class="status-badge ${mood.cls}">${escapeHtml(mood.label)}</span>
+        </div>
+        <div class="checkin-modal-row">
+          <span class="checkin-modal-label">When</span>
+          <span class="checkin-modal-value">${escapeHtml(when)}${moodSuffix}</span>
+        </div>
       </div>
       ${blockerSection}
       <div class="checkin-modal-section">

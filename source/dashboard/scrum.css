@@ -411,35 +411,53 @@
   border: 1px solid var(--color-border);
 }
 
-.checkin-modal-row {
+/* Compact summary header (Status / When) — tighter than the tf-body gap, with
+   labels aligned in a fixed column so the values line up. */
+.checkin-modal-summary {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.checkin-modal-row {
+  display: grid;
+  grid-template-columns: 72px 1fr;
   align-items: center;
   gap: var(--space-sm);
 }
 
+.checkin-modal-value {
+  color: var(--color-text);
+}
+
+/* Content sections (Blocker / Work done / Work planned), each separated by a
+   subtle divider for clear visual grouping. */
 .checkin-modal-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: var(--space-xs);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .checkin-modal-label {
   font-size: var(--text-xs);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   color: var(--color-text-muted);
 }
 
 .checkin-modal-text {
   margin: 0;
   color: var(--color-text);
+  line-height: var(--line-height-normal);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-/* Blocker detail block inside the check-in modal: tinted panel so it stands
-   out from the plain work-done/planned text. */
+/* Blocker detail block: tinted panel so it stands out from the plain
+   work-done/planned text. */
 .checkin-modal-blocker {
   display: flex;
   flex-direction: column;
@@ -454,7 +472,7 @@
   color: var(--color-text-on-error-muted);
 }
 
-.checkin-modal-meta {
+.checkin-modal-blocker .checkin-modal-meta {
   font-size: var(--text-xs);
   color: var(--color-text-on-error-muted);
 }
