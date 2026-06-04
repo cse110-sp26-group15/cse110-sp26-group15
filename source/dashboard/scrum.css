@@ -253,12 +253,16 @@
 /* ── Sprint progress ───────────────────────────────── */
 .sprint-progress-row {
   display: flex;
-  align-items: center;
-  gap: var(--space-md);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-xs);
 }
 
 .progress-bar {
-  flex: 1;
+  /* Column layout: the row stretches the bar to full width, so it must NOT flex
+     on the (now vertical) main axis — flex:1 there would zero out its height. */
+  flex: none;
+  width: 100%;
   height: var(--space-sm);
   background: var(--color-border);
   border-radius: var(--radius-full);
@@ -280,6 +284,8 @@
 }
 
 .progress-meta {
+  /* Sit above the full-width bar (the bar is first in the DOM). */
+  order: -1;
   display: flex;
   align-items: center;
   gap: var(--space-sm);
