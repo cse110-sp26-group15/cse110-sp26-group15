@@ -269,7 +269,14 @@
   height: 100%;
   background: var(--color-primary);
   border-radius: var(--radius-full);
-  transition: width var(--duration-slow) var(--ease-default);
+  transition:
+    width var(--duration-slow) var(--ease-default),
+    background-color var(--duration-slow) var(--ease-default);
+}
+
+/* All tasks done — turn the bar green to signal sprint completion. */
+.progress-bar-fill--complete {
+  background: var(--color-success);
 }
 
 .progress-meta {

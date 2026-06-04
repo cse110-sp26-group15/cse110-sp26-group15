@@ -504,6 +504,8 @@ function renderSprintProgress(tasks) {
 
   const { done, total, pct } = computeSprintProgress(tasks);
   fill.style.width = `${pct}%`;
+  // At 100% the bar turns green to signal the sprint is fully complete.
+  fill.classList.toggle("progress-bar-fill--complete", pct >= 100);
   text.textContent = `${done} / ${total} tasks · ${pct}% complete`;
 
   const dayInfo = computeDayOfSprint(sprintState.start_date, sprintState.end_date);
