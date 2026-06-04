@@ -1,6 +1,7 @@
 import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
 import { apiFetch, ApiError } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
+import { initLocalPairs } from "./xp-pairs.js";
 
 initUserMenu();
 
@@ -618,7 +619,7 @@ async function init() {
     await loadBlockers();
   }
   if (document.getElementById("pair-list")) {
-    renderPairs([]);
+    initLocalPairs();
   }
 }
 
