@@ -23,15 +23,9 @@ import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 
 initUserMenu();
 
-// task-form.js runs `document.addEventListener(...)` at module top, so we
-// can't import it statically — it would crash the node-side tests where
-// there's no document. We dynamic-import it inside openCreateTaskModal
-// instead. The module's own DOMContentLoaded auto-init becomes a no-op
-// when the module is loaded after DCL has already fired in the browser,
-// which is exactly what we want — scrum.js owns the wiring.
-//
-// `taskFormModulePromise` caches the import so repeated clicks reuse the
-// same module instance instead of re-fetching it.
+// task-form.js adds a top-level document listener, so it's dynamic-imported
+// (not static) to keep the node-side tests from crashing. Cached so repeated
+// opens reuse the same module instance.
 let taskFormModulePromise = null;
 function loadTaskFormModule() {
   if (!taskFormModulePromise) {
@@ -41,15 +35,11 @@ function loadTaskFormModule() {
 }
 
 // ── Constants ────────────────────────────────────────
-// PROJECT_ID is hard-coded for now (no auth/projects flow on the
-// dashboard yet); will switch to the logged-in user's project once that
-// context is plumbed through.
+// Hard-coded until the dashboard has an auth/projects flow.
 export const PROJECT_ID = 1;
 
-// localStorage key for the sprint picker selection. Namespaced by
-// project so multiple projects can each remember their own sprint.
-// (This is a UI preference, not data — we keep it in localStorage on
-// purpose so the user's last-picked sprint survives reloads.)
+// localStorage key for the picked sprint, namespaced per project so the
+// last-picked sprint survives reloads.
 const SPRINT_STORAGE_KEY = `sitrep.scrum.sprint.project-${PROJECT_ID}`;
 
 // Column definitions for the kanban view. Order is left → right.
@@ -130,31 +120,28 @@ export function parseISODate(s) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-/**
- * Today's date as a local YYYY-MM-DD string. Used to gate the sprint picker
- * so a sprint can't be started before the current day.
- */
-export function todayISODate() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
+/** Format a Date as a local YYYY-MM-DD string. */
+function formatISODate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
 
+/** Today as a local YYYY-MM-DD string. Gates the sprint picker's date inputs. */
+export function todayISODate() {
+  return formatISODate(new Date());
+}
+
 /**
- * Add `days` to a YYYY-MM-DD string and return the result as YYYY-MM-DD.
- * Returns null for empty/invalid input. Used to suggest a default 1-week
- * range when starting a new sprint.
+ * Add `days` to a YYYY-MM-DD string, returning YYYY-MM-DD (or null if invalid).
+ * Used to suggest a default 1-week range for a new sprint.
  */
 export function addDaysISO(iso, days) {
   const date = parseISODate(iso);
   if (!date) return null;
   date.setDate(date.getDate() + days);
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return formatISODate(date);
 }
 
 /**
@@ -327,30 +314,21 @@ export function writeSprintToStorage(sprint, storage = globalThis.localStorage) 
 }
 
 // ── Module-level state ───────────────────────────────
-// `sprintState` holds the currently-shown sprint metadata (number + date
-// range). It is loaded from localStorage on init and overwritten when the
-// user saves the picker.
+// Currently-shown sprint (number + date range); loaded from localStorage on
+// init, overwritten when the user saves the picker.
 let sprintState = { number: null, start_date: null, end_date: null };
 
-// Real sprint_id of the current sprint, when the API knows one. Used to wire
-// the create-modal's sprint dropdown. Null until /sprints/current returns a
-// row (localStorage picks carry only a number, never a sprint_id).
+// Real sprint_id from /sprints/current (localStorage picks carry only a
+// number). Used to wire the create-modal's sprint dropdown.
 let currentSprintId = null;
 
-// Maps a task title → the description of an open blocker filed against it (via
-// the daily check-in). Rebuilt each loadAll; used to show a blocker chip on
-// the matching task card. Blockers are read-only here — they're raised and
-// resolved through the check-in flow, not the cards.
+// task title → open-blocker description, for the "Blocked" chip on task cards.
+// Read-only here; blockers are raised/resolved through the check-in flow.
 let blockerByTask = new Map();
 
-// Build the title→reason lookup from the open-blocker list. First (most
-// recent, since the API sorts DESC) open blocker per task wins.
-//
-// Blockers the user resolved from the blocker rail are persisted to
-// localStorage (by blocker-card.js) but aren't yet reflected by the API, so we
-// also skip any blocker whose id is in that resolved set. This keeps the
-// "Blocked" chip off a task card after its blocker was resolved on a different
-// dashboard type and the user switched back here.
+// Build the title→reason lookup; first open blocker per task wins (API sorts
+// DESC). Skips blockers resolved from the rail (persisted to localStorage by
+// blocker-card.js but not yet reflected by the API) so the chip stays off.
 function buildBlockerIndex(blockers) {
   const map = new Map();
   const resolvedIds = readResolvedBlockerIds();
@@ -361,37 +339,32 @@ function buildBlockerIndex(blockers) {
   return map;
 }
 
-// "list" or "kanban" — controls which view of Sprint Tasks is visible.
+// "list" or "kanban" — which Sprint Tasks view is visible.
 let viewMode = "list";
 
-// Cache of the most recently-fetched task list, so the kanban view can
-// re-render after a status change without an extra round trip.
+// Last-fetched tasks, so the kanban view can re-render without a round trip.
 let currentTasks = [];
 
-// Cache of the most recently-fetched check-ins plus whether the Daily Standup
-// grid is currently showing history (past days) rather than today. Both back
-// the "View history" toggle (toggleCheckinHistory).
+// Last-fetched check-ins + whether the standup grid is showing history; both
+// back the "View history" toggle.
 let checkinsCache = [];
 let showingCheckinHistory = false;
-// Open blockers from the last load, kept so the check-in modal can show the
-// blocker(s) raised from a given check-in (matched by checkin_id).
+
+// Last-fetched open blockers, so the check-in modal can show a check-in's
+// blocker(s) (matched by checkin_id).
 let blockersCache = [];
 
-// Cache of project members — populated by fetchMembers() during loadAll
-// and exposed to the task-form modal via `window.getProjectMembers` so
-// the assignee dropdown can be populated.
+// Project members, exposed to the task-form modal via window.getProjectMembers
+// for the assignee dropdown.
 let projectMembers = [];
 
-// Cache of AI agents on this project. Exposed via window.getProjectAgents
-// so the task-form modal can identify which assignees are agents and
-// auto-enforce the reviewer-required rule on the client side.
+// AI agents on this project, exposed via window.getProjectAgents so the
+// task-form modal can require a reviewer when an agent is assigned.
 let projectAgents = [];
 
 // ── API calls ────────────────────────────────────────
-// All requests go through apiFetch (10s timeout, throws ApiError on
-// non-2xx). loadAll() catches once at the top so a single failure
-// surfaces as an inline error in the relevant panel rather than a
-// half-rendered dashboard.
+// All requests go through apiFetch (10s timeout, throws ApiError on non-2xx);
+// loadAll() catches once at the top and shows an inline error.
 
 async function fetchTasks() {
   const data = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`);
@@ -399,14 +372,8 @@ async function fetchTasks() {
 }
 
 /**
- * Create a task. `data` is whatever openTaskModal hands back:
- *   { title, description, assigned_to, status }
- *
- * `forceStatus` overrides whatever status the modal returned — used by
- * kanban-column + buttons so the task always lands in the right column.
- *
- * New tasks automatically join the currently-active sprint — there's no
- * manual sprint picker, since a task created "now" belongs to "now"'s sprint.
+ * Create a task from the openTaskModal payload. `forceStatus` overrides the
+ * modal's status (used by the kanban column + buttons).
  */
 async function createTask(data, { forceStatus } = {}) {
   const status = forceStatus ?? data.status ?? "todo";
@@ -415,14 +382,12 @@ async function createTask(data, { forceStatus } = {}) {
     description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
     status,
-    // reviewer_id + review_status only flow through when the task-form
-    // modal sets them (agent-assigned tasks). Server enforces the rule
-    // either way; we just avoid sending null spam for human tasks.
+    // reviewer_id + review_status only flow through for agent-assigned tasks;
+    // the server enforces the rule regardless.
     ...(data.reviewer_id != null ? { reviewer_id: data.reviewer_id } : {}),
     ...(data.review_status != null ? { review_status: data.review_status } : {}),
-    // Auto-assign to the active sprint. TODO(sprint-persistence): the tasks
-    // table has no sprint_id column yet, so the API silently drops this. Once
-    // the migration + API land, this will actually link the task to a sprint.
+    // TODO(sprint-persistence): tasks have no sprint_id column yet, so the API
+    // currently drops this.
     sprint_id: currentSprintId,
   };
 
@@ -456,13 +421,9 @@ async function fetchBlockers() {
   return (data.blockers ?? []).map((b) => ({
     blocker_id: b.blocker_id,
     description: b.description,
-    // The task title this blocker is filed against (null = project-wide).
-    // Used to show a blocker chip on the matching task card.
-    task: b.task ?? null,
+    task: b.task ?? null, // null = project-wide; drives the task-card chip
     tag: b.helper || null,
-    // The check-in this blocker was raised from — lets the check-in modal show
-    // the blocker's details for that person.
-    checkin_id: b.checkin_id ?? null,
+    checkin_id: b.checkin_id ?? null, // links the blocker to its check-in
     full_name: b.reported_by || b.full_name || "",
     is_resolved: Boolean(b.is_resolved),
   }));
@@ -782,11 +743,9 @@ function toggleCheckinHistory() {
 }
 
 // ── Task rendering helpers (shared by list + kanban) ──
-// onChange handler for the shared task-card's interactive controls. The card
-// can edit priority, story points, tags, blocker, assignee and status inline,
-// but only assigned_to + status have backend persistence right now — the rest
-// update locally and are intentionally not PATCHed. Blocker persistence is
-// owned by another branch, so we leave is_blocked/blocker_reason untouched too.
+// task-card onChange. Only assigned_to + status persist; other inline-editable
+// fields update locally and are intentionally not PATCHed (blocker persistence
+// is owned by another branch).
 async function persistTaskChange(taskId, fields) {
   const payload = {};
   if ("assigned_to" in fields) payload.assigned_to = fields.assigned_to;
@@ -803,9 +762,7 @@ async function persistTaskChange(taskId, fields) {
   }
 }
 
-// Adds the page-specific delete button in a row below the task-card. Assignee
-// and status editing now come from the shared component's interactive mode;
-// the component intentionally doesn't provide a delete button, so we add it.
+// Add the page-specific delete button (the shared task-card has no delete).
 function appendTaskControls(card, task) {
   const row = document.createElement("div");
   row.className = "task-card-row-delete";
@@ -829,18 +786,15 @@ function appendTaskControls(card, task) {
   card.appendChild(row);
 }
 
-// Build a task-card element for the list view (uses scrum-style card).
+// Build a task-card element, enriched with the active sprint label and any
+// open check-in blocker for this task.
 function buildTaskCard(task, { compact = false } = {}) {
-  // Mix in the active sprint number so the card banner reads
-  // "Urgent · Sprint 3" the way the task-card scrum variant expects.
   const blockerReason = blockerByTask.get(task.title);
   const enriched = {
     ...task,
-    // The card's assignee dropdown keys off assigned_to; scrum rows carry the
-    // assignee as user_id, so mirror it across for correct pre-selection.
+    // Mirror user_id → assigned_to so the card's assignee dropdown pre-selects.
     assigned_to: task.assigned_to ?? task.user_id ?? null,
     sprint: sprintState.number ? `Sprint ${sprintState.number}` : task.sprint,
-    // Surface an open check-in blocker (if any) as the card's blocker chip.
     ...(blockerReason ? { is_blocked: true, blocker_reason: blockerReason } : null),
   };
   const card = createTaskCard(enriched, "scrum", {
@@ -948,14 +902,8 @@ function setViewMode(mode) {
 }
 
 // ── Add-task flow (uses task-form modal) ─────────────
-// Opens the shared modal from ../task-form/task-form.js. The modal's
-// onSubmit fires once the user clicks "Create task" with a valid title.
-//
-// `lockedStatus`, when provided, forces the new task into that status
-// regardless of what the user picked in the modal — used by the kanban
-// column + buttons so a click on the "Blocked" column's + reliably
-// produces a blocked task. We also hide the status field in the modal
-// when it's locked so the UI doesn't lie about what the dropdown does.
+// `lockedStatus` forces the new task into that status and hides the modal's
+// status field (used by the kanban column + buttons).
 async function openCreateTaskModal({ lockedStatus, defaultStatus = "todo" } = {}) {
   const { openTaskModal } = await loadTaskFormModule();
 
@@ -969,10 +917,8 @@ async function openCreateTaskModal({ lockedStatus, defaultStatus = "todo" } = {}
     }
   });
 
-  // Tweak the just-opened modal: preselect the column's status, and hide
-  // the status field entirely when it's locked (kanban + buttons).
-  // openTaskModal builds the DOM synchronously, so the elements are
-  // already on the page by the time this code runs.
+  // openTaskModal builds the DOM synchronously, so the status field is already
+  // present: preselect the wanted status, and hide it when locked.
   const statusSelect = document.getElementById("tf-input-status");
   if (statusSelect) {
     const wanted = lockedStatus ?? defaultStatus;
@@ -986,14 +932,11 @@ async function openCreateTaskModal({ lockedStatus, defaultStatus = "todo" } = {}
 }
 
 // ── Sprint picker ────────────────────────────────────
-// The sprint number is auto-assigned, never typed: "New sprint" increments it,
-// "Edit sprint" keeps it. We stash the number the open picker will save here so
-// saveSprintPicker doesn't have to recompute it.
+// The sprint number is auto-assigned ("New sprint" increments, "Edit sprint"
+// keeps); the open picker stashes the value it will save here.
 let pickerSprintNumber = null;
 
-// Show/hide the "New sprint" button based on whether a sprint is running.
-// One sprint at a time — the button is removed entirely while a sprint is in
-// progress and only reappears once it has ended (or if there's no sprint yet).
+// One sprint at a time: hide "New sprint" while a sprint is in progress.
 function updateSprintButtons() {
   const newBtn = document.getElementById("new-sprint-btn");
   if (!newBtn) return;
@@ -1127,9 +1070,7 @@ async function loadAllImpl() {
       fetchBlockers(),
       fetchSprint(),
       fetchMembers(),
-      // The agents endpoint is best-effort — a missing/empty response
-      // shouldn't blow up the dashboard. Catch + log so the rest of
-      // loadAll() proceeds even when agents 500s.
+      // Best-effort: a failing agents endpoint shouldn't break the dashboard.
       fetchAgents().catch((err) => {
         console.warn("[scrum] fetchAgents failed; rendering empty agents rail", err);
         return [];
@@ -1145,10 +1086,7 @@ async function loadAllImpl() {
     return;
   }
 
-  // If /members returned something, trust it; otherwise reverse-engineer
-  // members from rows that include user info (legacy / partial APIs).
-  // Either way, cache the result so the create modal's assignee dropdown
-  // can populate (it reads via window.getProjectMembers).
+  // Trust /members if non-empty; otherwise derive members from task/checkin rows.
   projectMembers = apiMembers.length ? apiMembers : deriveMembers(tasks, checkins);
   projectAgents = apiAgents;
 
@@ -1267,15 +1205,11 @@ function init() {
   // Restore sprint state from localStorage (if anything is saved).
   const stored = readSprintFromStorage();
   if (stored) sprintState = stored;
-  // Set the initial "New sprint" enabled/disabled state from the restored
-  // sprint (loadAll refreshes it again, but this covers a failed initial load).
+  // Set the initial "New sprint" visibility (loadAll refreshes it later).
   updateSprintButtons();
 
   // ── Sidebar nav ────────────────────────────────────
-  // Real `href`s do the navigation (e.g. My Check-ins → check-in.html).
-  // In-page tabs (href="#") swap the visible .page-view to a placeholder
-  // so the user sees the click took effect — full pages for Team /
-  // Weekly Report aren't built yet.
+  // Real hrefs navigate; in-page tabs (href="#") swap to a placeholder view.
   document.querySelectorAll(".nav-item").forEach((item) => {
     item.addEventListener("click", (e) => {
       const href = item.getAttribute("href");
@@ -1295,8 +1229,7 @@ function init() {
   });
 
   // ── Sprint picker controls ─────────────────────────
-  // "New sprint" auto-increments the number; "Edit sprint" keeps it. Wrapped in
-  // arrows so the click event isn't passed as the mode argument.
+  // Arrow wrappers so the click event isn't passed as the mode argument.
   document.getElementById("new-sprint-btn")?.addEventListener("click", () => openSprintPicker("new"));
   document.getElementById("edit-sprint-btn")?.addEventListener("click", () => openSprintPicker("edit"));
   document.getElementById("save-sprint-btn")?.addEventListener("click", saveSprintPicker);
@@ -1312,10 +1245,7 @@ function init() {
   document.getElementById("checkin-grid")?.addEventListener("click", onCheckinGridClick);
 
   // ── Add-agent button (opens agent-form modal) ──────
-  // Members are filtered to non-agents inside openAgentModal — we pass
-  // the full cached list. createAgent posts to the API; on success we
-  // reload everything so the new agent shows in the rail + the
-  // assignee/owner pickers.
+  // openAgentModal filters members to non-agents; reload after a create.
   document.getElementById("add-agent-btn")?.addEventListener("click", () => {
     openAgentModal({
       members: projectMembers,
@@ -1327,48 +1257,34 @@ function init() {
   });
 
   // ── Add-task button (opens task-form modal) ────────
-  // task-form.js is dynamic-imported on first click (so the node-side
-  // tests don't crash on its top-level `document.addEventListener`).
-  // Because that import happens after DOMContentLoaded, the module's
-  // own auto-init won't fire — which means we own #add-task-btn outright
-  // and don't have to fight over it.
+  // task-form.js is dynamic-imported on first click (see loadTaskFormModule).
   document.getElementById("add-task-btn")?.addEventListener("click", () => {
     openCreateTaskModal({ defaultStatus: "todo" });
   });
 
-  // task-form's modal builder reads the project's member list off
-  // `window.getProjectMembers` to populate the assignee dropdown — we
-  // expose ours here so the dropdown isn't empty.
+  // Expose the caches the task-form modal reads to populate its assignee
+  // dropdown and enforce the reviewer-required rule for agents.
   if (typeof window !== "undefined") {
     window.getProjectMembers = () => projectMembers;
-    // The task-form modal also needs to know which members are AI agents
-    // so it can auto-default + require a reviewer when one is selected.
     window.getProjectAgents = () => projectAgents;
   }
 
   // ── Daily Standup "View history" toggle ────────────
-  // Swaps the standup grid between today's check-ins and past days.
   document.getElementById("checkin-history-link")?.addEventListener("click", (e) => {
     e.preventDefault();
     toggleCheckinHistory();
   });
 
-  // ── Check-in button ────────────────────────────────
-  // Sends the user to the dedicated check-in page (source/check-in), which
-  // hosts the daily stand-up form. Same destination as the "My Check-ins"
-  // sidebar link, so both entry points land on the same flow.
+  // ── Check-in button → dedicated check-in page ──────
   document.getElementById("checkin-today-btn")?.addEventListener("click", () => {
     window.location.href = "../check-in/check-in.html";
   });
 
-  // Apply the saved view mode (defaults to "list") and kick off the
-  // first load (with a loading overlay).
+  // Apply the saved view mode and kick off the first load (with a spinner).
   setViewMode(viewMode);
   loadAll(true);
 }
 
 if (typeof document !== "undefined") {
-  // Modules are deferred by default, so the DOM is parsed by the time
-  // we get here; no DOMContentLoaded listener required.
-  init();
+  init(); // deferred module: the DOM is already parsed
 }
