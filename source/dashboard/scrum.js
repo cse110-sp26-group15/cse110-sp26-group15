@@ -1232,8 +1232,12 @@ function init() {
 
   // ── Sprint picker controls ─────────────────────────
   // Arrow wrappers so the click event isn't passed as the mode argument.
-  document.getElementById("new-sprint-btn")?.addEventListener("click", () => openSprintPicker("new"));
-  document.getElementById("edit-sprint-btn")?.addEventListener("click", () => openSprintPicker("edit"));
+  document
+    .getElementById("new-sprint-btn")
+    ?.addEventListener("click", () => openSprintPicker("new"));
+  document
+    .getElementById("edit-sprint-btn")
+    ?.addEventListener("click", () => openSprintPicker("edit"));
   document.getElementById("save-sprint-btn")?.addEventListener("click", saveSprintPicker);
   document.getElementById("cancel-sprint-btn")?.addEventListener("click", closeSprintPicker);
 
