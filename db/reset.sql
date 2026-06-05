@@ -8,6 +8,8 @@ DELETE FROM sprints;
 
 DELETE FROM agents;
 
+DELETE FROM project_invites;
+
 DELETE FROM project_members;
 
 DELETE FROM projects;
