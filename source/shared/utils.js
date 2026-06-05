@@ -252,3 +252,111 @@ export function getCurrentUser() {
     return null;
   }
 }
+
+// ── Current project helpers ─────────────────────────────
+
+const CURRENT_PROJECT_KEY = "sitrep_project";
+
+/** Workflow → dashboard page path (relative to a page under source/<dir>/). */
+const DASHBOARD_PATHS = {
+  scrum: "../dashboard/scrum.html",
+  kanban: "../dashboard/kanban.html",
+  xp: "../dashboard/xp.html",
+};
+
+/**
+ * Map a project workflow to its dashboard page path. Unknown workflows
+ * fall back to the scrum dashboard.
+ * @param {string} workflow - "scrum" | "kanban" | "xp"
+ * @returns {string}
+ */
+export function dashboardPathFor(workflow) {
+  return DASHBOARD_PATHS[workflow] ?? DASHBOARD_PATHS.scrum;
+}
+
+/**
+ * Best-effort access to localStorage; returns null in non-browser envs
+ * (e.g. Vitest under Node) so callers degrade gracefully.
+ * @returns {Storage|null}
+ */
+function safeLocalStorage() {
+  try {
+    return typeof localStorage !== "undefined" ? localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Persist the active project so dashboards can scope their API calls to it
+ * without an auth round-trip. Stop-gap mirroring {@link saveCurrentUser}.
+ * @param {{ project_id: number, name: string, workflow: string }|null} project
+ * @param {Storage|null} [storage] - injectable for tests
+ */
+export function setCurrentProject(project, storage = safeLocalStorage()) {
+  if (!storage) return;
+  try {
+    if (project) {
+      storage.setItem(
+        CURRENT_PROJECT_KEY,
+        JSON.stringify({
+          project_id: project.project_id,
+          name: project.name,
+          workflow: project.workflow,
+        })
+      );
+    } else {
+      storage.removeItem(CURRENT_PROJECT_KEY);
+    }
+  } catch {
+    /* storage unavailable — ignore */
+  }
+}
+
+/**
+ * Read the active project previously stored by {@link setCurrentProject}.
+ * @param {Storage|null} [storage] - injectable for tests
+ * @returns {{ project_id: number, name: string, workflow: string }|null}
+ */
+export function getCurrentProject(storage = safeLocalStorage()) {
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(CURRENT_PROJECT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * GET /api/projects?user_id=N — the projects a user belongs to
+ * (most-recent first).
+ * @param {number} userId
+ * @returns {Promise<{ projects: object[] }>}
+ */
+export async function apiGetProjects(userId) {
+  return apiFetch(`/api/projects?user_id=${encodeURIComponent(userId)}`);
+}
+
+/**
+ * GET /api/invites?email=… — a user's pending project invites.
+ * @param {string} email
+ * @returns {Promise<{ invites: object[] }>}
+ */
+export async function apiGetInvites(email) {
+  return apiFetch(`/api/invites?email=${encodeURIComponent(email)}`);
+}
+
+/**
+ * POST /api/projects/:projectId/members — add a member by email.
+ * @param {number|string} projectId
+ * @param {string} email
+ * @returns {Promise<{ status: string, member?: object }>}
+ */
+export async function apiAddMember(projectId, email) {
+  return apiFetch(`/api/projects/${projectId}/members`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
