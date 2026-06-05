@@ -10,6 +10,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--space-md);
   margin-bottom: var(--space-lg);
 }
@@ -90,6 +91,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   margin-bottom: var(--space-sm);
   gap: var(--space-sm);
 }
@@ -114,6 +116,43 @@
 
 .panel-link:hover {
   text-decoration: underline;
+}
+
+/* "View history" with no past check-ins: the link is inert (clicking does
+   nothing — see toggleCheckinHistory) and instead shows a small tooltip bubble
+   on hover/focus explaining why. */
+.panel-link--no-history {
+  position: relative;
+  cursor: default;
+}
+
+.panel-link--no-history:hover {
+  text-decoration: none;
+}
+
+.panel-link--no-history::after {
+  content: "No previous check-ins to display.";
+  position: absolute;
+  top: calc(100% + var(--space-2xs));
+  right: 0;
+  z-index: 10;
+  white-space: nowrap;
+  padding: var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-sm);
+  background: var(--color-text);
+  color: var(--color-bg-surface);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-regular);
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--duration-fast) var(--ease-default);
+}
+
+.panel-link--no-history:hover::after,
+.panel-link--no-history:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
 }
 
 .muted-small {
@@ -227,6 +266,22 @@
 .progress-status {
   color: var(--color-success);
   font-weight: var(--font-weight-medium);
+}
+
+/* Sprint Health Score states (set in scrum.js → computeSprintHealth). Each
+   reuses an existing semantic color token so the status text reads at a
+   glance: ahead → blue (primary), on track → green (success), behind → red
+   (error). The doubled class keeps these above the base .progress-status rule. */
+.progress-status.progress-status--ahead {
+  color: var(--color-primary);
+}
+
+.progress-status.progress-status--on-track {
+  color: var(--color-success);
+}
+
+.progress-status.progress-status--behind {
+  color: var(--color-error);
 }
 
 /* "Day N of M" pill rendered next to the progress meta. Hidden until a

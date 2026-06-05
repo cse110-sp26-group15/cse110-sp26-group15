@@ -97,10 +97,11 @@ function buildBanner(blocker, { onResolve } = {}) {
       const originalText = button.textContent;
       button.textContent = "Resolving…";
       try {
-        await onResolve(blocker);
-        // Successful resolve usually triggers a rail refresh that removes
-        // this card entirely; if the caller didn't dispatch one, fully
-        // restore the button so it stays usable.
+        // Hand the card element to onResolve so it can remove this card (and
+        // any linked task's blocker chip) once the resolve succeeds.
+        await onResolve(blocker, button.closest(".blocker-card"));
+        // If onResolve didn't remove the card, fully restore the button so it
+        // stays usable.
         button.textContent = originalText;
         button.disabled = false;
         delete button.dataset.busy;
@@ -204,8 +205,9 @@ function buildFooter(blocker) {
  * @param {object}  [options]
  * @param {(blocker: object) => Promise<void> | void} [options.onResolve]
  *        When provided (and blocker.blocked is true), renders a "Resolve" button
- *        in the banner. The handler should perform the PATCH and is expected to
- *        trigger a `blockers:changed` event (mountBlockerRail does this for you).
+ *        in the banner. Called as `onResolve(blocker, cardElement)` on click;
+ *        mountBlockerRail's wrapper removes the card (and the linked task's
+ *        blocker chip) once it resolves.
  *
  * @returns {HTMLElement} A detached <article> ready to be appended.
  */
@@ -382,6 +384,54 @@ export function mapApiBlocker(apiRow) {
 export function filterActiveBlockers(blockers) {
   if (!Array.isArray(blockers)) return [];
   return blockers.filter((b) => b && b.blocked);
+}
+
+// ── Resolved-blocker persistence (shared across dashboards) ──
+// Resolving a blocker is visual-only today (no PATCH route is wired into the
+// dashboards yet), so a resolved blocker would reappear the moment any page
+// re-fetches from the API. Each dashboard type (scrum / kanban / xp / main) is a
+// separate page, so switching dashboard type re-mounts everything from scratch.
+//
+// To keep a resolved blocker resolved across those page loads — both as a
+// standalone blocker card AND as the "Blocked" chip on its linked task card — we
+// remember its stable `blocker_id` in localStorage under one shared key and
+// filter those ids out everywhere blockers are rendered (the blocker rail in
+// blocker-card-init.js, and the per-task blocker chips built by the scrum/main
+// dashboards). Centralizing the key + readers here keeps every surface in sync.
+export const RESOLVED_STORAGE_KEY = "blocker-rail:resolved";
+
+/**
+ * Read the set of blocker ids the user has already resolved. Returns an empty
+ * set when storage is unavailable or the stored value is missing/corrupt.
+ *
+ * @returns {Set<*>} Set of resolved `blocker_id`s.
+ */
+export function readResolvedBlockerIds() {
+  try {
+    const raw = localStorage.getItem(RESOLVED_STORAGE_KEY);
+    const ids = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(ids) ? ids : []);
+  } catch {
+    /* localStorage unavailable or corrupt — treat as nothing resolved */
+    return new Set();
+  }
+}
+
+/**
+ * Persist `id` as resolved so it stays hidden on future renders / page loads.
+ * No-op when the id is missing (e.g. demo blockers) or storage is unavailable.
+ *
+ * @param {*} id  The blocker's stable `blocker_id`.
+ */
+export function rememberResolvedBlockerId(id) {
+  if (id == null) return;
+  try {
+    const ids = readResolvedBlockerIds();
+    ids.add(id);
+    localStorage.setItem(RESOLVED_STORAGE_KEY, JSON.stringify([...ids]));
+  } catch {
+    /* localStorage unavailable — resolve stays visual-only for this session */
+  }
 }
 
 /**

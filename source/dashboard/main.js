@@ -1,7 +1,10 @@
 import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
-import { apiFetch, ApiError } from "../shared/utils.js";
+import { renderAgents } from "../agent-card/agent-card.js";
+import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
+import { apiFetch, ApiError, showLoading, hideLoading } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 import { initLocalPairs, loadPairs } from "./xp-pairs.js";
+import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 
 initUserMenu();
 
@@ -82,6 +85,33 @@ async function fetchMembers() {
 }
 
 /**
+ * Fetches AI agents (and their human owners) for the current project.
+ * Best-effort: callers should treat failure as "no agents to show".
+ * @returns {Promise<object[]>}
+ */
+async function fetchAgents() {
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/agents`);
+  return data.agents ?? [];
+}
+
+/**
+ * Load and render the AI Agents rail on pages that have an #agents-list
+ * container (xp.html today). No-op when the container is absent so this
+ * function is safe to call on every page main.js drives.
+ */
+async function loadAgents() {
+  const container = document.getElementById("agents-list");
+  if (!container) return;
+  try {
+    projectAgents = await fetchAgents();
+  } catch (err) {
+    console.warn("[main] fetchAgents failed; rendering empty rail", err);
+    projectAgents = [];
+  }
+  renderAgents(container, projectAgents);
+}
+
+/**
  * Creates a new task on the current project.
  * @param {object} data - { title, assigned_to, status, description }
  * @returns {Promise<{ task: object|null }>}
@@ -93,6 +123,8 @@ async function createTask(data) {
     description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
     status,
+    ...(data.reviewer_id != null ? { reviewer_id: data.reviewer_id } : {}),
+    ...(data.review_status != null ? { review_status: data.review_status } : {}),
   };
 
   const { task } = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`, {
@@ -138,6 +170,43 @@ async function updateTask(taskId, fields) {
 
 // ── Members cache ─────────────────────────────────────
 let projectMembers = [];
+
+// AI agents on this project. Mirrors the projectMembers cache so the
+// task-form modal can identify which assignees are agents.
+let projectAgents = [];
+
+// Maps a task title → the description of an open blocker filed against it (via
+// the daily check-in). Rebuilt each loadTasks; used to show a blocker chip on
+// the matching task card. Cards display blockers read-only — they're raised
+// and resolved through the check-in flow, not here.
+let blockerByTask = new Map();
+
+// Build the title→reason lookup from the open-blocker list. First open blocker
+// per task wins (the API returns them most-recent-first).
+//
+// Blockers the user resolved from the blocker rail are persisted to
+// localStorage (by blocker-card.js) but aren't yet reflected by the API, so we
+// also skip any blocker whose id is in that resolved set. This keeps the
+// "Blocked" chip off a task card after its blocker was resolved on a different
+// dashboard type and the user switched here.
+function buildBlockerIndex(openBlockers) {
+  const map = new Map();
+  const resolvedIds = readResolvedBlockerIds();
+  for (const b of openBlockers ?? []) {
+    if (!b.task) continue; // skip project-wide (general) blockers
+    if (resolvedIds.has(b.blocker_id)) continue; // resolved via the blocker rail
+    if (!map.has(b.task)) map.set(b.task, b.description || "Blocked");
+  }
+  return map;
+}
+
+// Returns a copy of `task` flagged as blocked when an open blocker targets it;
+// otherwise the task unchanged.
+function enrichTaskWithBlocker(task) {
+  const reason = blockerByTask.get(task.title);
+  if (!reason) return task;
+  return { ...task, is_blocked: true, blocker_reason: reason };
+}
 
 /**
  * Builds the inner HTML for an assignee `<select>`, populated from the cached
@@ -195,7 +264,7 @@ function renderBoard(tasks) {
     }
 
     for (const task of colTasks) {
-      const card = createTaskCard(task, "kanban", {
+      const card = createTaskCard(enrichTaskWithBlocker(task), "kanban", {
         members: projectMembers,
         onChange: async (taskId, fields) => {
           await updateTask(taskId, fields);
@@ -235,6 +304,10 @@ function renderTaskList(tasks) {
   const list = document.getElementById("task-list");
   if (!list) return;
 
+  // Each page declares its card variant via `data-card-variant` on #task-list
+  // (xp.html → "xp"; main.html → "kanban"). Defaults to the base kanban card.
+  const variant = list.dataset.cardVariant || "kanban";
+
   list.innerHTML = "";
 
   if (tasks.length === 0) {
@@ -243,7 +316,16 @@ function renderTaskList(tasks) {
   }
 
   for (const task of tasks) {
-    const card = createTaskCard(task, "xp");
+    const card = createTaskCard(enrichTaskWithBlocker(task), variant, {
+      members: projectMembers,
+      editPair: false,
+      onChange: async (taskId, fields) => {
+        await updateTask(taskId, fields);
+        if (fields.status !== undefined) {
+          await loadTasks();
+        }
+      },
+    });
     list.appendChild(card);
   }
 }
@@ -283,6 +365,18 @@ async function loadTasks() {
     console.error("[main] loadTasks failed", err);
     return;
   }
+
+  // Pull open blockers so cards can show a chip when a check-in flagged the
+  // task as blocked. Best-effort: a blocker-fetch failure must not blank the
+  // board, so we log it and render tasks without chips.
+  try {
+    const data = await fetchDashboard();
+    blockerByTask = buildBlockerIndex(data?.open_blockers ?? []);
+  } catch (err) {
+    console.error("[main] loadTasks: blocker fetch failed", err);
+    blockerByTask = new Map();
+  }
+
   renderBoard(tasks);
   renderTaskList(tasks);
   await refreshBlockerBanner();
@@ -545,11 +639,13 @@ async function loadBlockers() {
 
 // Expose to task-form module
 window.getProjectMembers = () => projectMembers;
+window.getProjectAgents = () => projectAgents;
 window.createTask = createTask;
 window.loadTasks = loadTasks;
 window.renderPairs = renderPairs;
 window.loadCheckins = loadCheckins;
 window.loadBlockers = loadBlockers;
+window.loadAgents = loadAgents;
 
 function moveCardTo(card, destZone, srcZone, srcStatus, destStatus) {
   destZone.querySelector(".kanban-col__empty")?.remove();
@@ -603,7 +699,7 @@ document.querySelectorAll(".kanban-col__cards").forEach((zone) => {
  * open-blocker summary banner.
  * @returns {Promise<void>}
  */
-async function init() {
+async function initImpl() {
   try {
     projectMembers = await fetchMembers();
   } catch (err) {
@@ -621,6 +717,40 @@ async function init() {
   if (document.getElementById("pair-list")) {
     initLocalPairs();
     await loadPairs();
+  }
+  // No-op on pages without an #agents-list container.
+  await loadAgents();
+
+  // "+ Add Agent" button in the AI Agents rail header (xp dashboard).
+  // On other pages without the button this is a no-op. Bound here in
+  // init() so projectMembers is already cached. The onSubmit refreshes
+  // members + agents but does NOT re-call init() — that would re-bind
+  // this same listener and stack duplicates.
+  document.getElementById("add-agent-btn")?.addEventListener("click", () => {
+    openAgentModal({
+      members: projectMembers,
+      onSubmit: async (data) => {
+        await createAgent(PROJECT_ID, data);
+        try {
+          projectMembers = await fetchMembers();
+        } catch (err) {
+          console.warn("[main] re-fetch members after agent create failed", err);
+        }
+        populateCreateFormAssignees();
+        await loadAgents();
+      },
+    });
+  });
+}
+
+// Public entry point — shows a loading overlay over the content area
+// while the initial data (members, tasks, board) loads, then removes it.
+async function init() {
+  showLoading();
+  try {
+    await initImpl();
+  } finally {
+    hideLoading();
   }
 }
 

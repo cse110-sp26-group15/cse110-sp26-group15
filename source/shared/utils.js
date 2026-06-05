@@ -40,6 +40,31 @@ export function hideBanner(bannerEl) {
   bannerEl.classList.remove("visible");
 }
 
+// ── Loading state ───────────────────────────────────────
+// A centered spinner overlay shown over a container (default: the
+// dashboard content area) during its initial data fetch. Styled in
+// dashboard/main.css. Idempotent and announced to assistive tech via
+// role="status" so screen readers hear the loading state.
+
+export function showLoading(target = document.getElementById("page-content"), label = "Loading…") {
+  if (!target || target.querySelector(".loading-overlay")) return;
+  const overlay = document.createElement("div");
+  overlay.className = "loading-overlay";
+  overlay.setAttribute("role", "status");
+  const spinner = document.createElement("span");
+  spinner.className = "spinner";
+  spinner.setAttribute("aria-hidden", "true");
+  const text = document.createElement("span");
+  text.className = "loading-overlay__label";
+  text.textContent = label;
+  overlay.append(spinner, text);
+  target.appendChild(overlay);
+}
+
+export function hideLoading(target = document.getElementById("page-content")) {
+  target?.querySelector(".loading-overlay")?.remove();
+}
+
 // ── Navigation ──────────────────────────────────────────
 
 export function navigateTo(path) {

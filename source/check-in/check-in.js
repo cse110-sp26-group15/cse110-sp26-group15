@@ -32,6 +32,16 @@ export const PROJECT_ID = 1;
 // Non-task-specific blocker option shown first in the "Blocked on" picker.
 export const GENERAL_BLOCKER = "General";
 
+// Maps each selected project workflow to its dashboard page, so the sidebar
+// "Dashboard" link routes to the board the user actually picked in project
+// setup (stored under localStorage "sitrep_project"). Mirrors the DASH_MAP
+// used on the profile page.
+export const DASHBOARD_BY_WORKFLOW = {
+  scrum: "../dashboard/scrum.html",
+  kanban: "../dashboard/kanban.html",
+  xp: "../dashboard/xp.html",
+};
+
 // Maps each workload value (the <option> values in check-in.html) to the
 // human label shown on the check-in card. Workload is a UI-only field —
 // it isn't part of the API check-in schema, so we stash it inside the
@@ -129,6 +139,46 @@ export function hasCheckinToday(checkins, userId) {
     if (userId == null) return true;
     return Number(c.user_id ?? c.user?.user_id) === Number(userId);
   });
+}
+
+/**
+ * Reads the selected project's stored workflow and returns its dashboard URL,
+ * so the sidebar "Dashboard" link opens the Scrum, Kanban, or XP board the
+ * user actually chose. Falls back to the Scrum board when nothing is stored or
+ * the value is unrecognized. Safe to call under node (no localStorage).
+ * @returns {string}
+ */
+export function resolveDashboardUrl() {
+  let workflow;
+  try {
+    const project = JSON.parse(globalThis.localStorage?.getItem("sitrep_project") ?? "null");
+    workflow = project?.workflow;
+  } catch {
+    /* unparseable / unavailable storage — fall through to default */
+  }
+  return DASHBOARD_BY_WORKFLOW[workflow] ?? DASHBOARD_BY_WORKFLOW.scrum;
+}
+
+/**
+ * Resolves the display name to show for a check-in. For the signed-in user's
+ * own check-ins we prefer their profile name (the locally-edited
+ * "sitrep_display_name", then the session user's full_name) so a name changed
+ * on the Profile page shows immediately; everyone else falls back to the
+ * full_name the API returned with the check-in row.
+ * @param {object} checkin
+ * @param {{user_id?: number, full_name?: string, email?: string}|null} currentUser
+ * @returns {string}
+ */
+export function resolveCheckinName(checkin, currentUser) {
+  const checkinUserId = Number(checkin.user_id ?? checkin.user?.user_id);
+  const isCurrentUser = currentUser != null && checkinUserId === Number(currentUser.user_id);
+  if (isCurrentUser) {
+    const stored =
+      typeof localStorage !== "undefined" ? localStorage.getItem("sitrep_display_name") : null;
+    const profileName = stored || currentUser.full_name || currentUser.email?.split("@")[0] || null;
+    if (profileName) return profileName;
+  }
+  return checkin.user?.full_name ?? checkin.full_name ?? "Unknown";
 }
 
 // ── API calls ────────────────────────────────────────
@@ -275,12 +325,15 @@ export function buildBlockerBlock(blocker) {
   return `<p class="checkin-card__blocker">${segments.join(" · ")}</p>`;
 }
 
-function buildCheckinCard(checkin) {
+function buildCheckinCard(checkin, currentUser) {
   const card = document.createElement("article");
   card.className = "checkin-card";
   card.dataset.checkinId = checkin.checkin_id;
 
-  const name = checkin.user?.full_name ?? checkin.full_name ?? "Unknown";
+  // Name + avatar initials come from the author's profile (see
+  // resolveCheckinName) so the current user's own cards reflect their latest
+  // profile name and matching icon.
+  const name = resolveCheckinName(checkin, currentUser);
   const workloadLabel = workloadFromStatusMood(checkin.status_mood);
 
   card.innerHTML = `
@@ -315,7 +368,7 @@ function buildCheckinCard(checkin) {
   return card;
 }
 
-function renderList(checkins) {
+function renderList(checkins, currentUser) {
   listEl.innerHTML = "";
 
   if (checkins.length === 0) {
@@ -324,7 +377,7 @@ function renderList(checkins) {
   }
 
   for (const checkin of checkins) {
-    listEl.appendChild(buildCheckinCard(checkin));
+    listEl.appendChild(buildCheckinCard(checkin, currentUser));
   }
 }
 
@@ -352,7 +405,7 @@ async function refresh(userId) {
   }
   currentCheckins = checkins;
   renderDailyStatus(checkins, userId);
-  renderList(checkins);
+  renderList(checkins, getCurrentUser());
 }
 
 // ── Mutations ────────────────────────────────────────
@@ -374,6 +427,16 @@ async function handleSubmit(event) {
   const userId = user?.user_id ?? 1; // fallback for unauthenticated demos
   const blocker = readBlocker();
 
+  // Disable the submit button while the POST is in flight so a double-tap
+  // can't create duplicate check-ins; the shared .btn:disabled style
+  // (components.css) supplies the dimmed, not-allowed visual.
+  const submitBtn = document.getElementById("submit-checkin-btn");
+  const prevLabel = submitBtn?.textContent;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Saving…";
+  }
+
   try {
     const checkin = await postCheckin({
       user_id: userId,
@@ -382,6 +445,10 @@ async function handleSubmit(event) {
       status_mood: `workload:${workload}`,
       work_done: workDone,
       work_planned: workPlanned,
+      // Stamp the check-in with the exact local moment of completion so the
+      // card shows the real date AND time and "today" is judged in the user's
+      // own timezone (the DB column otherwise defaults to a UTC date only).
+      checkin_date: new Date().toISOString(),
     });
 
     if (blocker && checkin?.checkin_id) {
@@ -403,6 +470,11 @@ async function handleSubmit(event) {
   } catch (err) {
     console.error("[check-in] submit failed", err);
     showError(`Couldn't save check-in: ${err.message}`);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = prevLabel;
+    }
   }
 }
 
@@ -432,8 +504,58 @@ function hideError() {
   errorEl.classList.add("hidden");
 }
 
+// ── Sidebar nav (mirrors scrum.js) ───────────────────
+// Team / Weekly Report don't have real pages yet — clicking them swaps
+// the check-in form for a lazy "Coming soon" placeholder so the sidebar
+// behaves consistently across the app.
+const TAB_VIEWS = {
+  team: { id: "team-view", subtitle: "Team roster and roles" },
+  "weekly-report": { id: "weekly-report-view", subtitle: "Sprint summary report" },
+};
+
+function switchView(navSlug, label) {
+  const target = TAB_VIEWS[navSlug];
+  const root = document.getElementById("page-content");
+  if (!root || !target) return;
+
+  root.querySelectorAll(".page-view").forEach((v) => v.classList.add("hidden"));
+
+  let view = document.getElementById(target.id);
+  if (!view) {
+    view = document.createElement("div");
+    view.id = target.id;
+    view.className = "page-view placeholder";
+    const safe = (s) =>
+      String(s ?? "").replace(
+        /[&<>"']/g,
+        (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+      );
+    view.innerHTML = `<p>${safe(label)}</p><span>${safe(target.subtitle)}</span>`;
+    root.appendChild(view);
+  }
+  view.classList.remove("hidden");
+}
+
+function wireSidebar() {
+  document.querySelectorAll(".nav-item").forEach((item) => {
+    item.addEventListener("click", (e) => {
+      const href = item.getAttribute("href");
+      const isInPage = !href || href === "#";
+
+      if (isInPage) {
+        e.preventDefault();
+        switchView(item.dataset.nav, item.textContent.trim());
+      }
+
+      document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
+      item.classList.add("active");
+    });
+  });
+}
+
 // ── Init ─────────────────────────────────────────────
 async function init() {
+  wireSidebar();
   form = document.getElementById("checkin-form");
   promptBanner = document.getElementById("checkin-prompt");
   doneBanner = document.getElementById("checkin-done");
@@ -447,6 +569,11 @@ async function init() {
 
   const user = getCurrentUser();
   const userId = user?.user_id ?? 1;
+
+  // Point the sidebar "Dashboard" link at the board matching the selected
+  // project workflow (Scrum / Kanban / XP) instead of always Scrum.
+  const dashboardLink = document.getElementById("nav-dashboard");
+  if (dashboardLink) dashboardLink.href = resolveDashboardUrl();
 
   await populateBlockerOptions(userId);
   blockerToggle.addEventListener("click", () => setBlockerOpen(!isBlockerOpen()));

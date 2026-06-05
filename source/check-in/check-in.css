@@ -9,11 +9,18 @@
    tokens so the page tracks light/dark mode automatically.
    ============================================================ */
 
-/* Constrain the column width so long textareas stay readable,
-   matching the .xp-dashboard max-width feel. */
+/* Constrain the column width so long textareas stay readable, but keep it
+   comfortably wide and horizontally centered within the content area.
+   `scrollbar-gutter: stable` reserves space for the vertical scrollbar so
+   it never overlaps the card content, and the symmetric inline padding keeps
+   the column visually centered whether or not the scrollbar is showing. */
 .checkin-page {
-  max-width: 760px;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  padding-inline: var(--space-sm);
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 /* ── Daily status banners ────────────────────────────

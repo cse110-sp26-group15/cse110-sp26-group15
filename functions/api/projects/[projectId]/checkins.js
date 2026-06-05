@@ -31,18 +31,30 @@ export async function onRequestPost(context) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { user_id, status_mood = null, work_done = null, work_planned = null } = body;
+  const {
+    user_id,
+    status_mood = null,
+    work_done = null,
+    work_planned = null,
+    checkin_date = null,
+  } = body;
 
   if (user_id === undefined || user_id === null) {
     return Response.json({ error: "user_id is required" }, { status: 400 });
   }
 
   try {
+    // Persist the exact moment the check-in was completed. The client sends an
+    // ISO timestamp (its local "now"); when it's missing we fall back to the
+    // server clock. The column default was date-only (CURRENT_DATE), which lost
+    // the time of day — storing the full timestamp keeps the card's date AND
+    // time accurate and lets the "already checked in today" check compare real
+    // moments rather than midnight-stamped dates.
     const result = await env.DB.prepare(
-      `INSERT INTO checkins (user_id, project_id, status_mood, work_done, work_planned)
-       VALUES (?, ?, ?, ?, ?)`
+      `INSERT INTO checkins (user_id, project_id, status_mood, work_done, work_planned, checkin_date)
+       VALUES (?, ?, ?, ?, ?, COALESCE(?, datetime('now')))`
     )
-      .bind(user_id, projectId, status_mood, work_done, work_planned)
+      .bind(user_id, projectId, status_mood, work_done, work_planned, checkin_date)
       .run();
 
     const checkin = await env.DB.prepare("SELECT * FROM checkins WHERE checkin_id = ?")

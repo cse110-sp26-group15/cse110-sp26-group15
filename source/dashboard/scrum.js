@@ -15,8 +15,11 @@
 // tests can exercise them without a DOM.
 
 import { createTaskCard } from "../task-card/task-card.js";
-import { apiFetch, ApiError } from "../shared/utils.js";
+import { renderAgents } from "../agent-card/agent-card.js";
+import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
+import { apiFetch, ApiError, showLoading, hideLoading } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
+import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 
 initUserMenu();
 
@@ -154,6 +157,47 @@ export function computeDayOfSprint(startDate, endDate, today = new Date()) {
 }
 
 /**
+ * Classify how a sprint is tracking by comparing weighted work completed
+ * against time spent, using the Weighted Sprint Health Score:
+ *
+ *   D = % of tasks Done
+ *   P = % of tasks In Progress
+ *   T = % of sprint time elapsed = (day / total) × 100
+ *   Weighted Completion = D + (0.5 × P)
+ *   Sprint Health Score = Weighted Completion / T
+ *
+ * In-progress tasks count as half-done, so a sprint with work underway
+ * scores higher than one that hasn't started. A score above 1 means more
+ * of the (weighted) work is done than time has passed (ahead); below 1
+ * means the sprint is lagging the clock (behind).
+ *
+ *   • score > 1.20          → "ahead"
+ *   • 0.80 ≤ score ≤ 1.20   → "on track"
+ *   • score < 0.80          → "behind"
+ *
+ * @param {number} pctDone  D: percentage of tasks done (0–100).
+ * @param {number} pctInProgress  P: percentage of tasks in progress (0–100).
+ * @param {{day: number, total: number}|null} dayInfo  Output of computeDayOfSprint.
+ * @returns {{label: string, cls: string, score: number}|null}
+ *   null when health can't be computed (no valid date range, or no time
+ *   has elapsed yet so the ratio would divide by zero).
+ */
+export function computeSprintHealth(pctDone, pctInProgress, dayInfo) {
+  if (!dayInfo || dayInfo.total <= 0) return null;
+  // T: percentage of the sprint's time that has elapsed.
+  const pctTimeElapsed = (dayInfo.day / dayInfo.total) * 100;
+  if (pctTimeElapsed <= 0) return null;
+
+  // Weighted Completion = D + (0.5 × P): done tasks count fully, in-progress
+  // tasks count half.
+  const weightedCompletion = pctDone + 0.5 * pctInProgress;
+  const score = weightedCompletion / pctTimeElapsed;
+  if (score > 1.2) return { label: "ahead", cls: "progress-status--ahead", score };
+  if (score < 0.8) return { label: "behind", cls: "progress-status--behind", score };
+  return { label: "on track", cls: "progress-status--on-track", score };
+}
+
+/**
  * Compute the sprint progress bar percentages from the task list.
  *
  * Returns the same `done`/`total`/`pct` numbers regardless of whether
@@ -241,6 +285,35 @@ export function writeSprintToStorage(sprint, storage = globalThis.localStorage) 
 // user saves the picker.
 let sprintState = { number: null, start_date: null, end_date: null };
 
+// Real sprint_id of the current sprint, when the API knows one. Used to wire
+// the create-modal's sprint dropdown. Null until /sprints/current returns a
+// row (localStorage picks carry only a number, never a sprint_id).
+let currentSprintId = null;
+
+// Maps a task title → the description of an open blocker filed against it (via
+// the daily check-in). Rebuilt each loadAll; used to show a blocker chip on
+// the matching task card. Blockers are read-only here — they're raised and
+// resolved through the check-in flow, not the cards.
+let blockerByTask = new Map();
+
+// Build the title→reason lookup from the open-blocker list. First (most
+// recent, since the API sorts DESC) open blocker per task wins.
+//
+// Blockers the user resolved from the blocker rail are persisted to
+// localStorage (by blocker-card.js) but aren't yet reflected by the API, so we
+// also skip any blocker whose id is in that resolved set. This keeps the
+// "Blocked" chip off a task card after its blocker was resolved on a different
+// dashboard type and the user switched back here.
+function buildBlockerIndex(blockers) {
+  const map = new Map();
+  const resolvedIds = readResolvedBlockerIds();
+  for (const b of blockers ?? []) {
+    if (b.is_resolved || resolvedIds.has(b.blocker_id) || !b.task) continue;
+    if (!map.has(b.task)) map.set(b.task, b.description || "Blocked");
+  }
+  return map;
+}
+
 // "list" or "kanban" — controls which view of Sprint Tasks is visible.
 let viewMode = "list";
 
@@ -248,10 +321,21 @@ let viewMode = "list";
 // re-render after a status change without an extra round trip.
 let currentTasks = [];
 
+// Cache of the most recently-fetched check-ins plus whether the Daily Standup
+// grid is currently showing history (past days) rather than today. Both back
+// the "View history" toggle (toggleCheckinHistory).
+let checkinsCache = [];
+let showingCheckinHistory = false;
+
 // Cache of project members — populated by fetchMembers() during loadAll
 // and exposed to the task-form modal via `window.getProjectMembers` so
 // the assignee dropdown can be populated.
 let projectMembers = [];
+
+// Cache of AI agents on this project. Exposed via window.getProjectAgents
+// so the task-form modal can identify which assignees are agents and
+// auto-enforce the reviewer-required rule on the client side.
+let projectAgents = [];
 
 // ── API calls ────────────────────────────────────────
 // All requests go through apiFetch (10s timeout, throws ApiError on
@@ -270,6 +354,9 @@ async function fetchTasks() {
  *
  * `forceStatus` overrides whatever status the modal returned — used by
  * kanban-column + buttons so the task always lands in the right column.
+ *
+ * New tasks automatically join the currently-active sprint — there's no
+ * manual sprint picker, since a task created "now" belongs to "now"'s sprint.
  */
 async function createTask(data, { forceStatus } = {}) {
   const status = forceStatus ?? data.status ?? "todo";
@@ -278,6 +365,15 @@ async function createTask(data, { forceStatus } = {}) {
     description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
     status,
+    // reviewer_id + review_status only flow through when the task-form
+    // modal sets them (agent-assigned tasks). Server enforces the rule
+    // either way; we just avoid sending null spam for human tasks.
+    ...(data.reviewer_id != null ? { reviewer_id: data.reviewer_id } : {}),
+    ...(data.review_status != null ? { review_status: data.review_status } : {}),
+    // Auto-assign to the active sprint. TODO(sprint-persistence): the tasks
+    // table has no sprint_id column yet, so the API silently drops this. Once
+    // the migration + API land, this will actually link the task to a sprint.
+    sprint_id: currentSprintId,
   };
 
   const { task } = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`, {
@@ -310,6 +406,9 @@ async function fetchBlockers() {
   return (data.blockers ?? []).map((b) => ({
     blocker_id: b.blocker_id,
     description: b.description,
+    // The task title this blocker is filed against (null = project-wide).
+    // Used to show a blocker chip on the matching task card.
+    task: b.task ?? null,
     tag: b.helper || null,
     full_name: b.reported_by || b.full_name || "",
     is_resolved: Boolean(b.is_resolved),
@@ -324,6 +423,11 @@ async function fetchSprint() {
 async function fetchMembers() {
   const data = await apiFetch(`/api/projects/${PROJECT_ID}/members`);
   return data.members ?? [];
+}
+
+async function fetchAgents() {
+  const data = await apiFetch(`/api/projects/${PROJECT_ID}/agents`);
+  return data.agents ?? [];
 }
 
 // ── Sprint header + progress ─────────────────────────
@@ -355,10 +459,21 @@ function renderSprintProgress(tasks) {
   fill.style.width = `${pct}%`;
   text.textContent = `${done} / ${total} tasks · ${pct}% complete`;
 
-  // Show "Day X of Y" only when the date range is valid; otherwise hide
-  // the badge so it doesn't display a stale value.
   const dayInfo = computeDayOfSprint(sprintState.start_date, sprintState.end_date);
-  if (dayInfo) {
+
+  // Once the sprint's end date is before the current day, the running
+  // "Day X of Y" count no longer makes sense — show "Sprint N has ended"
+  // instead. Otherwise show "Day X of Y" while a valid range is configured,
+  // and hide the badge when no range is set so it doesn't show a stale value.
+  const endDate = parseISODate(sprintState.end_date);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (endDate && endDate < startOfToday) {
+    badge.hidden = false;
+    badge.textContent = sprintState.number
+      ? `Sprint ${sprintState.number} has ended`
+      : "Sprint has ended";
+  } else if (dayInfo) {
     badge.hidden = false;
     badge.textContent = `Day ${dayInfo.day} of ${dayInfo.total}`;
   } else {
@@ -366,51 +481,52 @@ function renderSprintProgress(tasks) {
     badge.textContent = "";
   }
 
-  statusEl.textContent = pct >= 100 ? "complete" : "on track";
-}
-
-// ── Blockers ─────────────────────────────────────────
-function renderBlockers(blockers) {
-  const panel = document.getElementById("blockers-panel");
-  const list = document.getElementById("blockers-list");
-  const title = document.getElementById("blockers-title");
-  if (!panel || !list || !title) return;
-
-  const open = blockers.filter((b) => !b.is_resolved);
-  title.textContent = `⚠ Blockers (${open.length})`;
-
-  if (open.length === 0) {
-    panel.classList.add("is-empty");
-    list.innerHTML = `<p class="muted-small">No open blockers.</p>`;
-    return;
+  // Label + color the status from the Weighted Sprint Health Score (ahead /
+  // on track / behind). Clear any previous health class first so re-renders
+  // don't stack them, then apply the one matching the current score.
+  statusEl.classList.remove(
+    "progress-status--ahead",
+    "progress-status--on-track",
+    "progress-status--behind"
+  );
+  // P: percentage of tasks currently in progress, used for the weighted score.
+  const inProgress = tasks.filter((t) => t.status === "in-progress").length;
+  const pctInProgress = total === 0 ? 0 : (inProgress / total) * 100;
+  const health = computeSprintHealth(pct, pctInProgress, dayInfo);
+  if (pct >= 100) {
+    // Sprint is complete — show no status at all.
+    statusEl.textContent = "";
+  } else if (health) {
+    statusEl.textContent = health.label;
+    statusEl.classList.add(health.cls);
+  } else {
+    statusEl.textContent = "on track";
   }
-
-  panel.classList.remove("is-empty");
-  list.innerHTML = open
-    .map(
-      (b) => `
-      <div class="blocker-item" data-blocker-id="${escapeHtml(b.blocker_id)}">
-        <span class="blocker-dot"></span>
-        <span class="blocker-desc">${escapeHtml(b.description)}</span>
-        ${b.tag ? `<span class="blocker-tag">tag: ${escapeHtml(b.tag)}</span>` : ""}
-        <span class="blocker-author">${escapeHtml(b.full_name ?? "")}</span>
-      </div>`
-    )
-    .join("");
 }
 
 // ── Check-in cards ───────────────────────────────────
-function renderCheckins(checkins, members) {
-  const grid = document.getElementById("checkin-grid");
-  if (!grid) return;
-  const checkedInUserIds = new Set(checkins.map((c) => c.user_id));
+// Decide whether a check-in belongs to "today" in the viewer's local
+// timezone. Date-only strings ("YYYY-MM-DD") are read at local midnight;
+// full ISO timestamps are read as-is. A check-in with no date is treated
+// as today (the API defaults the column to the current date on insert).
+function isCheckinToday(checkin, now = new Date()) {
+  const raw = checkin.checkin_date;
+  if (!raw) return true;
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? parseISODate(raw) : new Date(raw);
+  if (!d || Number.isNaN(d.getTime())) return true;
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
 
-  const checkinCards = checkins
-    .map((c) => {
-      const mood = classifyMood(c.status_mood);
-      const time = c.checkin_date ? formatDate(c.checkin_date) : "today";
-      const work = c.work_done || c.work_planned || "—";
-      return `
+// Build the HTML for a single check-in card.
+function buildCheckinCardHtml(c) {
+  const mood = classifyMood(c.status_mood);
+  const time = c.checkin_date ? formatDate(c.checkin_date) : "today";
+  const work = c.work_done || c.work_planned || "—";
+  return `
         <div class="checkin-card" data-checkin-id="${escapeHtml(c.checkin_id)}">
           <div class="checkin-top">
             <div class="checkin-user">
@@ -429,8 +545,19 @@ function renderCheckins(checkins, members) {
             }
           </div>
         </div>`;
-    })
-    .join("");
+}
+
+// Render the Daily Standup grid. Only today's check-ins are shown here;
+// members who haven't checked in today get an "is-empty" placeholder card.
+// Past days are reachable through the "View history" link (toggleCheckinHistory).
+function renderCheckins(checkins, members) {
+  const grid = document.getElementById("checkin-grid");
+  if (!grid) return;
+
+  const todays = checkins.filter((c) => isCheckinToday(c));
+  const checkedInUserIds = new Set(todays.map((c) => c.user_id));
+
+  const checkinCards = todays.map(buildCheckinCardHtml).join("");
 
   const missing = members
     .filter((m) => !checkedInUserIds.has(m.user_id))
@@ -446,43 +573,78 @@ function renderCheckins(checkins, members) {
     )
     .join("");
 
-  if (!checkins.length && !members.length) {
+  if (!todays.length && !members.length) {
     grid.innerHTML = `<p class="muted-small">No check-ins for today yet.</p>`;
     return;
   }
   grid.innerHTML = checkinCards + missing;
 }
 
+// Keep the "View history" link's empty-state in sync with the cache. When the
+// grid is showing today and there are no past check-ins, mark the link inert so
+// it surfaces a hover tooltip ("No previous check-ins to display.", styled in
+// scrum.css) instead of toggling. Any other state clears the marker so the link
+// behaves as a normal toggle.
+function updateHistoryLinkState() {
+  const link = document.getElementById("checkin-history-link");
+  if (!link) return;
+  const hasPast = checkinsCache.some((c) => !isCheckinToday(c));
+  const inert = !showingCheckinHistory && !hasPast;
+  link.classList.toggle("panel-link--no-history", inert);
+  link.setAttribute("aria-disabled", inert ? "true" : "false");
+}
+
+// Toggle the Daily Standup grid between today's check-ins and the history of
+// past days. When there are no past days to show, clicking is a no-op — the
+// "View history" link instead reveals a hover tooltip (see updateHistoryLinkState).
+function toggleCheckinHistory() {
+  const grid = document.getElementById("checkin-grid");
+  const link = document.getElementById("checkin-history-link");
+  if (!grid) return;
+
+  if (!showingCheckinHistory) {
+    const past = checkinsCache.filter((c) => !isCheckinToday(c));
+    // Nothing to show — do nothing; the hover tooltip explains why.
+    if (past.length === 0) return;
+    showingCheckinHistory = true;
+    if (link) link.textContent = "View today";
+    grid.innerHTML = past.map(buildCheckinCardHtml).join("");
+  } else {
+    showingCheckinHistory = false;
+    if (link) link.textContent = "View history";
+    renderCheckins(checkinsCache, projectMembers);
+  }
+  updateHistoryLinkState();
+}
+
 // ── Task rendering helpers (shared by list + kanban) ──
-// Decorates a card with the page-specific status + delete controls in a
-// row below the task-card component. The shared component intentionally
-// doesn't provide a delete button, so we add it here.
+// onChange handler for the shared task-card's interactive controls. The card
+// can edit priority, story points, tags, blocker, assignee and status inline,
+// but only assigned_to + status have backend persistence right now — the rest
+// update locally and are intentionally not PATCHed. Blocker persistence is
+// owned by another branch, so we leave is_blocked/blocker_reason untouched too.
+async function persistTaskChange(taskId, fields) {
+  const payload = {};
+  if ("assigned_to" in fields) payload.assigned_to = fields.assigned_to;
+  if ("status" in fields) payload.status = fields.status;
+  if (Object.keys(payload).length === 0) return;
+
+  try {
+    await updateTask(taskId, payload);
+    await loadAll();
+  } catch (err) {
+    console.error("[scrum] task-card change failed", err);
+    alert(`Couldn't update task: ${err.message}`);
+    await loadAll();
+  }
+}
+
+// Adds the page-specific delete button in a row below the task-card. Assignee
+// and status editing now come from the shared component's interactive mode;
+// the component intentionally doesn't provide a delete button, so we add it.
 function appendTaskControls(card, task) {
   const row = document.createElement("div");
   row.className = "task-card-row-delete";
-
-  const statusSelect = document.createElement("select");
-  statusSelect.className = `status-select status-${task.status ?? "todo"}`;
-  statusSelect.dataset.taskId = task.task_id;
-  for (const col of STATUS_COLUMNS) {
-    const opt = document.createElement("option");
-    opt.value = col.key;
-    opt.textContent = col.label;
-    if (task.status === col.key) opt.selected = true;
-    statusSelect.appendChild(opt);
-  }
-  statusSelect.addEventListener("change", async (e) => {
-    const newStatus = e.target.value;
-    e.target.className = `status-select status-${newStatus}`;
-    try {
-      await updateTask(task.task_id, { status: newStatus });
-      await loadAll();
-    } catch (err) {
-      console.error("[scrum] updateTask failed", err);
-      alert(`Couldn't update task: ${err.message}`);
-      await loadAll();
-    }
-  });
 
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
@@ -499,7 +661,6 @@ function appendTaskControls(card, task) {
     }
   });
 
-  row.appendChild(statusSelect);
   row.appendChild(deleteBtn);
   card.appendChild(row);
 }
@@ -508,11 +669,21 @@ function appendTaskControls(card, task) {
 function buildTaskCard(task, { compact = false } = {}) {
   // Mix in the active sprint number so the card banner reads
   // "Urgent · Sprint 3" the way the task-card scrum variant expects.
+  const blockerReason = blockerByTask.get(task.title);
   const enriched = {
     ...task,
+    // The card's assignee dropdown keys off assigned_to; scrum rows carry the
+    // assignee as user_id, so mirror it across for correct pre-selection.
+    assigned_to: task.assigned_to ?? task.user_id ?? null,
     sprint: sprintState.number ? `Sprint ${sprintState.number}` : task.sprint,
+    // Surface an open check-in blocker (if any) as the card's blocker chip.
+    ...(blockerReason ? { is_blocked: true, blocker_reason: blockerReason } : null),
   };
-  const card = createTaskCard(enriched, "scrum", { compact });
+  const card = createTaskCard(enriched, "scrum", {
+    compact,
+    members: projectMembers,
+    onChange: persistTaskChange,
+  });
   appendTaskControls(card, task);
   return card;
 }
@@ -710,26 +881,43 @@ function saveSprintPicker() {
 // Paint a visible error state across every panel so failures are loud,
 // not silent. Caller passes the message to surface.
 function renderLoadError(message) {
-  for (const id of ["task-list", "kanban-board", "checkin-grid", "blockers-list"]) {
+  for (const id of ["task-list", "kanban-board", "checkin-grid", "blockers-list", "agents-list"]) {
     const el = document.getElementById(id);
     if (el) el.innerHTML = `<p class="task-empty task-error">⚠ ${escapeHtml(message)}</p>`;
   }
-  const title = document.getElementById("blockers-title");
-  if (title) title.textContent = "⚠ Blockers (unavailable)";
   const meta = document.getElementById("sprint-meta");
   if (meta) meta.textContent = "Sprint data unavailable";
 }
 
 // ── Load + render orchestration ──────────────────────
-async function loadAll() {
-  let tasks, checkins, blockers, apiSprint, apiMembers;
+// Public entry point. The first load (from init) passes showSpinner so a
+// loading overlay covers the content area until data arrives; refreshes
+// after create/update call loadAll() with no arg and update silently.
+async function loadAll(showSpinner = false) {
+  if (showSpinner) showLoading();
   try {
-    [tasks, checkins, blockers, apiSprint, apiMembers] = await Promise.all([
+    await loadAllImpl();
+  } finally {
+    if (showSpinner) hideLoading();
+  }
+}
+
+async function loadAllImpl() {
+  let tasks, checkins, blockers, apiSprint, apiMembers, apiAgents;
+  try {
+    [tasks, checkins, blockers, apiSprint, apiMembers, apiAgents] = await Promise.all([
       fetchTasks(),
       fetchCheckins(),
       fetchBlockers(),
       fetchSprint(),
       fetchMembers(),
+      // The agents endpoint is best-effort — a missing/empty response
+      // shouldn't blow up the dashboard. Catch + log so the rest of
+      // loadAll() proceeds even when agents 500s.
+      fetchAgents().catch((err) => {
+        console.warn("[scrum] fetchAgents failed; rendering empty agents rail", err);
+        return [];
+      }),
     ]);
   } catch (err) {
     const reason =
@@ -746,6 +934,7 @@ async function loadAll() {
   // Either way, cache the result so the create modal's assignee dropdown
   // can populate (it reads via window.getProjectMembers).
   projectMembers = apiMembers.length ? apiMembers : deriveMembers(tasks, checkins);
+  projectAgents = apiAgents;
 
   // If the user hasn't set a sprint yet, prefer whatever the API knows;
   // user-saved values always win once they exist.
@@ -757,11 +946,54 @@ async function loadAll() {
     };
   }
 
+  // Remember the real sprint_id so the create-modal dropdown can send it.
+  currentSprintId = apiSprint?.sprint_id ?? currentSprintId;
+
+  // Index open blockers by task title so cards can show a blocker chip.
+  blockerByTask = buildBlockerIndex(blockers);
+
+  // Cache check-ins and reset the Daily Standup grid to today's view; the
+  // "View history" toggle reads this cache to show past days on demand.
+  checkinsCache = checkins;
+  showingCheckinHistory = false;
+  const historyLink = document.getElementById("checkin-history-link");
+  if (historyLink) historyLink.textContent = "View history";
+  // Refresh the "View history" empty-state (hover tooltip vs. active toggle).
+  updateHistoryLinkState();
+
   renderSprintHeader(checkins);
   renderSprintProgress(tasks);
-  renderBlockers(blockers);
   renderCheckins(checkins, projectMembers);
   renderTasks(tasks);
+  renderAgents(document.getElementById("agents-list"), projectAgents);
+  renderAgentContributionsMeta(projectAgents, tasks);
+}
+
+/**
+ * Paint a one-liner above the agents grid: "N agents · X tasks completed".
+ * Lets the team see at-a-glance whether agents are pulling their weight
+ * without a full weekly report. Numbers are derived client-side from the
+ * payload we already have so no extra request is needed.
+ *
+ * @param {object[]} agents
+ * @param {object[]} tasks
+ */
+function renderAgentContributionsMeta(agents, tasks) {
+  const meta = document.getElementById("agent-contributions-meta");
+  if (!meta) return;
+  if (!agents.length) {
+    meta.textContent = "";
+    return;
+  }
+  const agentIds = new Set(agents.map((a) => a.user_id));
+  const completed = tasks.filter((t) => agentIds.has(t.user_id) && t.status === "done").length;
+  const pendingReview = tasks.filter(
+    (t) => agentIds.has(t.user_id) && t.review_status === "pending"
+  ).length;
+  const parts = [`${agents.length} agent${agents.length === 1 ? "" : "s"}`];
+  parts.push(`${completed} task${completed === 1 ? "" : "s"} done`);
+  if (pendingReview > 0) parts.push(`${pendingReview} pending review`);
+  meta.textContent = parts.join(" · ");
 }
 
 // Derive team members from any rows that include user info — keeps the
@@ -777,6 +1009,37 @@ function deriveMembers(tasks, checkins) {
   return [...map.entries()].map(([user_id, full_name]) => ({ user_id, full_name }));
 }
 
+// ── In-page tab switching ────────────────────────────
+// Sidebar tabs whose target page isn't built yet (Team, Weekly Report)
+// land here. We hide the real dashboard view and reveal a lazy-rendered
+// placeholder so the click clearly does something. Maps a nav item's
+// `data-nav` slug → { id, subtitle }; missing entries fall back to the
+// dashboard view (so "Dashboard" click still works if it ever loses its
+// real href).
+const TAB_VIEWS = {
+  dashboard: { id: "dashboard-view", subtitle: null },
+  team: { id: "team-view", subtitle: "Team roster and roles" },
+  "weekly-report": { id: "weekly-report-view", subtitle: "Sprint summary report" },
+};
+
+function switchView(navSlug, label) {
+  const target = TAB_VIEWS[navSlug] ?? TAB_VIEWS.dashboard;
+  const root = document.getElementById("page-content");
+  if (!root) return;
+
+  root.querySelectorAll(".page-view").forEach((v) => v.classList.add("hidden"));
+
+  let view = document.getElementById(target.id);
+  if (!view) {
+    view = document.createElement("div");
+    view.id = target.id;
+    view.className = "page-view placeholder";
+    view.innerHTML = `<p>${escapeHtml(label)}</p><span>${escapeHtml(target.subtitle ?? "Coming soon")}</span>`;
+    root.appendChild(view);
+  }
+  view.classList.remove("hidden");
+}
+
 // ── Init (DOM-only) ──────────────────────────────────
 // Skip everything below when there's no document — lets the test suite
 // import this module purely for the helpers above.
@@ -786,14 +1049,20 @@ function init() {
   if (stored) sprintState = stored;
 
   // ── Sidebar nav ────────────────────────────────────
-  // Real `href`s do the navigation; we only toggle the active state for
-  // hash links so they don't reload the page.
+  // Real `href`s do the navigation (e.g. My Check-ins → check-in.html).
+  // In-page tabs (href="#") swap the visible .page-view to a placeholder
+  // so the user sees the click took effect — full pages for Team /
+  // Weekly Report aren't built yet.
   document.querySelectorAll(".nav-item").forEach((item) => {
     item.addEventListener("click", (e) => {
       const href = item.getAttribute("href");
-      if (!href || href === "#") {
+      const isInPage = !href || href === "#";
+
+      if (isInPage) {
         e.preventDefault();
+        switchView(item.dataset.nav, item.textContent.trim());
       }
+
       document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
       item.classList.add("active");
 
@@ -812,6 +1081,21 @@ function init() {
     btn.addEventListener("click", () => setViewMode(btn.dataset.view));
   });
 
+  // ── Add-agent button (opens agent-form modal) ──────
+  // Members are filtered to non-agents inside openAgentModal — we pass
+  // the full cached list. createAgent posts to the API; on success we
+  // reload everything so the new agent shows in the rail + the
+  // assignee/owner pickers.
+  document.getElementById("add-agent-btn")?.addEventListener("click", () => {
+    openAgentModal({
+      members: projectMembers,
+      onSubmit: async (data) => {
+        await createAgent(PROJECT_ID, data);
+        await loadAll();
+      },
+    });
+  });
+
   // ── Add-task button (opens task-form modal) ────────
   // task-form.js is dynamic-imported on first click (so the node-side
   // tests don't crash on its top-level `document.addEventListener`).
@@ -827,7 +1111,17 @@ function init() {
   // expose ours here so the dropdown isn't empty.
   if (typeof window !== "undefined") {
     window.getProjectMembers = () => projectMembers;
+    // The task-form modal also needs to know which members are AI agents
+    // so it can auto-default + require a reviewer when one is selected.
+    window.getProjectAgents = () => projectAgents;
   }
+
+  // ── Daily Standup "View history" toggle ────────────
+  // Swaps the standup grid between today's check-ins and past days.
+  document.getElementById("checkin-history-link")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    toggleCheckinHistory();
+  });
 
   // ── Check-in button ────────────────────────────────
   // Sends the user to the dedicated check-in page (source/check-in), which
@@ -838,9 +1132,9 @@ function init() {
   });
 
   // Apply the saved view mode (defaults to "list") and kick off the
-  // first load.
+  // first load (with a loading overlay).
   setViewMode(viewMode);
-  loadAll();
+  loadAll(true);
 }
 
 if (typeof document !== "undefined") {

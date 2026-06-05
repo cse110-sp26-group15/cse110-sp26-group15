@@ -19,8 +19,10 @@
     <link rel="stylesheet" href="../shared/components.css" />
     <link rel="stylesheet" href="main.css" />
     <link rel="stylesheet" href="../task-card/task-card.css" />
+    <link rel="stylesheet" href="../task-form/task-form.css" />
     <link rel="stylesheet" href="scrum.css" />
     <link rel="stylesheet" href="../blocker-card/blocker-card.css" />
+    <link rel="stylesheet" href="../agent-card/agent-card.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -178,15 +180,10 @@
               <p class="sprint-picker-error" id="sprint-picker-error" hidden></p>
             </section>
 
-            <!-- ── Blockers panel ────────────────────────────── -->
-            <section class="blockers-panel" id="blockers-panel">
-              <header class="blockers-header">
-                <span class="blockers-title" id="blockers-title">⚠ Blockers (0)</span>
-              </header>
-              <div class="blockers-list" id="blockers-list">
-                <p class="muted-small">Loading blockers…</p>
-              </div>
-            </section>
+            <!-- Open blockers are surfaced once as cards at the top of the
+                 page via the blocker rail (../blocker-card/blocker-card-init.js);
+                 the standalone blockers list has been removed to avoid showing
+                 the same blockers twice. -->
 
             <!-- ── Sprint progress ───────────────────────────── -->
             <section class="panel sprint-progress-panel">
@@ -211,10 +208,30 @@
             <section class="panel">
               <header class="panel-header">
                 <h2 class="panel-title">Daily Standup</h2>
-                <a href="#" class="panel-link">View history</a>
+                <a href="#" class="panel-link" id="checkin-history-link">View history</a>
               </header>
               <div class="checkin-grid" id="checkin-grid">
                 <p class="muted-small">Loading check-ins…</p>
+              </div>
+            </section>
+
+            <!-- ── AI Agents ──────────────────────────────────
+                 Each card mirrors a team member's at-a-glance view:
+                 name, type, owning human, current task + review status,
+                 last activity, blocker count. Populated from the
+                 `agents` array on the dashboard payload. -->
+            <section class="panel">
+              <header class="panel-header">
+                <h2 class="panel-title">AI Agents</h2>
+                <div class="panel-header-actions">
+                  <span class="panel-link" id="agent-contributions-meta"></span>
+                  <button class="btn btn--primary" id="add-agent-btn" type="button">
+                    + Add Agent
+                  </button>
+                </div>
+              </header>
+              <div class="agents-grid" id="agents-list">
+                <p class="muted-small">Loading agents…</p>
               </div>
             </section>
 
@@ -245,7 +262,6 @@
     </div>
 
     <script type="module" src="scrum.js"></script>
-    <script type="module" src="../task-form/task-form.js"></script>
     <script type="module" src="../blocker-card/blocker-card-init.js"></script>
   </body>
 </html>

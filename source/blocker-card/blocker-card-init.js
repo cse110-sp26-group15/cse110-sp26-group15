@@ -5,6 +5,8 @@ import {
   mapApiBlocker,
   matchTaskByName,
   normalizeTaskName,
+  readResolvedBlockerIds,
+  rememberResolvedBlockerId,
   wireCollapseToggle,
 } from "./blocker-card.js";
 
@@ -113,24 +115,53 @@ async function defaultFetchBlockers() {
 function defaultFindTaskByName(taskName) {
   const target = normalizeTaskName(taskName);
   if (!target) return null;
-  const cards = document.querySelectorAll("#task-list .task-card");
+  // Search every task card on the page so the lookup works across all
+  // dashboard layouts (scrum list + kanban, the standalone kanban board, and
+  // the main/xp lists). The shared task-card component titles with
+  // `.task-card__title`; `.task-title` is kept as a fallback for legacy markup.
+  const cards = document.querySelectorAll(".task-card");
+  let hiddenMatch = null;
   for (const card of cards) {
-    const titleEl = card.querySelector(".task-title");
-    if (titleEl && normalizeTaskName(titleEl.textContent) === target) return card;
+    const titleEl = card.querySelector(".task-card__title, .task-title");
+    if (!titleEl || normalizeTaskName(titleEl.textContent) !== target) continue;
+    // Scrum renders both the list and kanban views at once with the inactive
+    // one hidden, so prefer a card that's actually visible; only fall back to
+    // a hidden match if no visible one exists.
+    if (card.offsetParent !== null) return card;
+    if (!hiddenMatch) hiddenMatch = card;
   }
-  return null;
+  return hiddenMatch;
 }
 
-// Safe stub used when the caller hasn't supplied a real resolver.
-// Logs a warning so it's obvious the PATCH route isn't wired yet,
-// but throws so the card's button shows the "Failed — retry" state
-// instead of pretending the resolve succeeded.
-async function defaultResolveBlocker() {
-  const msg =
-    "[blocker-rail] resolveBlocker not configured — pass `resolveBlocker` to mountBlockerRail once PATCH /api/blockers/:id exists";
-  console.warn(msg);
-  throw new Error(msg);
+// Remove the blocker chip shown on a task's card(s). Used when a blocker is
+// resolved so the linked task no longer displays a "Blocked" field. Clears the
+// chip everywhere the task appears (e.g. scrum's simultaneous list + kanban
+// views) and across every dashboard layout.
+function removeTaskBlockerChip(taskName) {
+  const target = normalizeTaskName(taskName);
+  if (!target) return;
+  for (const card of document.querySelectorAll(".task-card")) {
+    const titleEl = card.querySelector(".task-card__title, .task-title");
+    if (titleEl && normalizeTaskName(titleEl.textContent) === target) {
+      card.querySelector(".task-card__blocker")?.remove();
+    }
+  }
 }
+
+// Default resolve handler. There's no PATCH /api/blockers/:id route wired into
+// the dashboards yet, so "resolving" is visual-only: the card removal is done
+// by onResolve in mountBlockerRail; here we just clear the blocker chip from
+// the linked task's card when the blocker is filed against one.
+function defaultResolveBlocker(blocker) {
+  if (blocker?.task) removeTaskBlockerChip(blocker.task);
+}
+
+// ── Resolved-blocker persistence ──────────────────────
+// The read/remember helpers now live in blocker-card.js so the dashboards'
+// per-task blocker chips can share the exact same resolved-id store (see
+// readResolvedBlockerIds / rememberResolvedBlockerId). This keeps a resolved
+// blocker hidden everywhere — both as a blocker card and on its linked task
+// card — when the user switches dashboard type and a fresh page mounts.
 
 // ── Public mount API ──────────────────────────────────
 /**
@@ -177,22 +208,49 @@ export async function mountBlockerRail({
 
   let currentRail = null;
 
-  // Wrap caller's resolver so a successful PATCH automatically triggers a
-  // rail refresh — caller code doesn't have to remember to dispatch the event.
-  async function onResolve(blocker) {
+  // Wrap caller's resolver so resolving a blocker also tidies up the UI.
+  // `card` is the blocker card the Resolve button lives in (passed through by
+  // createBlockerCard). After the resolver runs we remove that card directly
+  // rather than refetching: the resolve is visual-only (no PATCH route yet), so
+  // a refetch would just re-add the still-open blocker. When the last card goes
+  // the rail is torn down and the dashed placeholder is restored.
+  async function onResolve(blocker, card) {
     await resolveBlocker(blocker);
-    document.dispatchEvent(new CustomEvent("blockers:changed"));
+    // Remember the resolve so the blocker stays gone after a refetch — e.g.
+    // when the user switches dashboard type and a fresh rail mounts.
+    rememberResolvedBlockerId(blocker?.id);
+    if (card) card.remove();
+    if (currentRail && !currentRail.querySelector(".blocker-card")) {
+      currentRail.remove();
+      currentRail = null;
+      const placeholder = container.querySelector("[data-blocker-placeholder]");
+      if (placeholder) placeholder.hidden = false;
+    }
   }
 
   async function refresh() {
     let blockers;
     try {
       const apiRows = await fetchBlockers();
-      blockers = (apiRows ?? []).map(mapApiBlocker).filter(Boolean);
+      blockers = (apiRows ?? [])
+        .map((row) => {
+          const blocker = mapApiBlocker(row);
+          // Carry the stable blocker_id alongside the card's render shape so
+          // resolved-state persistence has something to key on. Kept off
+          // mapApiBlocker itself so its output shape (and tests) stay intact;
+          // createBlockerCard ignores the extra field.
+          if (blocker) blocker.id = row?.blocker_id ?? null;
+          return blocker;
+        })
+        .filter(Boolean);
     } catch (err) {
       console.warn("[blocker-rail] refresh failed", err);
       blockers = [];
     }
+    // Drop blockers the user already resolved (persisted across page loads) so
+    // they don't reappear when switching dashboard type re-mounts the rail.
+    const resolvedIds = readResolvedBlockerIds();
+    blockers = blockers.filter((b) => !resolvedIds.has(b.id));
     if (!includeResolved) blockers = filterActiveBlockers(blockers);
 
     const nextRail = createBlockerRail(blockers, { onResolve });

@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="../task-card/task-card.css" />
     <link rel="stylesheet" href="../task-form/task-form.css" />
     <link rel="stylesheet" href="../blocker-card/blocker-card.css" />
+    <link rel="stylesheet" href="../agent-card/agent-card.css" />
     <link rel="stylesheet" href="kanban.css" />
   </head>
   <body>
@@ -134,6 +135,21 @@
               <span class="blockers-banner__label">Blockers</span>
               <div class="blockers-banner__list" id="blockers-list"></div>
             </div>
+
+            <!-- ── AI Agents ──────────────────────────────────
+                 Same agent rail as scrum/xp dashboards. Populated from
+                 the dashboard payload's `agents` array. -->
+            <section class="agents-section" id="agents-section">
+              <header class="agents-section__header">
+                <h2 class="agents-section__title">AI Agents</h2>
+                <button class="btn btn--primary" id="add-agent-btn" type="button">
+                  + Add Agent
+                </button>
+              </header>
+              <div class="agents-grid" id="agents-list">
+                <p class="muted-small">Loading agents…</p>
+              </div>
+            </section>
 
             <div class="kanban-board" id="kanban-board">
               <div class="kanban-col" id="col-todo" data-status="todo">

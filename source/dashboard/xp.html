@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="../task-card/task-card.css" />
     <link rel="stylesheet" href="xp.css" />
     <link rel="stylesheet" href="../blocker-card/blocker-card.css" />
+    <link rel="stylesheet" href="../agent-card/agent-card.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -159,7 +160,7 @@
                 </button>
               </div>
 
-              <div id="task-list" class="task-list">
+              <div id="task-list" class="task-list" data-card-variant="xp">
                 <p class="task-empty">Loading tasks...</p>
               </div>
             </section>
@@ -172,6 +173,21 @@
 
               <div id="pair-list" class="pair-grid">
                 <p class="task-empty">Loading pair sessions...</p>
+              </div>
+            </section>
+
+            <!-- ── AI Agents ──────────────────────────────────
+                 Mirrors the scrum/kanban agents rail. Populated from the
+                 dashboard payload's `agents` array. -->
+            <section class="xp-section" id="agents-section">
+              <div class="section-header">
+                <h2 class="section-title">AI Agents</h2>
+                <button class="btn btn--primary" id="add-agent-btn" type="button">
+                  + Add Agent
+                </button>
+              </div>
+              <div id="agents-list" class="agents-grid">
+                <p class="task-empty">Loading agents…</p>
               </div>
             </section>
 

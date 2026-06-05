@@ -6,6 +6,8 @@ DELETE FROM tasks;
 
 DELETE FROM sprints;
 
+DELETE FROM agents;
+
 DELETE FROM project_members;
 
 DELETE FROM projects;
