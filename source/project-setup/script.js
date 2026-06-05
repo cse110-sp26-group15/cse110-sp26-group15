@@ -7,6 +7,10 @@ import {
   navigateTo,
   apiCreateProject,
   getCurrentUser,
+  setCurrentProject,
+  dashboardPathFor,
+  apiGetInvites,
+  apiAddMember,
 } from "../shared/utils.js";
 
 const form = document.getElementById("setup-form");
@@ -128,18 +132,13 @@ form.addEventListener("submit", async (e) => {
   try {
     const created_by = getCurrentUser()?.user_id ?? null;
     const result = await apiCreateProject({ name, workflow, members: [...members], created_by });
-    // Persist project info so Profile/Settings pages can read it without an extra API call.
-    const projectData = result?.project ?? { name, workflow };
-    localStorage.setItem(
-      "sitrep_project",
-      JSON.stringify({ name: projectData.name ?? name, workflow: projectData.workflow ?? workflow })
-    );
-    const dashMap = {
-      scrum: "../dashboard/scrum.html",
-      kanban: "../dashboard/kanban.html",
-      xp: "../dashboard/xp.html",
-    };
-    navigateTo(dashMap[workflow] ?? "../dashboard/scrum.html");
+    const project = result?.project ?? { name, workflow };
+    setCurrentProject({
+      project_id: project.project_id,
+      name: project.name ?? name,
+      workflow: project.workflow ?? workflow,
+    });
+    navigateTo(dashboardPathFor(project.workflow ?? workflow));
   } catch (err) {
     showBanner(banner, err.message || "Something went wrong. Please try again.");
   } finally {
@@ -148,3 +147,69 @@ form.addEventListener("submit", async (e) => {
     submitBtn.innerHTML = 'Create workspace <span class="btn-arrow" aria-hidden="true">→</span>';
   }
 });
+
+// ── Pending invitations ─────────────────────────────────
+const invitesSection = document.getElementById("invites-section");
+const invitesList = document.getElementById("invites-list");
+
+/**
+ * Join a project from a pending invite: add the current user as a member,
+ * store the project, and navigate to its dashboard.
+ * @param {{ project_id: number, project_name: string, workflow: string }} invite
+ * @param {string} email
+ * @returns {Promise<void>}
+ */
+async function joinProject(invite, email) {
+  try {
+    await apiAddMember(invite.project_id, email);
+    setCurrentProject({
+      project_id: invite.project_id,
+      name: invite.project_name,
+      workflow: invite.workflow,
+    });
+    navigateTo(dashboardPathFor(invite.workflow));
+  } catch (err) {
+    showBanner(banner, err.message || "Could not join the project. Please try again.");
+  }
+}
+
+/**
+ * Fetch and render the signed-in user's pending invitations, if any.
+ * No-op when there is no current user or no invites.
+ * @returns {Promise<void>}
+ */
+async function loadInvites() {
+  const user = getCurrentUser();
+  if (!user?.email || !invitesSection || !invitesList) return;
+  let invites = [];
+  try {
+    ({ invites = [] } = await apiGetInvites(user.email));
+  } catch (err) {
+    console.warn("[project-setup] invite lookup failed", err);
+    return;
+  }
+  if (invites.length === 0) return;
+
+  invitesList.innerHTML = "";
+  for (const invite of invites) {
+    const li = document.createElement("li");
+    li.className = "invite-item";
+
+    const span = document.createElement("span");
+    span.className = "invite-item-name";
+    span.textContent = invite.project_name;
+
+    const joinBtn = document.createElement("button");
+    joinBtn.type = "button";
+    joinBtn.className = "btn-add-member";
+    joinBtn.textContent = "Join";
+    joinBtn.addEventListener("click", () => joinProject(invite, user.email));
+
+    li.appendChild(span);
+    li.appendChild(joinBtn);
+    invitesList.appendChild(li);
+  }
+  invitesSection.hidden = false;
+}
+
+loadInvites();
