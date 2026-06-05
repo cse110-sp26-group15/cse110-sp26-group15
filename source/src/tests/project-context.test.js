@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { dashboardPathFor, setCurrentProject, getCurrentProject } from "../../shared/utils.js";
+import {
+  dashboardPathFor,
+  setCurrentProject,
+  getCurrentProject,
+  defaultAssigneeId,
+} from "../../shared/utils.js";
 
 /**
  * Minimal in-memory Storage stand-in for Node (no real localStorage).
@@ -39,5 +44,18 @@ describe("current project storage", () => {
     setCurrentProject({ project_id: 1, name: "A", workflow: "scrum" }, store);
     setCurrentProject(null, store);
     expect(getCurrentProject(store)).toBeNull();
+  });
+});
+
+describe("defaultAssigneeId", () => {
+  const members = [{ user_id: 1 }, { user_id: 2 }];
+  it("prefers the current user when a member", () => {
+    expect(defaultAssigneeId(members, { user_id: 2 })).toBe(2);
+  });
+  it("falls back to the first member otherwise", () => {
+    expect(defaultAssigneeId(members, { user_id: 99 })).toBe(1);
+  });
+  it("returns null when there are no members", () => {
+    expect(defaultAssigneeId([], { user_id: 1 })).toBeNull();
   });
 });

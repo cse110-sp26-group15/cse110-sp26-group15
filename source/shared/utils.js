@@ -360,3 +360,18 @@ export async function apiAddMember(projectId, email) {
     body: JSON.stringify({ email }),
   });
 }
+
+/**
+ * Pick the default assignee id for a new task: the current user when they
+ * are a project member, otherwise the first member, otherwise null.
+ * @param {Array<{ user_id: number }>} members
+ * @param {{ user_id: number }|null} currentUser
+ * @returns {number|null}
+ */
+export function defaultAssigneeId(members, currentUser) {
+  if (!Array.isArray(members) || members.length === 0) return null;
+  if (currentUser && members.some((m) => Number(m.user_id) === Number(currentUser.user_id))) {
+    return Number(currentUser.user_id);
+  }
+  return Number(members[0].user_id);
+}
