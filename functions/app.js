@@ -7,7 +7,7 @@
 //
 //   - no valid session        -> /login/
 //   - signed in, 0 projects    -> /project-setup/   (onboarding)
-//   - signed in, >= 1 project  -> /projects/         (Projects page)
+//   - signed in, >= 1 project  -> /projects/projects.html  (Projects page)
 //
 // The session is resolved by the global middleware (functions/_middleware.js)
 // into context.data.userId before this runs. index.html, login, and signup all
@@ -15,7 +15,7 @@
 
 const LOGIN = "/login/";
 const ONBOARDING = "/project-setup/";
-const PROJECTS = "/projects/";
+const PROJECTS = "/projects/projects.html";
 
 export async function onRequestGet(context) {
   const { env, request } = context;

@@ -9,7 +9,8 @@ const VALID_WORKFLOWS = ["scrum", "kanban", "xp"];
  * taken from the session (context.data.userId), never from a query param, so a
  * client cannot enumerate another user's — or every — project. Each row
  * includes `member_count` so callers can render a picker without a second
- * round-trip.
+ * round-trip, plus an `is_owner` flag marking the projects this caller created
+ * (the only ones they're allowed to delete).
  *
  * @param {{ env: { DB?: object }, data?: { userId?: number|null } }} context
  * @returns {Promise<Response>}
@@ -37,7 +38,17 @@ export async function onRequestGet(context) {
       .bind(userId)
       .all();
 
-    return Response.json({ projects: results });
+    // Tag each project with whether this caller created it. Only the creator may
+    // delete a project (enforced by the DELETE handler), so the Projects page
+    // uses this server-derived flag to decide whether to show the delete
+    // control — rather than comparing against client-side state, which the
+    // session cookie can outlive.
+    const projects = (results ?? []).map((p) => ({
+      ...p,
+      is_owner: p.created_by === userId,
+    }));
+
+    return Response.json({ projects });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
   }

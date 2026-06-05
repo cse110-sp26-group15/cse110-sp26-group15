@@ -220,6 +220,28 @@ export async function apiCreateProject({ name, workflow, members }) {
   return res.json();
 }
 
+/**
+ * DELETE /api/projects/:projectId
+ *
+ * Permanently deletes a project the caller created (the server rejects the
+ * request with 403 if the caller is a member but not the creator). The session
+ * cookie identifies the caller, so no body is needed.
+ *
+ * @param {number|string} projectId
+ * @returns {Promise<{ success: boolean }>}
+ * @throws {Error} When the server responds with a non-2xx status.
+ */
+export async function apiDeleteProject(projectId) {
+  const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to delete project");
+  }
+
+  return res.json();
+}
+
 // ── Token helpers ───────────────────────────────────────
 
 export function saveToken() {

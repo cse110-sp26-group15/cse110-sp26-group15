@@ -48,8 +48,9 @@ const project = readProject();
 const workflow = project?.workflow ?? "scrum";
 const dashboardUrl = DASH_MAP[workflow] ?? DASH_MAP.scrum;
 
-// Wire Dashboard sidebar link
-document.getElementById("sidebar-logo-link").href = dashboardUrl;
+// The logo opens the Projects page; the Dashboard nav item stays on the
+// current project's board.
+document.getElementById("sidebar-logo-link").href = "../projects/projects.html";
 document.getElementById("nav-dashboard").href = dashboardUrl;
 
 // Nav items for other views all route back to the dashboard

@@ -29,10 +29,10 @@ describe("GET /app dispatcher", () => {
     expect(location(res)).toBe("/login/");
   });
 
-  it("redirects a returning member (>=1 project) to /projects/", async () => {
+  it("redirects a returning member (>=1 project) to the Projects page", async () => {
     const res = await dispatch(ctx({ userId: 1, db: mockDb(2) }));
     expect(res.status).toBe(302);
-    expect(location(res)).toBe("/projects/");
+    expect(location(res)).toBe("/projects/projects.html");
   });
 
   it("redirects a new user (0 projects) to onboarding", async () => {

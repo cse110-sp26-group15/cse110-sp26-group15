@@ -1,10 +1,18 @@
-import { apiFetch, apiCreateProject, validateEmail } from "../shared/utils.js";
+import { apiFetch, apiCreateProject, apiDeleteProject, validateEmail } from "../shared/utils.js";
+import { initUserMenu } from "../shared/user-menu.js";
+
+// Wire up the shared sidebar account menu (avatar/name/email, Profile,
+// Settings, Log Out) so the footer behaves like it does on the dashboards.
+initUserMenu();
 
 const WORKFLOW_DASHBOARD = {
   scrum: "../dashboard/scrum.html",
   kanban: "../dashboard/kanban.html",
   xp: "../dashboard/xp.html",
 };
+
+/** localStorage key the dashboards read the active project from. */
+const CURRENT_PROJECT_KEY = "sitrep_project";
 
 const listEl = document.getElementById("project-list");
 const emptyEl = document.getElementById("empty");
@@ -29,10 +37,37 @@ const members = [];
 // and navigate to the board for its workflow.
 function openProject(p) {
   localStorage.setItem(
-    "sitrep_project",
+    CURRENT_PROJECT_KEY,
     JSON.stringify({ project_id: p.project_id, name: p.name, workflow: p.workflow })
   );
   window.location.href = WORKFLOW_DASHBOARD[p.workflow] ?? WORKFLOW_DASHBOARD.scrum;
+}
+
+// Remove the chosen project after a confirmation prompt, then refresh the
+// list. If the deleted project was the one currently loaded in the dashboards,
+// clear that pointer so they don't try to reopen a project that's gone.
+async function deleteProject(p) {
+  const confirmed = window.confirm(
+    `Delete "${p.name}"? This permanently removes the project and all of its related information. This can't be undone.`
+  );
+  if (!confirmed) return;
+
+  errorEl.hidden = true;
+  try {
+    await apiDeleteProject(p.project_id);
+
+    try {
+      const active = JSON.parse(localStorage.getItem(CURRENT_PROJECT_KEY) || "null");
+      if (active?.project_id === p.project_id) localStorage.removeItem(CURRENT_PROJECT_KEY);
+    } catch {
+      /* malformed stored value — ignore */
+    }
+
+    await loadProjects();
+  } catch (err) {
+    errorEl.textContent = `Couldn't delete the project: ${err.message}`;
+    errorEl.hidden = false;
+  }
 }
 
 function render(projects) {
@@ -58,6 +93,22 @@ function render(projects) {
 
     btn.append(name, meta);
     li.append(btn);
+
+    // Only the creator can delete a project, so only show the control to them.
+    // `is_owner` is computed server-side from the session (see GET /api/projects)
+    // so the control reliably appears regardless of client-side state; the
+    // server enforces the same rule on the DELETE itself.
+    if (p.is_owner) {
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "project-card__delete";
+      del.setAttribute("aria-label", `Delete ${p.name}`);
+      del.title = "Delete project";
+      del.textContent = "✕";
+      del.addEventListener("click", () => deleteProject(p));
+      li.append(del);
+    }
+
     listEl.append(li);
   }
 }

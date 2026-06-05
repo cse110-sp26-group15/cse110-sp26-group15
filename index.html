@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="refresh" content="0; url=/app" />
+    <!-- Front door: always open to the login page. After a successful sign-in,
+         the login flow forwards to /app, which routes the user on to their
+         Projects page (or onboarding) based on their session. -->
+    <meta http-equiv="refresh" content="0; url=/login/" />
     <title>SitRep</title>
   </head>
   <body></body>
