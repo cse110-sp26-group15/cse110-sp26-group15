@@ -38,10 +38,16 @@ export async function onRequestGet(context) {
 
     const range = formatDateRange();
 
-    const [tasksResult, openBlockersResult, resolvedBlockersResult, checkinsResult, workloadResult, membersResult] =
-      await Promise.all([
-        env.DB.prepare(
-          `SELECT t.task_id,
+    const [
+      tasksResult,
+      openBlockersResult,
+      resolvedBlockersResult,
+      checkinsResult,
+      workloadResult,
+      membersResult,
+    ] = await Promise.all([
+      env.DB.prepare(
+        `SELECT t.task_id,
                   t.title,
                   t.status,
                   COALESCE(u.full_name, 'Unassigned') AS assignee
@@ -49,11 +55,11 @@ export async function onRequestGet(context) {
              LEFT JOIN users u ON t.assigned_to = u.user_id
              WHERE t.project_id = ?
              ORDER BY t.task_id ASC`
-        )
-          .bind(projectId)
-          .all(),
-        env.DB.prepare(
-          `SELECT b.blocker_id,
+      )
+        .bind(projectId)
+        .all(),
+      env.DB.prepare(
+        `SELECT b.blocker_id,
                   b.task,
                   b.description,
                   b.helper,
@@ -66,11 +72,11 @@ export async function onRequestGet(context) {
                AND b.is_resolved = 0
                AND DATE(c.checkin_date) BETWEEN ? AND ?
              ORDER BY c.checkin_date DESC`
-        )
-          .bind(projectId, range.start, range.end)
-          .all(),
-        env.DB.prepare(
-          `SELECT b.blocker_id,
+      )
+        .bind(projectId, range.start, range.end)
+        .all(),
+      env.DB.prepare(
+        `SELECT b.blocker_id,
                   b.task,
                   b.description,
                   b.helper,
@@ -83,11 +89,11 @@ export async function onRequestGet(context) {
                AND b.is_resolved = 1
                AND c.checkin_date BETWEEN ? AND ?
              ORDER BY c.checkin_date DESC`
-        )
-          .bind(projectId, range.start, range.end)
-          .all(),
-        env.DB.prepare(
-          `SELECT c.checkin_id,
+      )
+        .bind(projectId, range.start, range.end)
+        .all(),
+      env.DB.prepare(
+        `SELECT c.checkin_id,
                   c.checkin_date,
                   c.status_mood,
                   c.work_done,
@@ -99,11 +105,11 @@ export async function onRequestGet(context) {
              WHERE c.project_id = ?
                AND c.checkin_date BETWEEN ? AND ?
              ORDER BY c.checkin_date DESC, u.full_name ASC`
-        )
-          .bind(projectId, range.start, range.end)
-          .all(),
-        env.DB.prepare(
-          `SELECT COALESCE(u.user_id, 0) AS user_id,
+      )
+        .bind(projectId, range.start, range.end)
+        .all(),
+      env.DB.prepare(
+        `SELECT COALESCE(u.user_id, 0) AS user_id,
                   COALESCE(u.full_name, 'Unassigned') AS full_name,
                   COUNT(*) AS task_count
              FROM tasks t
@@ -112,17 +118,17 @@ export async function onRequestGet(context) {
                AND t.status != 'done'
              GROUP BY user_id, full_name
              ORDER BY task_count DESC, full_name ASC`
-        )
-          .bind(projectId)
-          .all(),
-        env.DB.prepare(
-          `SELECT COUNT(*) AS total_team_members
+      )
+        .bind(projectId)
+        .all(),
+      env.DB.prepare(
+        `SELECT COUNT(*) AS total_team_members
              FROM project_members
              WHERE project_id = ?`
-        )
-          .bind(projectId)
-          .first(),
-      ]);
+      )
+        .bind(projectId)
+        .first(),
+    ]);
 
     const tasks = tasksResult.results ?? [];
     const openBlockers = openBlockersResult.results ?? [];

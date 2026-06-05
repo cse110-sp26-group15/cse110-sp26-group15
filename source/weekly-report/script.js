@@ -1,7 +1,11 @@
 import { apiFetch, showLoading, hideLoading } from "../shared/utils.js";
 
 const params = new URLSearchParams(window.location.search);
-const PROJECT_ID = params.get("project") || params.get("projectId") || localStorage.getItem("sitrep_project_id") || "1";
+const PROJECT_ID =
+  params.get("project") ||
+  params.get("projectId") ||
+  localStorage.getItem("sitrep_project_id") ||
+  "1";
 const API_URL = `/api/projects/${PROJECT_ID}/weekly-report`;
 
 const elements = {
@@ -43,13 +47,7 @@ function pluralize(count, singular, plural = `${singular}s`) {
 }
 
 function getTaskAssignee(task) {
-  return (
-    task.assignee ||
-    task.assignee_name ||
-    task.full_name ||
-    task.owner ||
-    "Unassigned"
-  );
+  return task.assignee || task.assignee_name || task.full_name || task.owner || "Unassigned";
 }
 
 function getTaskStatus(task) {
@@ -243,13 +241,7 @@ function getCompletedTasks(data) {
 }
 
 function getActiveTasks(data) {
-  return (
-    data.tasks?.active ||
-    data.tasks?.inProgress ||
-    data.activeTasks ||
-    data.tasks?.todo ||
-    []
-  );
+  return data.tasks?.active || data.tasks?.inProgress || data.activeTasks || data.tasks?.todo || [];
 }
 
 function getOpenBlockers(data) {
@@ -534,10 +526,7 @@ function answerQuery(query, data) {
       return "No active tasks are listed in this weekly report.";
     }
 
-    return `There are ${active.length} active ${pluralize(
-      active.length,
-      "task"
-    )}: ${active
+    return `There are ${active.length} active ${pluralize(active.length, "task")}: ${active
       .map((task) => `${getTaskTitle(task)} (${getTaskAssignee(task)})`)
       .join(", ")}.`;
   }
@@ -569,9 +558,7 @@ function answerQuery(query, data) {
     return `${resolvedBlockers.length} ${pluralize(
       resolvedBlockers.length,
       "blocker"
-    )} were resolved: ${resolvedBlockers
-      .map((blocker) => getBlockerTitle(blocker))
-      .join(", ")}.`;
+    )} were resolved: ${resolvedBlockers.map((blocker) => getBlockerTitle(blocker)).join(", ")}.`;
   }
 
   if (/(check-in|checkin|participation|update|status|reported)/.test(lower)) {
