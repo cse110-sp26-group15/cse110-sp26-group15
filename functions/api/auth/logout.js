@@ -1,13 +1,28 @@
 /**
  * Cloudflare Pages function: POST /api/auth/logout
  *
- * Clears the `sitrep_token` httpOnly cookie by setting it with Max-Age=0.
- * Always returns `{ success: true }` — logout is idempotent and does not
- * verify the caller's session.
+ * Revokes the caller's session server-side by deleting its row from `sessions`
+ * (the token is read from the `sitrep_token` cookie, exposed on `context.data`
+ * by the middleware), then clears the cookie with Max-Age=0. Idempotent: a
+ * missing/expired token simply deletes nothing and still returns success.
  *
- * @returns {Response}
+ * @param {{ env: { DB?: object }, data?: { token?: string|null } }} context
+ * @returns {Promise<Response>}
  */
-export async function onRequestPost() {
+export async function onRequestPost(context) {
+  const { env } = context;
+  const token = context.data?.token;
+
+  // Best-effort revocation — never let a DB hiccup block the user from
+  // logging out. The cookie is cleared regardless below.
+  if (token && env?.DB) {
+    try {
+      await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
+    } catch (err) {
+      console.error("Logout: failed to delete session row", err);
+    }
+  }
+
   const response = Response.json({ success: true }, { status: 200 });
 
   // Clear httpOnly cookie

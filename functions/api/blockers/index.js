@@ -1,11 +1,17 @@
+import { requireUser } from "../_auth.js";
+
 /**
  * Cloudflare Pages function: GET /api/blockers
  *
  * Cross-project blocker lookup used by the dashboard blocker rail
  * (source/blocker-card/blocker-card-init.js). The rail mounts on any
  * page that has a `#dashboard-view` container and doesn't know what
- * project it lives under, so this endpoint serves blockers across
- * every project rather than scoping by `:projectId`.
+ * project it lives under, so this endpoint spans projects rather than
+ * scoping by `:projectId` — but it is scoped to the *caller's* projects
+ * (via project_members) so it never leaks blockers from projects the user
+ * is not a member of. Blockers reach a project through their check-in
+ * (blocker → checkin → project), so the membership join also drops any
+ * orphaned blocker with no check-in.
  *
  * Query params:
  *   ?general=true  → return every blocker (resolved + unresolved)
@@ -15,7 +21,7 @@
  * Response shape mirrors the project-scoped GET so the rail's
  * `mapApiBlocker` helper accepts either source.
  *
- * @param {{ request: Request, env: { DB?: object } }} context
+ * @param {{ request: Request, env: { DB?: object }, data?: { userId?: number|null } }} context
  * @returns {Promise<Response>}
  */
 export async function onRequest(context) {
@@ -24,6 +30,10 @@ export async function onRequest(context) {
   if (!env.DB) {
     return Response.json({ error: "D1 database binding not configured." }, { status: 500 });
   }
+
+  const denied = requireUser(context);
+  if (denied) return denied;
+  const userId = context.data.userId;
 
   const url = new URL(request.url);
   const task = url.searchParams.get("task")?.trim();
@@ -37,10 +47,13 @@ export async function onRequest(context) {
         `SELECT b.blocker_id, b.task, b.description, b.helper, b.is_resolved,
                 b.checkin_id, c.checkin_date, u.user_id, u.full_name
          FROM blockers b
-         LEFT JOIN checkins c ON b.checkin_id = c.checkin_id
+         JOIN checkins c ON b.checkin_id = c.checkin_id
+         JOIN project_members pm ON pm.project_id = c.project_id AND pm.user_id = ?
          LEFT JOIN users u ON c.user_id = u.user_id
          ORDER BY b.blocker_id DESC`
-      ).all();
+      )
+        .bind(userId)
+        .all();
 
       return Response.json({
         general: true,
@@ -69,12 +82,13 @@ export async function onRequest(context) {
       `SELECT b.blocker_id, b.task, b.description, b.helper, b.is_resolved,
               c.checkin_date, u.full_name
        FROM blockers b
-       LEFT JOIN checkins c ON b.checkin_id = c.checkin_id
+       JOIN checkins c ON b.checkin_id = c.checkin_id
+       JOIN project_members pm ON pm.project_id = c.project_id AND pm.user_id = ?
        LEFT JOIN users u ON c.user_id = u.user_id
        WHERE b.task = ?
        ORDER BY b.blocker_id DESC`
     )
-      .bind(task)
+      .bind(userId, task)
       .all();
 
     return Response.json({

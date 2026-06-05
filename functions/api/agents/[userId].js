@@ -1,3 +1,5 @@
+import { requireUser } from "../_auth.js";
+
 const VALID_AGENT_TYPES = [
   "standup-summarizer",
   "spec-reviewer",
@@ -6,6 +8,48 @@ const VALID_AGENT_TYPES = [
   "research-assistant",
   "general",
 ];
+
+/**
+ * Authorize access to an agent (by its user_id). An agent is a project member,
+ * so the rule is "the caller shares at least one project with this agent" —
+ * checked by intersecting both users' rows in project_members. Returns a
+ * Response to abort (401 unauthenticated / 403 no shared project / 500 on DB
+ * issues) or null when authorized. A non-existent or unshared agent yields 403
+ * (the handler's own 404-for-non-agent still applies once authorized, because
+ * any agent the UI surfaces comes from a project the caller belongs to).
+ *
+ * @param {{ env: { DB?: object }, data?: { userId?: number|null } }} context
+ * @param {string} agentUserId
+ * @returns {Promise<Response|null>}
+ */
+async function authorizeAgentAccess(context, agentUserId) {
+  const unauth = requireUser(context);
+  if (unauth) return unauth;
+
+  const { env } = context;
+  const callerId = context.data.userId;
+
+  let shared;
+  try {
+    shared = await env.DB.prepare(
+      `SELECT 1 AS ok
+         FROM project_members me
+         JOIN project_members them ON them.project_id = me.project_id
+        WHERE me.user_id = ? AND them.user_id = ?
+        LIMIT 1`
+    )
+      .bind(callerId, agentUserId)
+      .first();
+  } catch (err) {
+    console.error("authorizeAgentAccess: lookup failed", err);
+    return Response.json({ error: "Authorization check failed." }, { status: 500 });
+  }
+
+  if (!shared) {
+    return Response.json({ error: "You do not have access to this agent." }, { status: 403 });
+  }
+  return null;
+}
 
 /**
  * Cloudflare Pages function: GET /api/agents/:userId
@@ -24,6 +68,9 @@ export async function onRequestGet(context) {
   if (!env.DB) {
     return Response.json({ error: "D1 database binding not configured." }, { status: 500 });
   }
+
+  const denied = await authorizeAgentAccess(context, userId);
+  if (denied) return denied;
 
   try {
     const agent = await env.DB.prepare(
@@ -69,6 +116,9 @@ export async function onRequestPatch(context) {
   if (!env.DB) {
     return Response.json({ error: "D1 database binding not configured." }, { status: 500 });
   }
+
+  const denied = await authorizeAgentAccess(context, userId);
+  if (denied) return denied;
 
   let body;
   try {

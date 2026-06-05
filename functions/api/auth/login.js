@@ -82,10 +82,18 @@ export async function onRequestPost(context) {
       return Response.json({ error: "Invalid email or password." }, { status: 401 });
     }
 
-    // Generate session token
+    // Generate session token and persist it so the middleware can resolve the
+    // cookie back to this user on later requests. `expires_at` is computed in
+    // SQL (same format as CURRENT_TIMESTAMP) so the middleware's freshness
+    // check is a plain string comparison; the 7-day window mirrors the cookie
+    // Max-Age=604800 set below.
     const sessionToken = generateSessionToken();
 
-    // TODO: Store token in sessions table with expiration
+    await env.DB.prepare(
+      "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now', '+7 days'))"
+    )
+      .bind(sessionToken, user.user_id)
+      .run();
 
     // Return user data (without password_hash)
     const response = Response.json(

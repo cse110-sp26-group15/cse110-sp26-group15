@@ -26,10 +26,15 @@ function createMockDb({ firstResults = [], runResults = [] } = {}) {
   return { prepare: vi.fn(() => ({ bind: vi.fn(() => bound) })) };
 }
 
-function ctx({ projectId = "1", taskId = "1", body } = {}, db) {
+function ctx({ projectId = "1", taskId = "1", body, userId = 1 } = {}, db) {
   return {
     env: { DB: db },
     params: { projectId, taskId },
+    // PATCH /tasks/:taskId resolves the task → its project and checks
+    // membership; the middleware would normally set context.data.userId. The
+    // mocks below add project_id to the existing-task row and a truthy
+    // membership row so an authenticated caller passes the guard.
+    data: { userId },
     request: new Request("http://localhost/", {
       method: "POST",
       body: JSON.stringify(body ?? {}),
@@ -51,6 +56,7 @@ describe("POST /projects/:projectId/tasks reviewer enforcement", () => {
     const db = createMockDb({
       firstResults: [
         { user_id: 6, agent_user_id: 6, owner_user_id: null }, // assignee classify → agent but owner missing
+        { ok: 1 }, // assignee containment check (member of project)
       ],
     });
     const res = await postTask(ctx({ body: { title: "x", assigned_to: 6 } }, db));
@@ -63,6 +69,7 @@ describe("POST /projects/:projectId/tasks reviewer enforcement", () => {
     const db = createMockDb({
       firstResults: [
         { user_id: 6, agent_user_id: 6, owner_user_id: 1 }, // assignee = agent owned by user 1
+        { ok: 1 }, // assignee containment check
         { user_id: 1, agent_user_id: null, owner_user_id: null }, // reviewer classify → human (no agent row)
         {
           // post-insert SELECT
@@ -113,6 +120,7 @@ describe("POST /projects/:projectId/tasks reviewer enforcement", () => {
     const db = createMockDb({
       firstResults: [
         { user_id: 1, agent_user_id: null, owner_user_id: null }, // assignee = human
+        { ok: 1 }, // assignee containment check
         {
           task_id: 200,
           title: "human task",
@@ -142,9 +150,12 @@ describe("PATCH /tasks/:taskId reviewer enforcement", () => {
     const db = createMockDb({
       firstResults: [
         // existing task — currently human-assigned, no reviewer
-        { task_id: 5, assigned_to: 1, reviewer_id: null, review_status: "not-required" },
+        { task_id: 5, project_id: 1, assigned_to: 1, reviewer_id: null, review_status: "not-required" },
+        // membership check (caller is a member of the task's project)
+        { ok: 1 },
         // new assignee classify → agent with NULL owner_user_id
         { user_id: 6, agent_user_id: 6, owner_user_id: null },
+        { ok: 1 }, // assignee containment check
       ],
     });
     const res = await patchTask(ctx({ body: { assigned_to: 6 } }, db));
@@ -156,8 +167,10 @@ describe("PATCH /tasks/:taskId reviewer enforcement", () => {
   it("promotes review_status from 'not-required' to 'pending' when reassigned to agent", async () => {
     const db = createMockDb({
       firstResults: [
-        { task_id: 5, assigned_to: 1, reviewer_id: null, review_status: "not-required" }, // existing
+        { task_id: 5, project_id: 1, assigned_to: 1, reviewer_id: null, review_status: "not-required" }, // existing
+        { ok: 1 }, // membership check
         { user_id: 6, agent_user_id: 6, owner_user_id: 1 }, // assignee classify → agent
+        { ok: 1 }, // assignee containment check
         { user_id: 1, agent_user_id: null, owner_user_id: null }, // reviewer classify → human
         {
           task_id: 5,
