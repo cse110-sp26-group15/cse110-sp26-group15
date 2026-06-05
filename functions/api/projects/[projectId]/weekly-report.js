@@ -7,12 +7,11 @@ function formatDateRange() {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekDay = today.getDay();
   const start = new Date(today);
-  start.setDate(today.getDate() - weekDay - 7);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
+  start.setDate(today.getDate() - weekDay);
+  const end = new Date(today);
   return {
     start: formatDate(start),
-    end: formatDate(end),
+    end: formatDate(end) + "T23:59:59.999Z",
   };
 }
 
@@ -65,7 +64,7 @@ export async function onRequestGet(context) {
              LEFT JOIN users u ON c.user_id = u.user_id
              WHERE c.project_id = ?
                AND b.is_resolved = 0
-               AND c.checkin_date BETWEEN ? AND ?
+               AND DATE(c.checkin_date) BETWEEN ? AND ?
              ORDER BY c.checkin_date DESC`
         )
           .bind(projectId, range.start, range.end)

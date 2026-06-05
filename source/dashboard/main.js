@@ -10,6 +10,7 @@ initUserMenu();
 // Hard-coded for now; will switch to the logged-in project once auth context
 // is plumbed through (same TODO as scrum.js / kanban.js).
 const PROJECT_ID = 1;
+localStorage.setItem("sitrep_project_id", String(PROJECT_ID));
 
 // ── Navigation ────────────────────────────────────────
 document.querySelectorAll(".nav-item").forEach((item) => {

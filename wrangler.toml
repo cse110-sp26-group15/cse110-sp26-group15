@@ -5,6 +5,6 @@ pages_build_output_dir = "dist"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "cse110-sp26-group15"
-database_id = "032e436e-1cf5-4521-99db-e844a024961c"
+database_name = "sitrep-db"
+database_id = "6a6922f4-290d-4f1e-a0a5-cd7e9934b2e6"
 migrations_dir = "./db/migrations"
