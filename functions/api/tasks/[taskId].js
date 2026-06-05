@@ -64,6 +64,13 @@ export async function onRequestPatch(context) {
     );
   }
 
+  if (assigned_to !== undefined && (assigned_to === null || assigned_to === "")) {
+    return Response.json(
+      { error: "A task must be assigned to a project member." },
+      { status: 400 }
+    );
+  }
+
   try {
     const existing = await env.DB.prepare(
       `SELECT task_id, assigned_to, reviewer_id, review_status FROM tasks WHERE task_id = ?`
