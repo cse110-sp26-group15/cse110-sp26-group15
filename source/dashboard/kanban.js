@@ -17,12 +17,12 @@
 import { createTaskCard } from "../task-card/task-card.js";
 import { renderAgents } from "../agent-card/agent-card.js";
 import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
-import { apiFetch, ApiError } from "../shared/utils.js";
+import { apiFetch, ApiError, getCurrentProject } from "../shared/utils.js";
 
 // ── Constants ────────────────────────────────────────
 // Hard-coded for now; will switch to the logged-in project once auth
 // context is plumbed through (same TODO as scrum.js).
-export const PROJECT_ID = 1;
+export const PROJECT_ID = getCurrentProject()?.project_id ?? 1;
 
 // Column definitions — order is left → right on the board.
 export const STATUS_COLUMNS = [

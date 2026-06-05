@@ -1,7 +1,13 @@
 import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
 import { renderAgents } from "../agent-card/agent-card.js";
 import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
-import { apiFetch, ApiError, showLoading, hideLoading } from "../shared/utils.js";
+import {
+  apiFetch,
+  ApiError,
+  showLoading,
+  hideLoading,
+  getCurrentProject,
+} from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 
@@ -9,7 +15,7 @@ initUserMenu();
 
 // Hard-coded for now; will switch to the logged-in project once auth context
 // is plumbed through (same TODO as scrum.js / kanban.js).
-const PROJECT_ID = 1;
+const PROJECT_ID = getCurrentProject()?.project_id ?? 1;
 
 // ── Navigation ────────────────────────────────────────
 document.querySelectorAll(".nav-item").forEach((item) => {

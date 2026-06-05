@@ -19,7 +19,7 @@
 // comes from `GET /api/projects/:id/tasks` and "Who can help?" from
 // `GET /api/projects/:id/members`.
 
-import { apiFetch, ApiError, getCurrentUser } from "../shared/utils.js";
+import { apiFetch, ApiError, getCurrentUser, getCurrentProject } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 
 initUserMenu();
@@ -27,7 +27,7 @@ initUserMenu();
 // ── Constants ────────────────────────────────────────
 // Hard-coded for now; will switch to the logged-in project once auth
 // context is plumbed through (same TODO as scrum.js / kanban.js).
-export const PROJECT_ID = 1;
+export const PROJECT_ID = getCurrentProject()?.project_id ?? 1;
 
 // Non-task-specific blocker option shown first in the "Blocked on" picker.
 export const GENERAL_BLOCKER = "General";

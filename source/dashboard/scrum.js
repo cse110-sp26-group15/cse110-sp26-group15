@@ -17,7 +17,13 @@
 import { createTaskCard } from "../task-card/task-card.js";
 import { renderAgents } from "../agent-card/agent-card.js";
 import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
-import { apiFetch, ApiError, showLoading, hideLoading } from "../shared/utils.js";
+import {
+  apiFetch,
+  ApiError,
+  showLoading,
+  hideLoading,
+  getCurrentProject,
+} from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 
@@ -44,7 +50,7 @@ function loadTaskFormModule() {
 // PROJECT_ID is hard-coded for now (no auth/projects flow on the
 // dashboard yet); will switch to the logged-in user's project once that
 // context is plumbed through.
-export const PROJECT_ID = 1;
+export const PROJECT_ID = getCurrentProject()?.project_id ?? 1;
 
 // localStorage key for the sprint picker selection. Namespaced by
 // project so multiple projects can each remember their own sprint.
