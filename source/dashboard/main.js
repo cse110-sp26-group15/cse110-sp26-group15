@@ -3,6 +3,7 @@ import { renderAgents } from "../agent-card/agent-card.js";
 import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
 import { apiFetch, ApiError, showLoading, hideLoading } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
+import { initLocalPairs, loadPairs } from "./xp-pairs.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 
 initUserMenu();
@@ -714,7 +715,8 @@ async function initImpl() {
     await loadBlockers();
   }
   if (document.getElementById("pair-list")) {
-    renderPairs([]);
+    initLocalPairs();
+    await loadPairs();
   }
   // No-op on pages without an #agents-list container.
   await loadAgents();
