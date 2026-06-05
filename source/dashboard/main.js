@@ -9,6 +9,7 @@ import {
   getCurrentProjectId,
 } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
+import { initLocalPairs, loadPairs } from "./xp-pairs.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 
 initUserMenu();
@@ -720,7 +721,8 @@ async function initImpl() {
     await loadBlockers();
   }
   if (document.getElementById("pair-list")) {
-    renderPairs([]);
+    initLocalPairs();
+    await loadPairs();
   }
   // No-op on pages without an #agents-list container.
   await loadAgents();
