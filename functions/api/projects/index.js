@@ -58,8 +58,8 @@ function validateEmail(email) {
  *
  * Creates a new project, registers the creator (when supplied) as a member,
  * and resolves any invited member emails to existing users in `project_members`.
- * Emails with no matching user are returned in `not_found` rather than failing
- * the request.
+ * Emails with no matching user are stored as pending invites in `project_invites`
+ * and returned in `pending` rather than failing the request.
  *
  * Request body:
  *   - name {string}       Required. Project display name.
@@ -69,7 +69,7 @@ function validateEmail(email) {
  *   - created_by {number|null} Optional. user_id of the creator; added as a member.
  *
  * Response 201:
- *   { project, invited: [{ user_id, email }], not_found: string[] }
+ *   { project, invited: [{ user_id, email }], pending: string[] }
  *
  * @param {{ env: { DB?: object }, request: Request }} context
  * @returns {Promise<Response>}
@@ -151,16 +151,26 @@ export async function onRequestPost(context) {
       addedUserIds.add(creatorId);
     }
 
-    // Resolve invited member emails -> existing users; skip unknown emails
+    // Resolve invited member emails -> existing users; record pending invites
+    // for emails with no matching account so they're linked when they sign up.
     const invited = [];
-    const notFound = [];
+    const pending = [];
     for (const email of normalizedEmails) {
       const user = await env.DB.prepare("SELECT user_id, email FROM users WHERE email = ?")
         .bind(email)
         .first();
 
       if (!user) {
-        notFound.push(email);
+        // No account yet — record a pending invite so they're linked when
+        // they sign up and join. INSERT OR IGNORE + UNIQUE(project_id,email)
+        // makes this idempotent and duplicate-safe.
+        await env.DB.prepare(
+          `INSERT OR IGNORE INTO project_invites (project_id, email, invited_by)
+           VALUES (?, ?, ?)`
+        )
+          .bind(projectId, email, creatorId)
+          .run();
+        pending.push(email);
         continue;
       }
 
@@ -182,7 +192,7 @@ export async function onRequestPost(context) {
       .bind(projectId)
       .first();
 
-    return Response.json({ project, invited, not_found: notFound }, { status: 201 });
+    return Response.json({ project, invited, pending }, { status: 201 });
   } catch (err) {
     console.error("Create project error:", err);
     return Response.json({ error: err.message }, { status: 500 });

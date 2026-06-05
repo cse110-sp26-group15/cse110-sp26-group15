@@ -135,7 +135,7 @@ auth handlers.
 - `POST /api/projects` (modify): unknown emails go into `project_invites` instead of being
   dropped; response returns `{ project, invited, pending }` (replaces `not_found`).
 - `POST /api/projects/:projectId/members` (new): body `{ email }`. Existing user → `INSERT OR
-  IGNORE` into `project_members` and clear any matching invite (`{ status: "added" }` or
+IGNORE` into `project_members` and clear any matching invite (`{ status: "added" }` or
   `"already_member"`); unknown email → `project_invites` (`{ status: "pending" }`).
 - `GET /api/projects/:projectId/members` (modify): return `{ members, pending_invites }`
   (backward compatible — existing callers still read `members`).
@@ -174,19 +174,19 @@ auth handlers.
 
 ### Acceptance criteria mapping
 
-| Criterion | Covered by |
-|---|---|
-| Members appear in assignee dropdowns | Assignee dropdown (already populated; blank removed) |
-| Tasks cannot be assigned to blank users | Server 400 + client submit guard |
-| Member list persists across refreshes | DB-backed `project_members` + `project_invites` |
-| Team data is project-specific | Client project scoping + dashboards drop hard-coded id |
-| Members stored in DB | existing `project_members` + new `project_invites` |
-| Members displayed across dashboards | Team view (`team-panel.js`) |
-| Assignee dropdown populated from members | Assignee dropdown |
-| No blank assignee option | task-form + inline builders |
-| Duplicate members prevented | composite PK + `UNIQUE(project_id,email)` + client guard |
-| Current user in sidebar/footer | existing `user-menu.js` (verify still wired) |
-| Invited members associated with correct project | invites carry `project_id`; linked on join |
+| Criterion                                       | Covered by                                               |
+| ----------------------------------------------- | -------------------------------------------------------- |
+| Members appear in assignee dropdowns            | Assignee dropdown (already populated; blank removed)     |
+| Tasks cannot be assigned to blank users         | Server 400 + client submit guard                         |
+| Member list persists across refreshes           | DB-backed `project_members` + `project_invites`          |
+| Team data is project-specific                   | Client project scoping + dashboards drop hard-coded id   |
+| Members stored in DB                            | existing `project_members` + new `project_invites`       |
+| Members displayed across dashboards             | Team view (`team-panel.js`)                              |
+| Assignee dropdown populated from members        | Assignee dropdown                                        |
+| No blank assignee option                        | task-form + inline builders                              |
+| Duplicate members prevented                     | composite PK + `UNIQUE(project_id,email)` + client guard |
+| Current user in sidebar/footer                  | existing `user-menu.js` (verify still wired)             |
+| Invited members associated with correct project | invites carry `project_id`; linked on join               |
 
 ### Implementation workflow
 

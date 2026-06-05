@@ -13,6 +13,7 @@
 **Workflow note (user preference):** Pause after EACH task so the user can commit. Each task's final step is a ready-to-use commit message — do not commit automatically; wait for the user before starting the next task.
 
 **Conventions:**
+
 - Every backend API function and JS function gets a JSDoc block.
 - Every new/modified backend handler ships Vitest unit tests under `source/src/tests/`.
 - Front-end lives in `source/`; `dist/` is a build copy. Run `npm run build` before Playwright (it serves `dist`).
@@ -23,6 +24,7 @@
 ## File Structure
 
 **Create:**
+
 - `db/migrations/0008_add_project_invites.sql` — new `project_invites` table.
 - `functions/api/invites/index.js` — `GET /api/invites?email=` (pending invites for an email).
 - `source/shared/team-panel.js` — shared Team-view roster + add-member UI (pure `buildTeamPanelHtml` + DOM `renderTeamPanel`).
@@ -35,6 +37,7 @@
 - `e2e/project-invites.spec.js` — e2e for pending-invite Join flow + login routing.
 
 **Modify:**
+
 - `db/reset.sql` — clear `project_invites`.
 - `db/seed.sql` — one demo pending invite.
 - `functions/api/projects/index.js` — store unknown emails as invites; return `pending`.
@@ -54,6 +57,7 @@
 ## Task 1: Database — `project_invites` table
 
 **Files:**
+
 - Create: `db/migrations/0008_add_project_invites.sql`
 - Modify: `db/reset.sql`, `db/seed.sql`
 
@@ -99,14 +103,17 @@ INSERT INTO project_invites (project_id, email, invited_by) VALUES
 - [ ] **Step 4: Apply + reseed locally to verify the SQL is valid**
 
 Run:
+
 ```bash
 npm run db:reset:local && npm run db:migrate:local && npm run db:seed:local
 ```
+
 Expected: all three commands succeed with no SQL errors; the seed step reports rows written.
 
 - [ ] **Step 5: Commit**
 
 Commit message:
+
 ```
 feat(db): add project_invites table for pending invites
 
@@ -122,6 +129,7 @@ reset.sql and add one demo pending invite to seed.sql.
 ## Task 2: `POST /api/projects` — store unknown emails as pending invites
 
 **Files:**
+
 - Modify: `functions/api/projects/index.js`
 - Test: `source/src/tests/projects-create.test.js`
 
@@ -180,7 +188,9 @@ describe("POST /api/projects pending invites", () => {
         { meta: {} }, // INSERT project_invites
       ],
     });
-    const res = await createProject(ctx({ name: "P", workflow: "scrum", members: ["ghost@x.com"] }, db));
+    const res = await createProject(
+      ctx({ name: "P", workflow: "scrum", members: ["ghost@x.com"] }, db)
+    );
     const data = await res.json();
     expect(res.status).toBe(201);
     expect(data.pending).toEqual(["ghost@x.com"]);
@@ -198,7 +208,9 @@ describe("POST /api/projects pending invites", () => {
         { meta: {} }, // INSERT project_members
       ],
     });
-    const res = await createProject(ctx({ name: "Q", workflow: "kanban", members: ["real@x.com"] }, db));
+    const res = await createProject(
+      ctx({ name: "Q", workflow: "kanban", members: ["real@x.com"] }, db)
+    );
     const data = await res.json();
     expect(res.status).toBe(201);
     expect(data.invited).toEqual([{ user_id: 2, email: "real@x.com" }]);
@@ -217,13 +229,15 @@ Expected: FAIL — `data.pending` is `undefined` (handler still returns `not_fou
 In `functions/api/projects/index.js`, inside `onRequestPost`, replace the invited-resolution block. Change the declaration:
 
 ```js
-    const invited = [];
-    const notFound = [];
+const invited = [];
+const notFound = [];
 ```
+
 to:
+
 ```js
-    const invited = [];
-    const pending = [];
+const invited = [];
+const pending = [];
 ```
 
 Replace the `if (!user) { notFound.push(email); continue; }` branch with an invite insert:
@@ -247,10 +261,11 @@ Replace the `if (!user) { notFound.push(email); continue; }` branch with an invi
 Update the JSDoc `@returns` line and the final response:
 
 ```js
-    return Response.json({ project, invited, pending }, { status: 201 });
+return Response.json({ project, invited, pending }, { status: 201 });
 ```
 
 Update the handler's JSDoc `Response 201:` line to:
+
 ```
  *   { project, invited: [{ user_id, email }], pending: string[] }
 ```
@@ -268,6 +283,7 @@ Expected: no lint errors; all unit tests pass.
 - [ ] **Step 6: Commit**
 
 Commit message:
+
 ```
 feat(api): store unknown invite emails as pending invites
 
@@ -284,6 +300,7 @@ unit tests.
 ## Task 3: `POST /api/projects/:projectId/members` — add member after creation
 
 **Files:**
+
 - Modify: `functions/api/projects/[projectId]/members.js`
 - Test: `source/src/tests/project-members.test.js`
 
@@ -304,7 +321,9 @@ import {
  * @returns {object}
  */
 function createMockDb({ firstResults = [], allResults = [], runResults = [] } = {}) {
-  let f = 0, a = 0, r = 0;
+  let f = 0,
+    a = 0,
+    r = 0;
   const bound = {
     first: vi.fn(async () => firstResults[f++] ?? null),
     all: vi.fn(async () => allResults[a++] ?? { results: [] }),
@@ -517,6 +536,7 @@ Expected: pass.
 - [ ] **Step 6: Commit**
 
 Commit message:
+
 ```
 feat(api): add POST members endpoint + pending invites in GET
 
@@ -533,6 +553,7 @@ pending_invites and members' email/role. Adds project-members tests.
 ## Task 4: `GET /api/invites?email=` — pending invites for a user
 
 **Files:**
+
 - Create: `functions/api/invites/index.js`
 - Test: `source/src/tests/invites.test.js`
 
@@ -645,6 +666,7 @@ Expected: pass.
 - [ ] **Step 6: Commit**
 
 Commit message:
+
 ```
 feat(api): add GET /api/invites for pending invites by email
 
@@ -659,6 +681,7 @@ workflow, used by onboarding to show a join prompt. Adds invites tests.
 ## Task 5: Forbid blank task assignees (POST + PATCH)
 
 **Files:**
+
 - Modify: `functions/api/projects/[projectId]/tasks.js`
 - Modify: `functions/api/tasks/[taskId].js`
 - Test: `source/src/tests/tasks-assignee.test.js`
@@ -678,7 +701,8 @@ import { onRequestPatch as patchTask } from "../../../functions/api/tasks/[taskI
  * @returns {object}
  */
 function createMockDb({ firstResults = [], runResults = [] } = {}) {
-  let f = 0, r = 0;
+  let f = 0,
+    r = 0;
   const bound = {
     first: vi.fn(async () => firstResults[f++] ?? null),
     run: vi.fn(async () => runResults[r++] ?? { meta: { last_row_id: 1 } }),
@@ -721,7 +745,9 @@ describe("blank assignee rule", () => {
   it("PATCH rejects clearing the assignee to null", async () => {
     // existing task lookup returns a row; assigned_to:null is an explicit clear
     const db = createMockDb({
-      firstResults: [{ task_id: 1, assigned_to: 2, reviewer_id: null, review_status: "not-required" }],
+      firstResults: [
+        { task_id: 1, assigned_to: 2, reviewer_id: null, review_status: "not-required" },
+      ],
     });
     const res = await patchTask(ctx({ body: { assigned_to: null } }, db));
     expect(res.status).toBe(400);
@@ -741,12 +767,9 @@ Expected: FAIL — POST currently allows null assignee (returns 201); PATCH allo
 In `functions/api/projects/[projectId]/tasks.js` `onRequestPost`, immediately after the `title` validation block (right after the `if (!title ...) { ... }` check), add:
 
 ```js
-  if (assigned_to === null || assigned_to === undefined || assigned_to === "") {
-    return Response.json(
-      { error: "A task must be assigned to a project member." },
-      { status: 400 }
-    );
-  }
+if (assigned_to === null || assigned_to === undefined || assigned_to === "") {
+  return Response.json({ error: "A task must be assigned to a project member." }, { status: 400 });
+}
 ```
 
 - [ ] **Step 3b: Enforce on PATCH**
@@ -754,12 +777,9 @@ In `functions/api/projects/[projectId]/tasks.js` `onRequestPost`, immediately af
 In `functions/api/tasks/[taskId].js` `onRequestPatch`, after `const { status, assigned_to, reviewer_id, review_status, description } = body;` and the existing `status`/`review_status` validation, add a guard that only fires when the caller is explicitly setting the assignee:
 
 ```js
-  if (assigned_to !== undefined && (assigned_to === null || assigned_to === "")) {
-    return Response.json(
-      { error: "A task must be assigned to a project member." },
-      { status: 400 }
-    );
-  }
+if (assigned_to !== undefined && (assigned_to === null || assigned_to === "")) {
+  return Response.json({ error: "A task must be assigned to a project member." }, { status: 400 });
+}
 ```
 
 (Place it before the `try {` block. Updates that omit `assigned_to` are unaffected.)
@@ -782,6 +802,7 @@ Expected: pass.
 - [ ] **Step 7: Commit**
 
 Commit message:
+
 ```
 feat(api): reject blank task assignees on create and update
 
@@ -797,6 +818,7 @@ POST /api/projects/:id/tasks now requires assigned_to; PATCH
 ## Task 6: Client project-context helpers in `utils.js`
 
 **Files:**
+
 - Modify: `source/shared/utils.js`
 - Test: `source/src/tests/project-context.test.js`
 
@@ -806,11 +828,7 @@ Create `source/src/tests/project-context.test.js`:
 
 ```js
 import { describe, it, expect } from "vitest";
-import {
-  dashboardPathFor,
-  setCurrentProject,
-  getCurrentProject,
-} from "../../shared/utils.js";
+import { dashboardPathFor, setCurrentProject, getCurrentProject } from "../../shared/utils.js";
 
 /**
  * Minimal in-memory Storage stand-in for Node (no real localStorage).
@@ -986,6 +1004,7 @@ Expected: pass.
 - [ ] **Step 6: Commit**
 
 Commit message:
+
 ```
 feat(client): add project-context + invite helpers to utils
 
@@ -1001,6 +1020,7 @@ project-context unit tests.
 ## Task 7: Route to the user's project after login
 
 **Files:**
+
 - Modify: `source/login/script.js`
 
 - [ ] **Step 1: Add imports**
@@ -1041,7 +1061,7 @@ async function routeAfterAuth(user) {
 In the submit handler, replace `navigateTo("../project-setup/");` (the post-login redirect) with:
 
 ```js
-    await routeAfterAuth(user);
+await routeAfterAuth(user);
 ```
 
 - [ ] **Step 4: Build for e2e**
@@ -1064,6 +1084,7 @@ Expected: pass.
 - [ ] **Step 7: Commit**
 
 Commit message:
+
 ```
 feat(client): route to most-recent project after login
 
@@ -1078,6 +1099,7 @@ dashboard (most recent first), or to onboarding when they have none.
 ## Task 8: Onboarding — store real project_id + "You've been invited"
 
 **Files:**
+
 - Modify: `source/project-setup/index.html`
 - Modify: `source/project-setup/script.js`
 - Test: `e2e/project-invites.spec.js` (created here)
@@ -1087,12 +1109,12 @@ dashboard (most recent first), or to onboarding when they have none.
 In `source/project-setup/index.html`, immediately after the `<div class="form-error-banner" ...></div>` line and before `<form id="setup-form" ...>`, insert:
 
 ```html
-          <!-- Pending invitations for the signed-in user (populated by script.js) -->
-          <section class="invites-section" id="invites-section" hidden>
-            <h2 class="invites-title">You've been invited</h2>
-            <ul class="invites-list" id="invites-list" aria-label="Pending invitations"></ul>
-            <p class="invites-divider"><span>or create a new project</span></p>
-          </section>
+<!-- Pending invitations for the signed-in user (populated by script.js) -->
+<section class="invites-section" id="invites-section" hidden>
+  <h2 class="invites-title">You've been invited</h2>
+  <ul class="invites-list" id="invites-list" aria-label="Pending invitations"></ul>
+  <p class="invites-divider"><span>or create a new project</span></p>
+</section>
 ```
 
 - [ ] **Step 2: Update the script — imports + helpers + create flow**
@@ -1103,31 +1125,31 @@ In `source/project-setup/script.js`, extend the `../shared/utils.js` import to a
 Replace the create-success block:
 
 ```js
-    const result = await apiCreateProject({ name, workflow, members: [...members], created_by });
-    const projectData = result?.project ?? { name, workflow };
-    localStorage.setItem(
-      "sitrep_project",
-      JSON.stringify({ name: projectData.name ?? name, workflow: projectData.workflow ?? workflow })
-    );
-    const dashMap = {
-      scrum: "../dashboard/scrum.html",
-      kanban: "../dashboard/kanban.html",
-      xp: "../dashboard/xp.html",
-    };
-    navigateTo(dashMap[workflow] ?? "../dashboard/scrum.html");
+const result = await apiCreateProject({ name, workflow, members: [...members], created_by });
+const projectData = result?.project ?? { name, workflow };
+localStorage.setItem(
+  "sitrep_project",
+  JSON.stringify({ name: projectData.name ?? name, workflow: projectData.workflow ?? workflow })
+);
+const dashMap = {
+  scrum: "../dashboard/scrum.html",
+  kanban: "../dashboard/kanban.html",
+  xp: "../dashboard/xp.html",
+};
+navigateTo(dashMap[workflow] ?? "../dashboard/scrum.html");
 ```
 
 with:
 
 ```js
-    const result = await apiCreateProject({ name, workflow, members: [...members], created_by });
-    const project = result?.project ?? { name, workflow };
-    setCurrentProject({
-      project_id: project.project_id,
-      name: project.name ?? name,
-      workflow: project.workflow ?? workflow,
-    });
-    navigateTo(dashboardPathFor(project.workflow ?? workflow));
+const result = await apiCreateProject({ name, workflow, members: [...members], created_by });
+const project = result?.project ?? { name, workflow };
+setCurrentProject({
+  project_id: project.project_id,
+  name: project.name ?? name,
+  workflow: project.workflow ?? workflow,
+});
+navigateTo(dashboardPathFor(project.workflow ?? workflow));
 ```
 
 - [ ] **Step 3: Add the pending-invites renderer**
@@ -1269,7 +1291,9 @@ test.describe("Onboarding pending invites", () => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          invites: [{ invite_id: 1, project_id: 3, project_name: "Research Spike", workflow: "xp" }],
+          invites: [
+            { invite_id: 1, project_id: 3, project_name: "Research Spike", workflow: "xp" },
+          ],
         }),
       })
     );
@@ -1317,6 +1341,7 @@ Expected: pass.
 - [ ] **Step 8: Commit**
 
 Commit message:
+
 ```
 feat(client): onboarding stores project_id + shows pending invites
 
@@ -1333,6 +1358,7 @@ Adds e2e coverage.
 ## Task 9: Dashboards + check-in read the active project
 
 **Files:**
+
 - Modify: `source/dashboard/main.js`, `source/dashboard/scrum.js`, `source/check-in/check-in.js`, `source/dashboard/kanban.js`
 
 - [ ] **Step 1: main.js**
@@ -1376,6 +1402,7 @@ Expected: pass.
 - [ ] **Step 7: Commit**
 
 Commit message:
+
 ```
 feat(client): scope dashboards + check-in to the active project
 
@@ -1391,6 +1418,7 @@ tests green and is a safe default.
 ## Task 10: Remove the blank assignee option (client)
 
 **Files:**
+
 - Modify: `source/task-form/task-form.js`
 - Modify: `source/dashboard/main.js` (`buildAssigneeOptions`)
 - Modify: `source/dashboard/scrum.js` (its create-task modal's assignee select)
@@ -1462,17 +1490,17 @@ if (typeof document !== "undefined") {
 Remove these lines that create the blank option:
 
 ```js
-  const unassignedOpt = document.createElement("option");
-  unassignedOpt.value = "";
-  unassignedOpt.textContent = "Unassigned";
-  assigneeSelect.appendChild(unassignedOpt);
+const unassignedOpt = document.createElement("option");
+unassignedOpt.value = "";
+unassignedOpt.textContent = "Unassigned";
+assigneeSelect.appendChild(unassignedOpt);
 ```
 
 After the members loop that appends options, set the default selection:
 
 ```js
-  const defaultId = defaultAssigneeId(members, getCurrentUser());
-  if (defaultId != null) assigneeSelect.value = String(defaultId);
+const defaultId = defaultAssigneeId(members, getCurrentUser());
+if (defaultId != null) assigneeSelect.value = String(defaultId);
 ```
 
 - [ ] **Step 4: task-form.js — submit guard + error element**
@@ -1480,22 +1508,22 @@ After the members loop that appends options, set the default selection:
 Where the reviewer error element is created, add a sibling assignee error under the assignee field. After `assigneeField.appendChild(assigneeSelect);` add:
 
 ```js
-  const assigneeError = document.createElement("p");
-  assigneeError.className = "tf-error";
-  assigneeError.hidden = true;
-  assigneeError.textContent = "Please select an assignee.";
-  assigneeField.appendChild(assigneeError);
+const assigneeError = document.createElement("p");
+assigneeError.className = "tf-error";
+assigneeError.hidden = true;
+assigneeError.textContent = "Please select an assignee.";
+assigneeField.appendChild(assigneeError);
 ```
 
 In `submit()`, before computing `isAgent`, add:
 
 ```js
-    if (!assigneeSelect.value) {
-      assigneeError.hidden = false;
-      assigneeSelect.focus();
-      return;
-    }
-    assigneeError.hidden = true;
+if (!assigneeSelect.value) {
+  assigneeError.hidden = false;
+  assigneeSelect.focus();
+  return;
+}
+assigneeError.hidden = true;
 ```
 
 - [ ] **Step 5: main.js — buildAssigneeOptions drops the blank option**
@@ -1544,6 +1572,7 @@ Expected: pass.
 - [ ] **Step 10: Commit**
 
 Commit message:
+
 ```
 feat(client): remove blank assignee option; default to a real member
 
@@ -1560,6 +1589,7 @@ gates task-form self-init for Node imports.
 ## Task 11: Team view — roster + pending + add-member (shared)
 
 **Files:**
+
 - Create: `source/shared/team-panel.js`
 - Test: `source/src/tests/team-panel.test.js`
 - Modify: `source/dashboard/main.js` (`switchView`), `source/dashboard/scrum.js` (`switchView`)
@@ -1737,9 +1767,9 @@ Expected: PASS.
 In `source/dashboard/main.js`: add `import { renderTeamPanel } from "../shared/team-panel.js";` at the top. In `switchView`, after the view element is shown, mount the panel when the Team tab is selected:
 
 ```js
-  if (label === "Team") {
-    renderTeamPanel(view, { projectId: PROJECT_ID });
-  }
+if (label === "Team") {
+  renderTeamPanel(view, { projectId: PROJECT_ID });
+}
 ```
 
 (Place this just before the final `view.classList.remove("hidden");` so `view` exists, then keep the unhide line.)
@@ -1749,7 +1779,7 @@ In `source/dashboard/main.js`: add `import { renderTeamPanel } from "../shared/t
 In `source/dashboard/scrum.js`: add the same import. In its `switchView(navSlug, label)`, when `navSlug === "team"`, after resolving/creating the `team-view` element, call:
 
 ```js
-    renderTeamPanel(view, { projectId: PROJECT_ID });
+renderTeamPanel(view, { projectId: PROJECT_ID });
 ```
 
 (Match scrum.js's existing variable name for the resolved view element.)
@@ -1760,19 +1790,75 @@ Append to `source/shared/components.css`:
 
 ```css
 /* Team panel */
-.team-panel { max-width: 640px; }
-.team-panel-title { font-size: 1.1rem; margin: 0 0 1rem; }
-.team-list { list-style: none; margin: 0 0 1.25rem; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
-.team-member { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border, #e2e8f0); border-radius: 10px; }
-.team-member--pending { opacity: 0.7; }
-.team-avatar { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft, #e0e7ff); font-size: 0.8rem; font-weight: 600; }
-.team-avatar--pending { background: var(--border, #e2e8f0); }
-.team-member-name { margin: 0; font-weight: 600; }
-.team-member-meta { margin: 0; font-size: 0.8rem; color: var(--text-muted, #64748b); }
-.team-empty { color: var(--text-muted, #64748b); }
-.team-add { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-.team-add-input { flex: 1 1 220px; padding: 0.5rem 0.7rem; border: 1px solid var(--border, #e2e8f0); border-radius: 8px; }
-.team-add-status { flex-basis: 100%; margin: 0.25rem 0 0; font-size: 0.8rem; color: var(--text-muted, #64748b); }
+.team-panel {
+  max-width: 640px;
+}
+.team-panel-title {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+}
+.team-list {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.team-member {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+}
+.team-member--pending {
+  opacity: 0.7;
+}
+.team-avatar {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft, #e0e7ff);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.team-avatar--pending {
+  background: var(--border, #e2e8f0);
+}
+.team-member-name {
+  margin: 0;
+  font-weight: 600;
+}
+.team-member-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted, #64748b);
+}
+.team-empty {
+  color: var(--text-muted, #64748b);
+}
+.team-add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.team-add-input {
+  flex: 1 1 220px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+}
+.team-add-status {
+  flex-basis: 100%;
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted, #64748b);
+}
 ```
 
 - [ ] **Step 8: Build + manual check**
@@ -1788,6 +1874,7 @@ Expected: pass.
 - [ ] **Step 10: Commit**
 
 Commit message:
+
 ```
 feat(client): add shared Team view with roster + add-member
 
@@ -1826,6 +1913,7 @@ Confirm against `specs/adrs/manage-project-members.md` mapping table: members in
 - [ ] **Step 5: Commit (only if Step 4 required a fix)**
 
 Commit message (if needed):
+
 ```
 test: verify project member management end-to-end
 

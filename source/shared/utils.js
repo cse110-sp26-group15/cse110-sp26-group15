@@ -187,7 +187,7 @@ export async function apiSignup({ email, password, full_name }) {
  * @param {string}    args.workflow      One of 'scrum' | 'kanban' | 'xp'.
  * @param {string[]}  args.members       Invited member emails.
  * @param {number|null} [args.created_by] user_id of the creator, if known.
- * @returns {Promise<{ project: object, invited: Array<{user_id:number,email:string}>, not_found: string[] }>}
+ * @returns {Promise<{ project: object, invited: Array<{user_id:number,email:string}>, pending: string[] }>}
  * @throws {Error} When the server responds with a non-2xx status.
  */
 export async function apiCreateProject({ name, workflow, members, created_by = null }) {
