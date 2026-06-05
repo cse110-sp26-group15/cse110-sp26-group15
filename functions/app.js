@@ -34,9 +34,7 @@ export async function onRequestGet(context) {
 
   let count = 0;
   try {
-    const row = await env.DB.prepare(
-      "SELECT COUNT(*) AS n FROM project_members WHERE user_id = ?"
-    )
+    const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM project_members WHERE user_id = ?")
       .bind(userId)
       .first();
     count = Number(row?.n ?? 0);

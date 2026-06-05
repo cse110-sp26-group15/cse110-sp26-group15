@@ -150,7 +150,13 @@ describe("PATCH /tasks/:taskId reviewer enforcement", () => {
     const db = createMockDb({
       firstResults: [
         // existing task — currently human-assigned, no reviewer
-        { task_id: 5, project_id: 1, assigned_to: 1, reviewer_id: null, review_status: "not-required" },
+        {
+          task_id: 5,
+          project_id: 1,
+          assigned_to: 1,
+          reviewer_id: null,
+          review_status: "not-required",
+        },
         // membership check (caller is a member of the task's project)
         { ok: 1 },
         // new assignee classify → agent with NULL owner_user_id
@@ -167,7 +173,13 @@ describe("PATCH /tasks/:taskId reviewer enforcement", () => {
   it("promotes review_status from 'not-required' to 'pending' when reassigned to agent", async () => {
     const db = createMockDb({
       firstResults: [
-        { task_id: 5, project_id: 1, assigned_to: 1, reviewer_id: null, review_status: "not-required" }, // existing
+        {
+          task_id: 5,
+          project_id: 1,
+          assigned_to: 1,
+          reviewer_id: null,
+          review_status: "not-required",
+        }, // existing
         { ok: 1 }, // membership check
         { user_id: 6, agent_user_id: 6, owner_user_id: 1 }, // assignee classify → agent
         { ok: 1 }, // assignee containment check
