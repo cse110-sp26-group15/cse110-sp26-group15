@@ -1,8 +1,12 @@
-// xp-pairs.js — XP Pair Programming localStorage support
+// xp-pairs.js — XP Pair Programming (API-first, localStorage fallback)
 
+import { apiFetch } from "../shared/utils.js";
+
+// Hard-coded for now; same TODO as scrum.js / kanban.js.
+const PROJECT_ID = 1;
 const STORAGE_KEY = "sitrep_pairs";
 
-// Used when the backend has no members yet (frontend-only / pre-API state).
+// Shown when the backend has no project members yet (pre-seed / frontend-only).
 const FALLBACK_MEMBERS = [
   { user_id: 9001, full_name: "Yizhen" },
   { user_id: 9002, full_name: "Unnati" },
@@ -17,7 +21,9 @@ function getMembers() {
   return api.length >= 2 ? api : FALLBACK_MEMBERS;
 }
 
-function loadPairs() {
+// ── localStorage helpers ──────────────────────────────
+
+function loadLocalPairs() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
   } catch {
@@ -25,9 +31,11 @@ function loadPairs() {
   }
 }
 
-function savePairs(pairs) {
+function saveLocalPairs(pairs) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(pairs));
 }
+
+// ── Utilities ─────────────────────────────────────────
 
 function esc(s) {
   return String(s ?? "")
@@ -46,13 +54,11 @@ function initials(name) {
 
 // ── Rendering ─────────────────────────────────────────
 
-function renderLocalPairs() {
+function renderPairCards(pairs) {
   const list = document.getElementById("pair-list");
   if (!list) return;
 
-  const pairs = loadPairs();
-
-  if (pairs.length === 0) {
+  if (!Array.isArray(pairs) || pairs.length === 0) {
     list.innerHTML = `<p class="task-empty">No active pairs. Click "+ new pair" to create one.</p>`;
     return;
   }
@@ -60,12 +66,12 @@ function renderLocalPairs() {
   list.innerHTML = pairs
     .map(
       (p) => `
-      <article class="pair-card" data-pair-id="${esc(p.pair_id)}">
+      <article class="pair-card" data-pair-id="${esc(String(p.pair_id))}">
         <div class="pair-card-header">
           <span class="pair-card-title">Pair Session</span>
           <button
             class="btn-link pair-delete-btn"
-            data-pair-id="${esc(p.pair_id)}"
+            data-pair-id="${esc(String(p.pair_id))}"
             type="button"
             aria-label="Remove pair"
           >&#x2715;</button>
@@ -101,21 +107,64 @@ function renderLocalPairs() {
   });
 }
 
-function deletePair(pairId) {
-  savePairs(loadPairs().filter((p) => p.pair_id !== pairId));
-  renderLocalPairs();
+// ── Core operations (API-first, localStorage fallback) ─
+
+/**
+ * Loads pairs from the API and renders them. Falls back to localStorage when
+ * the API is unreachable so the UI stays functional offline.
+ */
+export async function loadPairs() {
+  try {
+    const data = await apiFetch(`/api/projects/${PROJECT_ID}/pairs`);
+    renderPairCards(data.pairs ?? []);
+  } catch {
+    renderPairCards(loadLocalPairs());
+  }
 }
 
-function addPair(member1, member2) {
-  const pair = {
-    pair_id: `local-${Date.now()}`,
-    member1: { user_id: member1.user_id, full_name: member1.full_name },
-    member2: { user_id: member2.user_id, full_name: member2.full_name },
-  };
-  const pairs = loadPairs();
-  pairs.push(pair);
-  savePairs(pairs);
-  renderLocalPairs();
+/**
+ * Creates a pair via the API. If the request fails (network or unavailability),
+ * the pair is saved to localStorage so it is not lost.
+ */
+async function addPair(member1, member2) {
+  try {
+    await apiFetch(`/api/projects/${PROJECT_ID}/pairs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ member1_id: member1.user_id, member2_id: member2.user_id }),
+    });
+    await loadPairs();
+  } catch {
+    // API unavailable — persist locally with a prefixed ID so deletion routing works.
+    const pair = {
+      pair_id: `local-${Date.now()}`,
+      member1: { user_id: member1.user_id, full_name: member1.full_name },
+      member2: { user_id: member2.user_id, full_name: member2.full_name },
+    };
+    saveLocalPairs([...loadLocalPairs(), pair]);
+    renderPairCards(loadLocalPairs());
+  }
+}
+
+/**
+ * Deletes a pair. "local-" prefixed IDs are removed from localStorage directly.
+ * Numeric IDs are deleted via the API; on failure the local cache is pruned.
+ */
+async function deletePair(pairId) {
+  if (String(pairId).startsWith("local-")) {
+    saveLocalPairs(loadLocalPairs().filter((p) => String(p.pair_id) !== pairId));
+    renderPairCards(loadLocalPairs());
+    return;
+  }
+
+  try {
+    await apiFetch(`/api/projects/${PROJECT_ID}/pairs/${pairId}`, { method: "DELETE" });
+    await loadPairs();
+  } catch {
+    // API unavailable — remove from local cache (best-effort).
+    saveLocalPairs(loadLocalPairs().filter((p) => String(p.pair_id) !== String(pairId)));
+    renderPairCards(loadLocalPairs());
+  }
 }
 
 // ── Modal ─────────────────────────────────────────────
@@ -166,7 +215,7 @@ function openModal() {
   backdrop.addEventListener("click", (e) => {
     if (e.target === backdrop) closeModal();
   });
-  document.getElementById("pm-submit")?.addEventListener("click", handleSubmit);
+  document.getElementById("pm-submit").addEventListener("click", handleSubmit);
   document.addEventListener("keydown", onEscape);
 
   (backdrop.querySelector("#pm-member1") ?? backdrop.querySelector(".pm-close")).focus();
@@ -213,15 +262,17 @@ function handleSubmit() {
     return;
   }
 
-  addPair(m1, m2);
+  addPair(m1, m2); // fire-and-forget: modal closes immediately, render follows async
   closeModal();
 }
 
 // ── Entry point ───────────────────────────────────────
 
+/**
+ * Wires the "+ new pair" button. Call once during dashboard init.
+ * Pair loading is handled separately by the exported `loadPairs()`.
+ */
 export function initLocalPairs() {
-  renderLocalPairs();
-
   const btn = document.getElementById("new-pair-btn");
   if (btn) btn.addEventListener("click", openModal);
 }
