@@ -3,8 +3,17 @@ import { test, expect } from "@playwright/test";
 /** URL of the check-in page (not an index.html shortcut — explicit filename). */
 const CHECKIN_URL = "/check-in/check-in.html";
 
-/** Project ID hard-coded in check-in.js. */
+/** Project ID used when sitrep_project is seeded for the session. */
 const PROJECT_ID = 1;
+
+const STORED_PROJECT = { project_id: PROJECT_ID, name: "Test Project", workflow: "scrum" };
+
+/** Seed sitrep_project before the page script runs. */
+async function seedProject(page, project = STORED_PROJECT) {
+  await page.addInitScript((p) => {
+    localStorage.setItem("sitrep_project", JSON.stringify(p));
+  }, project);
+}
 
 /**
  * Sets up the three GET mocks the check-in page fires on load:
@@ -66,6 +75,7 @@ test.describe("Check-in page", () => {
    * Verifies the page title and key structural elements are present.
    */
   test("renders page title and form", async ({ page }) => {
+    await seedProject(page);
     await mockPageLoad(page);
     await page.goto(CHECKIN_URL);
 
@@ -82,6 +92,7 @@ test.describe("Check-in page", () => {
    * for today, and the form is visible.
    */
   test("shows check-in prompt when no check-in today", async ({ page }) => {
+    await seedProject(page);
     await mockPageLoad(page, []);
     await page.goto(CHECKIN_URL);
 
@@ -95,6 +106,7 @@ test.describe("Check-in page", () => {
    * the API returns a check-in for today owned by the current user (user_id 1).
    */
   test("shows done banner when today's check-in already exists", async ({ page }) => {
+    await seedProject(page);
     await mockPageLoad(page, [todayCheckin()]);
     await page.goto(CHECKIN_URL);
 
@@ -108,6 +120,7 @@ test.describe("Check-in page", () => {
    * required fields empty, without hitting the network.
    */
   test("shows validation error on empty submit", async ({ page }) => {
+    await seedProject(page);
     await mockPageLoad(page);
     await page.goto(CHECKIN_URL);
     await page.locator("#submit-checkin-btn").click();
@@ -121,6 +134,7 @@ test.describe("Check-in page", () => {
    * clicking the toggle button. Clicking again closes it.
    */
   test("toggles blocker panel open and closed", async ({ page }) => {
+    await seedProject(page);
     await mockPageLoad(page);
     await page.goto(CHECKIN_URL);
 
@@ -175,6 +189,7 @@ test.describe("Check-in page", () => {
       })
     );
 
+    await seedProject(page);
     await page.goto(CHECKIN_URL);
     await page.locator("#field-work-done").fill("Fixed bugs");
     await page.locator("#field-work-planned").fill("Write e2e tests");
@@ -199,6 +214,7 @@ test.describe("Check-in page", () => {
       status_mood: "workload:light",
       user: { full_name: "Alice Smith" },
     };
+    await seedProject(page);
     await mockPageLoad(page, [pastCheckin]);
     await page.goto(CHECKIN_URL);
 

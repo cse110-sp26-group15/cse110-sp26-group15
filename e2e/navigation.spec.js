@@ -17,11 +17,15 @@ async function mockKanbanLoad(page, projectId = 1) {
     body: JSON.stringify(body),
   });
 
-  await page.route(`**/api/projects/${projectId}/tasks`, (route) => route.fulfill(ok({ tasks: [] })));
+  await page.route(`**/api/projects/${projectId}/tasks`, (route) =>
+    route.fulfill(ok({ tasks: [] }))
+  );
   await page.route(`**/api/projects/${projectId}/members`, (route) =>
     route.fulfill(ok({ members: [] }))
   );
-  await page.route(`**/api/projects/${projectId}/agents`, (route) => route.fulfill(ok({ agents: [] })));
+  await page.route(`**/api/projects/${projectId}/agents`, (route) =>
+    route.fulfill(ok({ agents: [] }))
+  );
   await page.route(`**/api/projects/${projectId}/checkins`, (route) =>
     route.fulfill(ok({ checkins: [] }))
   );
@@ -38,8 +42,12 @@ async function mockCheckinLoad(page, projectId = 1) {
     body: JSON.stringify(body),
   });
 
-  await page.route(`**/api/projects/${projectId}/checkins`, (route) => route.fulfill(ok({ checkins: [] })));
-  await page.route(`**/api/projects/${projectId}/tasks`, (route) => route.fulfill(ok({ tasks: [] })));
+  await page.route(`**/api/projects/${projectId}/checkins`, (route) =>
+    route.fulfill(ok({ checkins: [] }))
+  );
+  await page.route(`**/api/projects/${projectId}/tasks`, (route) =>
+    route.fulfill(ok({ tasks: [] }))
+  );
   await page.route(`**/api/projects/${projectId}/members`, (route) =>
     route.fulfill(ok({ members: [] }))
   );
@@ -92,7 +100,10 @@ test.describe("Navigation", () => {
     await seedProject(page);
     await page.goto("/profile/");
 
-    await expect(page.locator("#nav-check-ins")).toHaveAttribute("href", "../check-in/check-in.html");
+    await expect(page.locator("#nav-check-ins")).toHaveAttribute(
+      "href",
+      "../check-in/check-in.html"
+    );
     await expect(page.locator("#nav-team")).toHaveAttribute(
       "href",
       "../dashboard/kanban.html#team"
@@ -112,7 +123,9 @@ test.describe("Navigation", () => {
     await expect(page).toHaveURL(/check-in\/check-in/);
   });
 
-  test("profile Team link opens the Team placeholder on the workflow dashboard", async ({ page }) => {
+  test("profile Team link opens the Team placeholder on the workflow dashboard", async ({
+    page,
+  }) => {
     await seedProject(page);
     await mockKanbanLoad(page);
     await page.goto("/profile/");

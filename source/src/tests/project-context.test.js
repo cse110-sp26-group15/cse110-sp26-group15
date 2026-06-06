@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  getStoredProject,
-  getCurrentProjectId,
-  requireStoredProject,
-} from "../../shared/utils.js";
+import { getStoredProject, getCurrentProjectId, requireStoredProject } from "../../shared/utils.js";
 
 function makeStorage(initial = {}) {
   let store = { ...initial };
