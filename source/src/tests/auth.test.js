@@ -1,5 +1,6 @@
 import bcryptjs from "bcryptjs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { onRequestPost as signupHandler } from "../../../functions/api/auth/signup.js";
 
 // These tests verify the auth API endpoints work correctly
 // Run with: npm test
@@ -185,6 +186,47 @@ describe("Auth API Tests", () => {
       expect(body.user.user_id).toBeDefined();
       expect(body.token).toBeDefined();
       expect(body.user.password_hash).toBeUndefined();
+    });
+
+    it("should persist trimmed full_name when provided in signup body", async () => {
+      // Track bind call arguments for each prepared statement
+      const bindCalls = [];
+      const mockDb = {
+        prepare: vi.fn((sql) => ({
+          bind: vi.fn((...args) => {
+            bindCalls.push({ sql, args });
+            return {
+              first: vi.fn(async () => {
+                // duplicate-check query returns null (no existing user)
+                if (sql.includes("SELECT user_id")) return null;
+                // fetch-after-insert returns the created user row
+                return { user_id: 7, email: "jane@example.com", full_name: "Jane Doe" };
+              }),
+              run: vi.fn(async () => ({ meta: { last_row_id: 7 } })),
+            };
+          }),
+        })),
+      };
+
+      const request = new Request("http://localhost/api/auth/signup", {
+        method: "POST",
+        body: JSON.stringify({
+          email: "jane@example.com",
+          password: "SecurePass1",
+          full_name: "  Jane Doe  ",
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const res = await signupHandler({ env: { DB: mockDb }, request });
+      expect(res.status).toBe(201);
+
+      // Find the INSERT bind call and verify the full_name argument is trimmed
+      const insertCall = bindCalls.find((c) => c.sql.includes("INSERT INTO users"));
+      expect(insertCall).toBeDefined();
+      // INSERT binds: (email, passwordHash, full_name)
+      // full_name is the 3rd argument (index 2)
+      expect(insertCall.args[2]).toBe("Jane Doe");
     });
   });
 
