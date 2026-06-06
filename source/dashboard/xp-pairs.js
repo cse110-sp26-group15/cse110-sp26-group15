@@ -1,38 +1,21 @@
-// xp-pairs.js — XP Pair Programming (API-first, localStorage fallback)
+// xp-pairs.js — XP Pair Programming (API-backed, project-scoped)
 
-import { apiFetch } from "../shared/utils.js";
+import { apiFetch, getCurrentProjectId } from "../shared/utils.js";
 
-// Hard-coded for now; same TODO as scrum.js / kanban.js.
-const PROJECT_ID = 1;
-const STORAGE_KEY = "sitrep_pairs";
+// The project the user is currently viewing (chosen at project setup, read from
+// localStorage). Matches main.js / scrum.js so pairs load for the active
+// project rather than always project 1.
+const PROJECT_ID = getCurrentProjectId();
 
-// Shown when the backend has no project members yet (pre-seed / frontend-only).
-const FALLBACK_MEMBERS = [
-  { user_id: 9001, full_name: "Yizhen" },
-  { user_id: 9002, full_name: "Unnati" },
-  { user_id: 9003, full_name: "Thomas" },
-  { user_id: 9004, full_name: "Laksh" },
-  { user_id: 9005, full_name: "Dylan" },
-  { user_id: 9006, full_name: "Michael" },
-];
+// Pair sessions from the most recent load. Cached so the XP dashboard can link
+// task pair-partners with these sessions without an extra round trip.
+let loadedPairs = [];
 
+// Real project members only. Pairing must reference users who actually belong
+// to the project — anything else fails the server's membership check and never
+// persists, so we never invent placeholder people here.
 function getMembers() {
-  const api = window.getProjectMembers?.() ?? [];
-  return api.length >= 2 ? api : FALLBACK_MEMBERS;
-}
-
-// ── localStorage helpers ──────────────────────────────
-
-function loadLocalPairs() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveLocalPairs(pairs) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(pairs));
+  return window.getProjectMembers?.() ?? [];
 }
 
 // ── Utilities ─────────────────────────────────────────
@@ -107,63 +90,83 @@ function renderPairCards(pairs) {
   });
 }
 
-// ── Core operations (API-first, localStorage fallback) ─
+// ── Core operations (API-backed) ──────────────────────
 
 /**
- * Loads pairs from the API and renders them. Falls back to localStorage when
- * the API is unreachable so the UI stays functional offline.
+ * Loads the project's pairs from the API and renders them. On failure the rail
+ * shows an error rather than silently inventing data, so what's on screen
+ * always reflects the server.
  */
 export async function loadPairs() {
   try {
     const data = await apiFetch(`/api/projects/${PROJECT_ID}/pairs`);
-    renderPairCards(data.pairs ?? []);
-  } catch {
-    renderPairCards(loadLocalPairs());
+    loadedPairs = data.pairs ?? [];
+    renderPairCards(loadedPairs);
+  } catch (err) {
+    console.error("[xp-pairs] loadPairs failed", err);
+    const list = document.getElementById("pair-list");
+    if (list) {
+      list.innerHTML = `<p class="task-empty task-error">⚠ Couldn't load pairs.</p>`;
+    }
   }
 }
 
 /**
- * Creates a pair via the API. If the request fails (network or unavailability),
- * the pair is saved to localStorage so it is not lost.
+ * The pair sessions from the most recent load. Each entry has
+ * `member1`/`member2` objects with `user_id` + `full_name`.
+ * @returns {Array<{pair_id: number|string, member1: object, member2: object}>}
+ */
+export function getLoadedPairs() {
+  return loadedPairs;
+}
+
+/**
+ * Create a pair session for two members if they aren't already paired (in
+ * either order) — otherwise a no-op. Used by the task pair-partner picker so
+ * pairing two people on a task surfaces a matching Pair Programming session.
+ * @param {{user_id: number|string, full_name: string}} member1
+ * @param {{user_id: number|string, full_name: string}} member2
+ * @returns {Promise<void>}
+ */
+export async function ensurePairSession(member1, member2) {
+  const a = Number(member1?.user_id);
+  const b = Number(member2?.user_id);
+  if (!a || !b || a === b) return;
+  const exists = loadedPairs.some((p) => {
+    const m1 = Number(p.member1?.user_id);
+    const m2 = Number(p.member2?.user_id);
+    return (m1 === a && m2 === b) || (m1 === b && m2 === a);
+  });
+  if (exists) return;
+  await addPair(member1, member2);
+}
+
+/**
+ * Creates a pair via the API and refreshes the rail. Throws on failure (e.g.
+ * the members aren't on the project) so the caller can surface the error —
+ * we never fake a "saved" pair that wouldn't survive a refresh.
+ * @returns {Promise<void>}
  */
 async function addPair(member1, member2) {
-  try {
-    await apiFetch(`/api/projects/${PROJECT_ID}/pairs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ member1_id: member1.user_id, member2_id: member2.user_id }),
-    });
-    await loadPairs();
-  } catch {
-    // API unavailable — persist locally with a prefixed ID so deletion routing works.
-    const pair = {
-      pair_id: `local-${Date.now()}`,
-      member1: { user_id: member1.user_id, full_name: member1.full_name },
-      member2: { user_id: member2.user_id, full_name: member2.full_name },
-    };
-    saveLocalPairs([...loadLocalPairs(), pair]);
-    renderPairCards(loadLocalPairs());
-  }
+  await apiFetch(`/api/projects/${PROJECT_ID}/pairs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ member1_id: member1.user_id, member2_id: member2.user_id }),
+  });
+  await loadPairs();
 }
 
 /**
- * Deletes a pair. "local-" prefixed IDs are removed from localStorage directly.
- * Numeric IDs are deleted via the API; on failure the local cache is pruned.
+ * Deletes a pair via the API and refreshes the rail. Surfaces failures rather
+ * than diverging the UI from the server.
  */
 async function deletePair(pairId) {
-  if (String(pairId).startsWith("local-")) {
-    saveLocalPairs(loadLocalPairs().filter((p) => String(p.pair_id) !== pairId));
-    renderPairCards(loadLocalPairs());
-    return;
-  }
-
   try {
     await apiFetch(`/api/projects/${PROJECT_ID}/pairs/${pairId}`, { method: "DELETE" });
     await loadPairs();
-  } catch {
-    // API unavailable — remove from local cache (best-effort).
-    saveLocalPairs(loadLocalPairs().filter((p) => String(p.pair_id) !== String(pairId)));
-    renderPairCards(loadLocalPairs());
+  } catch (err) {
+    console.error("[xp-pairs] deletePair failed", err);
+    alert(`Couldn't remove pair: ${err.message}`);
   }
 }
 
@@ -182,6 +185,9 @@ function buildOptions(members) {
 function openModal() {
   if (backdrop) return;
   const members = getMembers();
+  // Pairing needs two real project members; without them the create would only
+  // fail server-side, so say so up front instead of offering an empty picker.
+  const enough = members.length >= 2;
 
   backdrop = document.createElement("div");
   backdrop.className = "pm-backdrop";
@@ -192,19 +198,23 @@ function openModal() {
         <button class="pm-close" type="button" aria-label="Close dialog">&#x2715;</button>
       </div>
       <div class="pm-body">
-        <div class="pm-field">
-          <label class="pm-label" for="pm-member1">Member 1</label>
-          <select class="input input--select" id="pm-member1">${buildOptions(members)}</select>
-        </div>
-        <div class="pm-field">
-          <label class="pm-label" for="pm-member2">Member 2</label>
-          <select class="input input--select" id="pm-member2">${buildOptions(members)}</select>
-        </div>
-        <p class="pm-error hidden" id="pm-error" role="alert"></p>
+        ${
+          enough
+            ? `<div class="pm-field">
+                 <label class="pm-label" for="pm-member1">Member 1</label>
+                 <select class="input input--select" id="pm-member1">${buildOptions(members)}</select>
+               </div>
+               <div class="pm-field">
+                 <label class="pm-label" for="pm-member2">Member 2</label>
+                 <select class="input input--select" id="pm-member2">${buildOptions(members)}</select>
+               </div>
+               <p class="pm-error hidden" id="pm-error" role="alert"></p>`
+            : `<p class="pm-empty">You need at least two members on this project to create a pair. Add members to the project first.</p>`
+        }
       </div>
       <div class="pm-footer">
-        <button class="btn btn--secondary" id="pm-cancel" type="button">Cancel</button>
-        <button class="btn btn--primary" id="pm-submit" type="button">Create Pair</button>
+        <button class="btn btn--secondary" id="pm-cancel" type="button">${enough ? "Cancel" : "Close"}</button>
+        ${enough ? `<button class="btn btn--primary" id="pm-submit" type="button">Create Pair</button>` : ""}
       </div>
     </div>`;
 
@@ -215,7 +225,9 @@ function openModal() {
   backdrop.addEventListener("click", (e) => {
     if (e.target === backdrop) closeModal();
   });
-  document.getElementById("pm-submit").addEventListener("click", handleSubmit);
+  if (enough) {
+    document.getElementById("pm-submit").addEventListener("click", handleSubmit);
+  }
   document.addEventListener("keydown", onEscape);
 
   (backdrop.querySelector("#pm-member1") ?? backdrop.querySelector(".pm-close")).focus();
@@ -232,11 +244,12 @@ function onEscape(e) {
   if (e.key === "Escape") closeModal();
 }
 
-function handleSubmit() {
+async function handleSubmit() {
   const members = getMembers();
   const sel1 = document.getElementById("pm-member1");
   const sel2 = document.getElementById("pm-member2");
   const errorEl = document.getElementById("pm-error");
+  const submitBtn = document.getElementById("pm-submit");
 
   const id1 = Number(sel1.value);
   const id2 = Number(sel2.value);
@@ -262,8 +275,18 @@ function handleSubmit() {
     return;
   }
 
-  addPair(m1, m2); // fire-and-forget: modal closes immediately, render follows async
-  closeModal();
+  // Wait for the create to actually persist before closing — if it fails, keep
+  // the modal open and show why, instead of leaving a pair that vanishes on
+  // refresh.
+  errorEl.classList.add("hidden");
+  submitBtn.disabled = true;
+  try {
+    await addPair(m1, m2);
+    closeModal();
+  } catch (err) {
+    showError(err?.message || "Couldn't create pair. Please try again.");
+    submitBtn.disabled = false;
+  }
 }
 
 // ── Entry point ───────────────────────────────────────

@@ -609,6 +609,13 @@
   text-align-last: center;
 }
 
+/* Shrink the shared .btn into a pill to sit alongside the Delete action. */
+.task-card-edit {
+  font-size: var(--text-xs);
+  padding: var(--space-2xs) var(--space-md);
+  border-radius: var(--radius-full);
+}
+
 /* Shrink the shared .btn so the Delete action fits the compact controls
    row, and round it into a pill to sit alongside the status dropdown.
    Uses the muted error palette — light red fill, darker red border — to

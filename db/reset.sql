@@ -6,6 +6,8 @@ DELETE FROM checkins;
 
 DELETE FROM tasks;
 
+DELETE FROM xp_pairs;
+
 DELETE FROM sprints;
 
 DELETE FROM agents;

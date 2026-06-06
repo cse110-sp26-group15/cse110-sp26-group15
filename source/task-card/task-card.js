@@ -22,9 +22,6 @@ const PRIORITY_ICONS = {
   low: "↓",
 };
 
-// Priority values in display order (also the <select> option order).
-const PRIORITY_ORDER = ["urgent", "high", "medium", "low"];
-
 const STATUS_LABELS = {
   todo: "todo",
   "in-progress": "in progress",
@@ -72,6 +69,32 @@ function formatDueDate(iso) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// Created-date display, e.g. "May 18, 2025". Returns "" for missing/invalid.
+function formatCreatedDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// Relative "how long ago" label from an ISO date to now (e.g. "3d ago").
+// Returns "" for missing/invalid input; clamps future dates to "just now".
+function timeAgo(iso) {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const mins = Math.floor((Date.now() - then) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(months / 12)}y ago`;
 }
 
 function initials(name) {
@@ -187,53 +210,6 @@ function attachNumberCommit(input, { onCommit }) {
 }
 
 // ── Interactive control builders ──────────────────────
-function buildPrioritySelect(task, currentPriority, iconEl, textEl, ctx) {
-  const select = el("select", {
-    className: "task-card__select task-card__select--priority",
-    ariaLabel: "Priority",
-  });
-  addOptions(
-    select,
-    PRIORITY_ORDER.map((p) => ({
-      value: p,
-      label: capitalize(p),
-      selected: p === currentPriority,
-    }))
-  );
-
-  select.addEventListener("change", (e) => {
-    const newPriority = e.target.value;
-    swapPrefixedClass(ctx.card, "task-card--priority-", newPriority);
-    iconEl.textContent = PRIORITY_ICONS[newPriority] ?? "";
-    if (textEl) textEl.textContent = capitalize(newPriority);
-    notifyChange(ctx, task, { priority: newPriority });
-  });
-
-  return select;
-}
-
-function buildStatusSelect(task, ctx) {
-  const currentStatus = task.status ?? "todo";
-  const select = el("select", {
-    className: `task-card__select task-card__select--status task-card__status task-card__status--${currentStatus}`,
-    ariaLabel: "Status",
-  });
-  addOptions(
-    select,
-    Object.entries(STATUS_LABELS)
-      .filter(([value]) => value !== "blocked")
-      .map(([value, label]) => ({ value, label, selected: value === currentStatus }))
-  );
-
-  select.addEventListener("change", (e) => {
-    const newStatus = e.target.value;
-    swapPrefixedClass(select, "task-card__status--", newStatus);
-    notifyChange(ctx, task, { status: newStatus });
-  });
-
-  return select;
-}
-
 // Shared by the points (step 1) and hours (step 0.5) editors.
 function buildNumberInput({ className, ariaLabel, step, value, field, task, ctx }) {
   const input = el("input", { type: "number", className, ariaLabel });
@@ -475,23 +451,9 @@ function buildBanner(task, projectType, ctx) {
   });
   const sprintSuffix = projectType === "scrum" && task.sprint ? ` · ${task.sprint}` : "";
 
-  if (ctx?.interactive) {
-    const textEl = el("span", {
-      className: "task-card__priority-text",
-      text: capitalize(priority),
-    });
-    const target = el(
-      "span",
-      { className: "task-card__priority-target" },
-      icon,
-      textEl,
-      buildPrioritySelect(task, priority, icon, textEl, ctx)
-    );
-    label.appendChild(target);
-    if (sprintSuffix) label.append(sprintSuffix);
-  } else {
-    label.append(icon, capitalize(priority) + sprintSuffix);
-  }
+  // Priority is read-only on the card — it's edited through the task's Edit
+  // form instead, so we don't duplicate the control inline.
+  label.append(icon, capitalize(priority) + sprintSuffix);
   banner.appendChild(label);
 
   const meta = el("div", { className: "task-card__banner-meta" });
@@ -517,6 +479,30 @@ function buildBanner(task, projectType, ctx) {
 
   banner.appendChild(meta);
   return banner;
+}
+
+/**
+ * Build the read-only "created" strip below the banner: the creation date and
+ * a derived "how long ago" label, each in its own area, e.g.
+ * "Created May 18, 2025 · 3d ago". The creation time is set by the server and
+ * isn't user-editable.
+ *
+ * Returns null when the task has no `created_at`, so cards that don't track a
+ * creation date render exactly as before.
+ */
+function buildCreatedMeta(task) {
+  if (task.created_at == null) return null;
+
+  const wrap = el("div", { className: "task-card__created" });
+  wrap.append(
+    el("span", { className: "task-card__created-label", text: "Created" }),
+    el("span", {
+      className: "task-card__created-date",
+      text: formatCreatedDate(task.created_at) || "—",
+    }),
+    el("span", { className: "task-card__age", text: timeAgo(task.created_at) })
+  );
+  return wrap;
 }
 
 // Read-only blocker chip (interactive cards use buildBlockerControl instead).
@@ -670,17 +656,15 @@ function buildFooter(task, projectType, ctx) {
 
   footer.appendChild(assignees);
 
-  if (ctx?.interactive) {
-    footer.appendChild(buildStatusSelect(task, ctx));
-  } else {
-    const statusKey = task.is_blocked ? "blocked" : (task.status ?? "todo");
-    footer.appendChild(
-      el("span", {
-        className: `task-card__status task-card__status--${statusKey}`,
-        text: STATUS_LABELS[statusKey] ?? statusKey,
-      })
-    );
-  }
+  // Status is read-only on the card — it's changed through the task's Edit
+  // form (or, on the kanban board, by dragging the card between columns).
+  const statusKey = task.is_blocked ? "blocked" : (task.status ?? "todo");
+  footer.appendChild(
+    el("span", {
+      className: `task-card__status task-card__status--${statusKey}`,
+      text: STATUS_LABELS[statusKey] ?? statusKey,
+    })
+  );
 
   return footer;
 }
@@ -728,6 +712,9 @@ function buildReviewRow(task) {
  * @param {"todo"|"in-progress"|"done"|"blocked"} [task.status="todo"]
  * @param {"urgent"|"high"|"medium"|"low"}        [task.priority="low"]
  * @param {string}  [task.due_date]             ISO date string (YYYY-MM-DD).
+ * @param {string}  [task.created_at]           ISO date/timestamp. When set,
+ *        renders a read-only "Created {date} · {how long ago}" strip below the
+ *        banner. Server-assigned; not user-editable.
  * @param {string[]} [task.tags]                Rendered as pills.
  * @param {boolean} [task.is_blocked]           Shows red blocker chip + status.
  * @param {string}  [task.blocker_reason]       Shown inside the blocker chip.
@@ -754,8 +741,8 @@ function buildReviewRow(task) {
  * @param {boolean} [options.editPair=true]
  *        XP only. When true (default), an interactive XP card renders both an
  *        assignee and a pair-partner `<select>`. Set false to render just the
- *        primary assignee dropdown (e.g. while `pair_assignee` has no backend
- *        persistence) — the pair partner then shows as a read-only avatar.
+ *        primary assignee dropdown — the pair partner then shows as a read-only
+ *        avatar.
  *
  * @returns {HTMLElement} A detached <article> ready to be appended.
  */
@@ -778,6 +765,10 @@ export function createTaskCard(task, projectType = "kanban", options = {}) {
   };
 
   card.appendChild(buildBanner(task, projectType, ctx));
+  // Created date + "how long ago" strip — only rendered when the task carries
+  // a created_at (returns null otherwise, leaving other cards unchanged).
+  const createdMeta = buildCreatedMeta(task);
+  if (createdMeta) card.appendChild(createdMeta);
   card.appendChild(buildBody(task, projectType, ctx));
   // Review row (AI-agent reviewer + status) only appears when the task has
   // reviewer metadata — buildReviewRow returns null for human tasks.
