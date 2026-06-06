@@ -1,3 +1,5 @@
+import { requireProjectMember } from "../_auth.js";
+
 /**
  * Cloudflare Pages function: DELETE /api/checkins/:checkinId
  *
@@ -13,13 +15,20 @@ export async function onRequestDelete(context) {
   const { checkinId } = params;
 
   try {
-    const checkin = await env.DB.prepare("SELECT checkin_id FROM checkins WHERE checkin_id = ?")
+    const checkin = await env.DB.prepare(
+      "SELECT checkin_id, project_id FROM checkins WHERE checkin_id = ?"
+    )
       .bind(checkinId)
       .first();
 
     if (!checkin) {
       return Response.json({ error: "Check-in not found" }, { status: 404 });
     }
+
+    // Resolve membership off the check-in's project before deleting it (and
+    // its attached blockers below).
+    const denied = await requireProjectMember(context, checkin.project_id);
+    if (denied) return denied;
 
     await env.DB.prepare("DELETE FROM blockers WHERE checkin_id = ?").bind(checkinId).run();
     await env.DB.prepare("DELETE FROM checkins WHERE checkin_id = ?").bind(checkinId).run();

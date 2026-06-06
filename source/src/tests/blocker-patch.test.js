@@ -18,10 +18,15 @@ function createMockDb({ firstResult, runResult } = {}) {
   return db;
 }
 
-function createContext({ blockerId = "1", body, db } = {}) {
+function createContext({ blockerId = "1", body, db, userId = 1 } = {}) {
   return {
     env: { DB: db },
     params: { blockerId },
+    // The route resolves the blocker → its project and checks membership; the
+    // middleware would normally populate context.data.userId. The mock DB below
+    // returns a row carrying project_id for the resolution and a truthy row for
+    // the membership lookup, so an authenticated caller passes the guard.
+    data: { userId },
     request: new Request("http://localhost/", {
       method: "PATCH",
       body: typeof body === "string" ? body : JSON.stringify(body),
@@ -35,6 +40,7 @@ describe("PATCH /blockers/:blockerId", () => {
     const updated = {
       blocker_id: 1,
       checkin_id: 2,
+      project_id: 1,
       description: "x",
       is_resolved: 1,
       resolved_at: "2026-05-18 17:00:00",
@@ -49,13 +55,15 @@ describe("PATCH /blockers/:blockerId", () => {
     expect(res.status).toBe(200);
     expect(data.blocker.is_resolved).toBe(1);
     expect(data.blocker.resolved_at).not.toBeNull();
-    expect(db._sqlCalls[0]).toContain("resolved_at = CURRENT_TIMESTAMP");
+    const updateSql = db._sqlCalls.find((s) => s.startsWith("UPDATE blockers"));
+    expect(updateSql).toContain("resolved_at = CURRENT_TIMESTAMP");
   });
 
   it("re-opening a blocker clears resolved_at via SQL", async () => {
     const updated = {
       blocker_id: 1,
       checkin_id: 2,
+      project_id: 1,
       description: "x",
       is_resolved: 0,
       resolved_at: null,
@@ -70,13 +78,15 @@ describe("PATCH /blockers/:blockerId", () => {
     expect(res.status).toBe(200);
     expect(data.blocker.is_resolved).toBe(0);
     expect(data.blocker.resolved_at).toBeNull();
-    expect(db._sqlCalls[0]).toContain("resolved_at = NULL");
+    const updateSql = db._sqlCalls.find((s) => s.startsWith("UPDATE blockers"));
+    expect(updateSql).toContain("resolved_at = NULL");
   });
 
   it("updates a single field without touching others", async () => {
     const updated = {
       blocker_id: 1,
       checkin_id: 2,
+      project_id: 1,
       description: "x",
       is_resolved: 0,
       resolved_at: null,
@@ -90,8 +100,9 @@ describe("PATCH /blockers/:blockerId", () => {
 
     expect(res.status).toBe(200);
     expect(data.blocker.helper).toBe("Sam");
-    expect(db._sqlCalls[0]).toContain("helper = ?");
-    expect(db._sqlCalls[0]).not.toContain("resolved_at");
+    const updateSql = db._sqlCalls.find((s) => s.startsWith("UPDATE blockers"));
+    expect(updateSql).toContain("helper = ?");
+    expect(updateSql).not.toContain("resolved_at");
   });
 
   it("returns 400 when body has no valid fields", async () => {

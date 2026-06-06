@@ -6,7 +6,6 @@ import {
   hideBanner,
   navigateTo,
   apiCreateProject,
-  getCurrentUser,
 } from "../shared/utils.js";
 
 const form = document.getElementById("setup-form");
@@ -126,13 +125,19 @@ form.addEventListener("submit", async (e) => {
   submitBtn.innerHTML = "Creating workspace…";
 
   try {
-    const created_by = getCurrentUser()?.user_id ?? null;
-    const result = await apiCreateProject({ name, workflow, members: [...members], created_by });
-    // Persist project info so Profile/Settings pages can read it without an extra API call.
+    const result = await apiCreateProject({ name, workflow, members: [...members] });
+    // Persist project info so the dashboards / Profile / Settings pages can read
+    // it without an extra API call. The project_id is what makes each project
+    // load its own data — the dashboards read it via getCurrentProjectId()
+    // instead of hard-coding 1.
     const projectData = result?.project ?? { name, workflow };
     localStorage.setItem(
       "sitrep_project",
-      JSON.stringify({ name: projectData.name ?? name, workflow: projectData.workflow ?? workflow })
+      JSON.stringify({
+        project_id: projectData.project_id ?? null,
+        name: projectData.name ?? name,
+        workflow: projectData.workflow ?? workflow,
+      })
     );
     const dashMap = {
       scrum: "../dashboard/scrum.html",

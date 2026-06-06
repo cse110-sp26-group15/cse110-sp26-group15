@@ -41,8 +41,12 @@ function createMockDb({ firstResults = [], allResults = [], runResults = [] } = 
   };
 }
 
-function createContext({ projectId = "1", userId = "6", body, db } = {}) {
-  const ctx = { env: { DB: db }, params: { projectId, userId } };
+function createContext({ projectId = "1", userId = "6", body, db, callerId = 1 } = {}) {
+  // `userId` is the route param (the agent's id). `callerId` is the
+  // authenticated caller the middleware would resolve onto context.data; the
+  // /agents/:userId handlers gate on the caller sharing a project with the
+  // agent, so the mock DBs in those tests return a truthy shared-project row.
+  const ctx = { env: { DB: db }, params: { projectId, userId }, data: { userId: callerId } };
   if (body !== undefined) {
     ctx.request = new Request("http://localhost/", {
       method: "POST",
@@ -129,6 +133,7 @@ describe("POST /projects/:projectId/agents", () => {
     const db = createMockDb({
       firstResults: [
         { user_id: 1, full_name: "Alex" }, // owner exists + non-agent
+        { ok: 1 }, // owner containment check (member of project)
         { user_id: 5 }, // existing email
       ],
     });
@@ -145,6 +150,7 @@ describe("POST /projects/:projectId/agents", () => {
     const db = createMockDb({
       firstResults: [
         { user_id: 1, full_name: "Alex Rivera" }, // owner check
+        { ok: 1 }, // owner containment check
         null, // dup-email check (no dup)
         {
           // final SELECT
@@ -177,13 +183,13 @@ describe("POST /projects/:projectId/agents", () => {
 
 describe("PATCH /agents/:userId", () => {
   it("rejects when owner_user_id is null", async () => {
-    const db = createMockDb();
+    const db = createMockDb({ firstResults: [{ ok: 1 }] }); // shared-project check
     const res = await patchAgent(createContext({ db, body: { owner_user_id: null } }));
     expect(res.status).toBe(400);
   });
 
   it("rejects when no fields are supplied", async () => {
-    const db = createMockDb();
+    const db = createMockDb({ firstResults: [{ ok: 1 }] }); // shared-project check
     const res = await patchAgent(createContext({ db, body: {} }));
     expect(res.status).toBe(400);
     const data = await res.json();
@@ -193,6 +199,7 @@ describe("PATCH /agents/:userId", () => {
   it("updates owner when new owner is a human", async () => {
     const db = createMockDb({
       firstResults: [
+        { ok: 1 }, // shared-project check (authorizeAgentAccess)
         { user_id: 2 }, // owner check — non-agent user exists
         { user_id: 6 }, // agent exists
         {
@@ -215,6 +222,7 @@ describe("PATCH /agents/:userId", () => {
   it("returns 404 when agent does not exist", async () => {
     const db = createMockDb({
       firstResults: [
+        { ok: 1 }, // shared-project check (authorizeAgentAccess)
         { user_id: 2 }, // owner check passes
         null, // existing agent lookup → not found
       ],
@@ -226,7 +234,7 @@ describe("PATCH /agents/:userId", () => {
 
 describe("GET /agents/:userId", () => {
   it("returns 404 when not found", async () => {
-    const db = createMockDb({ firstResults: [null] });
+    const db = createMockDb({ firstResults: [{ ok: 1 }, null] }); // shared-project check, then agent not found
     const res = await getAgent(createContext({ db }));
     expect(res.status).toBe(404);
   });
