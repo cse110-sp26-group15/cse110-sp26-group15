@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SitRep — Weekly Report</title>
+
+    <script>
+      (function () {
+        var t = localStorage.getItem("sitrep_theme");
+        if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
+      })();
+    </script>
+
+    <link rel="stylesheet" href="../shared/theme.css" />
+    <link rel="stylesheet" href="../shared/components.css" />
+    <link rel="stylesheet" href="../dashboard/main.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <a href="../project-setup/index.html" class="sidebar-logo">
+            <div class="logo-mark">S</div>
+            <div class="logo-text">SitRep</div>
+          </a>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a href="../dashboard/scrum.html" class="nav-item">Dashboard</a>
+          <a href="../check-in/check-in.html" class="nav-item">My Check-ins</a>
+          <a href="#" class="nav-item">Team</a>
+          <a href="index.html" class="nav-item active">Weekly Report</a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-menu" id="user-menu">
+            <div class="user-dropdown" id="user-dropdown" hidden>
+              <a href="../profile/index.html" class="dropdown-item">
+                <svg
+                  class="dropdown-icon"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="8" cy="5.5" r="2.5" />
+                  <path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+                </svg>
+                Profile
+              </a>
+              <a href="../settings/index.html" class="dropdown-item">
+                <svg
+                  class="dropdown-icon"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="8" cy="8" r="2" />
+                  <path
+                    d="M8 2v1M8 13v1M2 8h1M13 8h1M3.5 3.5l.7.7M11.8 11.8l.7.7M12.5 3.5l-.7.7M4.2 11.8l-.7.7"
+                  />
+                </svg>
+                Settings
+              </a>
+              <div class="dropdown-divider"></div>
+              <button type="button" class="dropdown-item dropdown-item--danger" id="logout-btn">
+                <svg
+                  class="dropdown-icon"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M10 11l3-3-3-3M13 8H6M6 3H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3" />
+                </svg>
+                Log Out
+              </button>
+            </div>
+            <button
+              type="button"
+              class="user-menu-trigger"
+              id="user-menu-trigger"
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-label="Account menu"
+            >
+              <div class="avatar" id="user-avatar">U</div>
+              <div class="user-info">
+                <p class="user-name" id="user-name">User</p>
+                <p class="user-role" id="user-email"></p>
+              </div>
+              <svg
+                class="user-menu-chevron"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="4 6 8 10 12 6" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main-content">
+        <main class="content-area weekly-report-page" id="page-content">
+          <section class="report-toolbar section-header">
+            <div>
+              <h2 class="section-title">Weekly Report</h2>
+            </div>
+
+            <button class="btn btn--secondary" id="refresh-btn" type="button">
+              Refresh Report
+            </button>
+          </section>
+
+          <div class="weekly-layout">
+            <article class="report-document" aria-label="Weekly project report">
+              <section class="document-section">
+                <h3>Project Summary</h3>
+                <p id="report-narrative">Building your weekly report summary…</p>
+              </section>
+
+              <section class="document-section">
+                <h3>Completed Tasks</h3>
+                <div id="completed-tasks-list" class="report-list">Loading completed tasks…</div>
+              </section>
+
+              <section class="document-section">
+                <h3>Active Tasks</h3>
+                <div id="active-tasks-list" class="report-list">Loading active tasks…</div>
+              </section>
+
+              <section class="document-section">
+                <h3>Blockers</h3>
+
+                <h4>Open Blockers</h4>
+                <div id="open-blockers-list" class="report-list">Loading open blockers…</div>
+
+                <h4>Resolved Blockers</h4>
+                <div id="resolved-blockers-list" class="report-list">
+                  Loading resolved blockers…
+                </div>
+              </section>
+
+              <section class="document-section">
+                <h3>Check-in Participation</h3>
+                <p id="checkin-summary">Loading check-in participation…</p>
+                <div id="weekly-report-checkin-list" class="report-list"></div>
+              </section>
+
+              <section class="document-section">
+                <h3>Team Workload Distribution</h3>
+                <p id="workload-summary">Loading workload distribution…</p>
+                <div id="workload-list" class="workload-list"></div>
+              </section>
+
+              <section class="document-section">
+                <h3>Workflow Notes</h3>
+                <p id="workflow-notes">Loading workflow-specific project notes…</p>
+              </section>
+            </article>
+
+            <aside class="report-chat-panel" aria-label="Ask questions about this report">
+              <div class="chat-panel-header">
+                <p class="eyebrow">Report Assistant</p>
+                <h2>Ask about this report</h2>
+                <p>
+                  Ask about completed work, active tasks, blockers, check-ins, or workload. Answers
+                  are based on this weekly report.
+                </p>
+              </div>
+
+              <div class="chat-log" id="chat-log"></div>
+
+              <div class="chat-input-row">
+                <input
+                  id="query-input"
+                  type="text"
+                  class="input"
+                  placeholder="Ask: What blockers are still open?"
+                />
+                <button class="btn btn--primary" id="query-submit" type="button">Ask</button>
+              </div>
+            </aside>
+          </div>
+
+          <div class="error-banner hidden" id="report-error" role="alert"></div>
+        </main>
+      </div>
+    </div>
+
+    <script type="module" src="../dashboard/main.js"></script>
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
