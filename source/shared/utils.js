@@ -128,6 +128,19 @@ export async function apiFetch(url, opts = {}) {
   }
 
   if (!res.ok) {
+    // 401 = no/expired session. Bounce to login here (not in every caller) so
+    // every guarded fetch behaves the same, but skip it when we're already on
+    // an auth page to avoid a redirect loop. Still throw so the in-flight
+    // caller stops cleanly while the navigation happens.
+    if (
+      res.status === 401 &&
+      typeof location !== "undefined" &&
+      !location.pathname.includes("/login") &&
+      !location.pathname.includes("/signup")
+    ) {
+      const here = encodeURIComponent(location.pathname + location.search);
+      location.href = `/login/?next=${here}`;
+    }
     const message = body?.error || `Request to ${url} failed (${res.status})`;
     throw new ApiError(message, { status: res.status, body });
   }
@@ -182,24 +195,48 @@ export async function apiSignup({ email, password, full_name }) {
  * Creates a project on the backend and (optionally) seeds the creator and
  * invited member emails into `project_members`.
  *
+ * The creator is taken from the session cookie by the server, so it is not part
+ * of the payload.
+ *
  * @param {object}    args
  * @param {string}    args.name          Project display name.
  * @param {string}    args.workflow      One of 'scrum' | 'kanban' | 'xp'.
  * @param {string[]}  args.members       Invited member emails.
- * @param {number|null} [args.created_by] user_id of the creator, if known.
  * @returns {Promise<{ project: object, invited: Array<{user_id:number,email:string}>, pending: string[] }>}
  * @throws {Error} When the server responds with a non-2xx status.
  */
-export async function apiCreateProject({ name, workflow, members, created_by = null }) {
+export async function apiCreateProject({ name, workflow, members }) {
   const res = await fetch("/api/projects", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, workflow, members, created_by }),
+    body: JSON.stringify({ name, workflow, members }),
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || "Failed to create project");
+  }
+
+  return res.json();
+}
+
+/**
+ * DELETE /api/projects/:projectId
+ *
+ * Permanently deletes a project the caller created (the server rejects the
+ * request with 403 if the caller is a member but not the creator). The session
+ * cookie identifies the caller, so no body is needed.
+ *
+ * @param {number|string} projectId
+ * @returns {Promise<{ success: boolean }>}
+ * @throws {Error} When the server responds with a non-2xx status.
+ */
+export async function apiDeleteProject(projectId) {
+  const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to delete project");
   }
 
   return res.json();
@@ -374,4 +411,23 @@ export function defaultAssigneeId(members, currentUser) {
     return Number(currentUser.user_id);
   }
   return Number(members[0].user_id);
+}
+
+/**
+ * Read just the id of the project the user is currently working in — a thin
+ * convenience over {@link getCurrentProject} for the dashboards and check-in
+ * page, which only need the id to scope their API calls and never the name or
+ * workflow.
+ *
+ * Falls back to `fallback` when nothing is stored, the stored value predates
+ * this field, or storage is unavailable (e.g. under Node during tests) — this
+ * keeps direct navigation and the unit suite working unchanged.
+ *
+ * @param {number} [fallback=1]
+ * @returns {number}
+ */
+export function getCurrentProjectId(fallback = 1) {
+  const project = getCurrentProject();
+  const id = project?.project_id;
+  return Number.isInteger(id) && id > 0 ? id : fallback;
 }

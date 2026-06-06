@@ -1,3 +1,5 @@
+import { requireReferencedMember } from "../../_auth.js";
+
 const VALID_STATUSES = ["todo", "in-progress", "done"];
 const VALID_REVIEW_STATUSES = ["not-required", "pending", "approved", "needs-revision"];
 
@@ -134,6 +136,16 @@ export async function onRequestPost(context) {
     if (assigned_to && assignee.kind === "missing") {
       return Response.json({ error: "assigned_to references unknown user" }, { status: 400 });
     }
+
+    // Keep the assignee contained to this project — a member can't assign a
+    // task to a user (or agent) who isn't on the project.
+    const assigneeContained = await requireReferencedMember(
+      context,
+      projectId,
+      assigned_to,
+      "assigned_to"
+    );
+    if (assigneeContained) return assigneeContained;
 
     if (assignee.kind === "agent") {
       // Default reviewer to the agent's owner when client omits it.

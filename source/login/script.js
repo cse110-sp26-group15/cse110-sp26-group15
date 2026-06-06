@@ -9,32 +9,7 @@ import {
   apiLogin,
   saveToken,
   saveCurrentUser,
-  apiGetProjects,
-  setCurrentProject,
-  dashboardPathFor,
 } from "../shared/utils.js";
-
-/**
- * After a successful login, send the user to their most-recent project's
- * dashboard, or to onboarding if they have none. Falls back to onboarding
- * on any lookup error so login never dead-ends.
- * @param {{ user_id: number }} user
- * @returns {Promise<void>}
- */
-async function routeAfterAuth(user) {
-  try {
-    const { projects = [] } = await apiGetProjects(user.user_id);
-    if (projects.length > 0) {
-      const project = projects[0]; // API returns most-recent first
-      setCurrentProject(project);
-      navigateTo(dashboardPathFor(project.workflow));
-      return;
-    }
-  } catch (err) {
-    console.warn("[login] project lookup failed; routing to onboarding", err);
-  }
-  navigateTo("../project-setup/");
-}
 
 const form = document.getElementById("login-form");
 const emailInput = document.getElementById("email");
@@ -127,7 +102,14 @@ form.addEventListener("submit", async (e) => {
       localStorage.removeItem("sitrep_remembered_email");
     }
 
-    await routeAfterAuth(user);
+    // If apiFetch bounced us here from a guarded page, return there after
+    // login. Only honor same-origin absolute paths ("/...") — never "//host"
+    // or full URLs — so this can't be turned into an open redirect.
+    const next = new URLSearchParams(location.search).get("next");
+    const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+    // No deep-link → let the backend dispatcher (/app) decide between the
+    // Projects page and onboarding based on whether the user has projects.
+    navigateTo(safeNext ?? "/app");
   } catch (err) {
     showBanner(banner, err.message || "Something went wrong. Please try again.");
   } finally {

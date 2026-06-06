@@ -94,12 +94,17 @@ export async function onRequestPost(context) {
 
     const userId = result.meta.last_row_id;
 
-    // Generate session token
+    // Generate session token and persist it so the middleware can resolve the
+    // cookie back to this user on later requests. Mirrors login.js: `expires_at`
+    // is computed in SQL to match the middleware's freshness check, and the
+    // 7-day window mirrors the cookie Max-Age=604800 set below.
     const sessionToken = generateSessionToken();
 
-    // In a real app, you'd store this token in a sessions table
-    // For now, we'll include it in the cookie
-    // TODO: Create sessions table to track tokens
+    await env.DB.prepare(
+      "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now', '+7 days'))"
+    )
+      .bind(sessionToken, userId)
+      .run();
 
     // Fetch the created user
     const user = await env.DB.prepare(

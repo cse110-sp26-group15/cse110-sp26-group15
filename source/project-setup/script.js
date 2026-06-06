@@ -130,8 +130,12 @@ form.addEventListener("submit", async (e) => {
   submitBtn.innerHTML = "Creating workspace…";
 
   try {
-    const created_by = getCurrentUser()?.user_id ?? null;
-    const result = await apiCreateProject({ name, workflow, members: [...members], created_by });
+    // The creator is taken from the session cookie by the server, so it is not
+    // part of the payload. Persist the new project locally so the dashboards /
+    // Profile / Settings pages can read it (via getCurrentProjectId()) without
+    // an extra round-trip — the project_id is what makes each one load its own
+    // data instead of hard-coding 1.
+    const result = await apiCreateProject({ name, workflow, members: [...members] });
     const project = result?.project ?? { name, workflow };
     setCurrentProject({
       project_id: project.project_id,

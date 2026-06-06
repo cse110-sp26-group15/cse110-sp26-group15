@@ -1,3 +1,5 @@
+DELETE FROM sessions;
+
 DELETE FROM blockers;
 
 DELETE FROM checkins;

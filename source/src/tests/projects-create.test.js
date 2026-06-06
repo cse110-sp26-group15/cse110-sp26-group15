@@ -20,14 +20,20 @@ function createMockDb({ firstResults = [], runResults = [] } = {}) {
 }
 
 /**
- * Build a POST /api/projects context.
+ * Build a POST /api/projects context. The creator is resolved from the session
+ * (`context.data.userId`, set by the global middleware) — never the body — so
+ * we stub it here the way the real middleware would. Defaults to user 1, kept
+ * distinct from the existing-member fixtures (user 2) so the creator isn't
+ * deduped against them.
  * @param {object} body
  * @param {object} db
+ * @param {number} [userId=1]
  * @returns {object}
  */
-function ctx(body, db) {
+function ctx(body, db, userId = 1) {
   return {
     env: { DB: db },
+    data: { userId },
     request: new Request("http://localhost/api/projects", {
       method: "POST",
       body: JSON.stringify(body),

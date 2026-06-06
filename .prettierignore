@@ -3,3 +3,6 @@ dist/
 build/
 coverage/
 package-lock.json
+.wrangler/
+test-results/
+playwright-report/

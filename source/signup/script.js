@@ -126,7 +126,9 @@ form.addEventListener("submit", async (e) => {
     localStorage.setItem("sitrep_display_name", fullName);
 
     saveCurrentUser({ ...user, full_name: user?.full_name ?? fullName });
-    navigateTo("../project-setup/");
+    // The backend dispatcher (/app) routes to onboarding for a brand-new
+    // account (0 projects) or the Projects page if they were invited to any.
+    navigateTo("/app");
   } catch (err) {
     showBanner(banner, err.message || "Something went wrong. Please try again.");
   } finally {

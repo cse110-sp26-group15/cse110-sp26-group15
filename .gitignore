@@ -10,3 +10,5 @@ test-results/
 .env.local
 .wrangler
 .claude/
+test-results/
+playwright-report/
