@@ -1,16 +1,22 @@
 import { createTaskCard, setTaskCardStatus } from "../task-card/task-card.js";
 import { renderAgents } from "../agent-card/agent-card.js";
 import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
-import { apiFetch, ApiError, showLoading, hideLoading } from "../shared/utils.js";
+import {
+  apiFetch,
+  ApiError,
+  showLoading,
+  hideLoading,
+  getCurrentProjectId,
+} from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 import { initLocalPairs, loadPairs } from "./xp-pairs.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 
 initUserMenu();
 
-// Hard-coded for now; will switch to the logged-in project once auth context
-// is plumbed through (same TODO as scrum.js / kanban.js).
-const PROJECT_ID = 1;
+// The project the user is currently viewing, chosen at project setup and read
+// from localStorage. Falls back to 1 when nothing is stored.
+const PROJECT_ID = getCurrentProjectId();
 
 // ── Navigation ────────────────────────────────────────
 document.querySelectorAll(".nav-item").forEach((item) => {

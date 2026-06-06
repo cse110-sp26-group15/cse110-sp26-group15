@@ -9,8 +9,7 @@ import {
   rememberResolvedBlockerId,
   wireCollapseToggle,
 } from "./blocker-card.js";
-
-const DEFAULT_API_URL = "/api/blockers?general=true";
+import { getCurrentProjectId } from "../shared/utils.js";
 
 // ── Rail navigation (click + keyboard) ────────────────
 // Caller supplies `findTask` so the lookup strategy stays decoupled from
@@ -98,10 +97,16 @@ export function attachRailNavigation(rail, { findTask }) {
 
 // ── Default fetch + lookup (dashboard) ────────────────
 async function defaultFetchBlockers() {
+  // Scope the rail to the project the user is currently viewing (read from
+  // localStorage via getCurrentProjectId). Using the cross-project /api/blockers
+  // endpoint here leaked blockers from the user's *other* projects into whatever
+  // board they were on. The project-scoped endpoint's default query returns
+  // every open blocker for this project, and its row shape matches mapApiBlocker.
+  const url = `/api/projects/${getCurrentProjectId()}/blockers`;
   try {
-    const res = await fetch(DEFAULT_API_URL);
+    const res = await fetch(url);
     if (!res.ok) {
-      console.warn(`[blocker-rail] fetch ${DEFAULT_API_URL} returned ${res.status}`);
+      console.warn(`[blocker-rail] fetch ${url} returned ${res.status}`);
       return [];
     }
     const data = await res.json();
@@ -185,7 +190,7 @@ function defaultResolveBlocker(blocker) {
  * @param {object}      options
  * @param {HTMLElement} options.container               Where the rail lives.
  * @param {HTMLElement} [options.anchor=null]           If set + child of container, rail is inserted before this node; otherwise appended.
- * @param {() => Promise<object[]>} [options.fetchBlockers]   Returns raw API rows. Default hits `/api/blockers?general=true`.
+ * @param {() => Promise<object[]>} [options.fetchBlockers]   Returns raw API rows. Default hits `/api/projects/:id/blockers` for the active project.
  * @param {(taskName: string) => HTMLElement|null} [options.findTask]  DOM resolver for footer clicks. Default matches `#task-list .task-card` titles.
  * @param {boolean}     [options.includeResolved=false] When false, resolved blockers are dropped before render.
  * @returns {Promise<{refresh: () => Promise<void>, destroy: () => void}>}

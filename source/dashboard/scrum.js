@@ -17,7 +17,13 @@
 import { createTaskCard } from "../task-card/task-card.js";
 import { renderAgents } from "../agent-card/agent-card.js";
 import { openAgentModal, createAgent } from "../agent-card/agent-form.js";
-import { apiFetch, ApiError, showLoading, hideLoading } from "../shared/utils.js";
+import {
+  apiFetch,
+  ApiError,
+  showLoading,
+  hideLoading,
+  getCurrentProjectId,
+} from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 
@@ -41,10 +47,10 @@ function loadTaskFormModule() {
 }
 
 // ── Constants ────────────────────────────────────────
-// PROJECT_ID is hard-coded for now (no auth/projects flow on the
-// dashboard yet); will switch to the logged-in user's project once that
-// context is plumbed through.
-export const PROJECT_ID = 1;
+// The project the user is currently viewing, chosen at project setup and read
+// from localStorage. Falls back to 1 when nothing is stored (e.g. direct
+// navigation, or the unit suite running under Node with no localStorage).
+export const PROJECT_ID = getCurrentProjectId();
 
 // localStorage key for the sprint picker selection. Namespaced by
 // project so multiple projects can each remember their own sprint.

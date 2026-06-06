@@ -1,3 +1,34 @@
+import { requireProjectMember } from "../_auth.js";
+
+/**
+ * Resolve a blocker to the project that owns it, via its check-in
+ * (blocker → checkin → project), and gate on membership. A blocker has no
+ * project_id column today, so the check-in is the only link; an orphaned
+ * blocker (no/deleted check-in) resolves to a null project and is denied.
+ * Returns a Response to abort (404 missing / 401/403/400 from the guard), or
+ * null when the caller is authorized.
+ *
+ * @param {{ env: { DB: object }, userId?: number|null }} context
+ * @param {string} blockerId
+ * @returns {Promise<Response|null>}
+ */
+async function authorizeBlocker(context, blockerId) {
+  const { env } = context;
+  const owner = await env.DB.prepare(
+    `SELECT b.blocker_id, c.project_id
+       FROM blockers b
+       LEFT JOIN checkins c ON b.checkin_id = c.checkin_id
+      WHERE b.blocker_id = ?`
+  )
+    .bind(blockerId)
+    .first();
+
+  if (!owner) {
+    return Response.json({ error: "Blocker not found" }, { status: 404 });
+  }
+  return requireProjectMember(context, owner.project_id);
+}
+
 export async function onRequestPatch(context) {
   const { env, params, request } = context;
   const { blockerId } = params;
@@ -43,6 +74,9 @@ export async function onRequestPatch(context) {
   values.push(blockerId);
 
   try {
+    const denied = await authorizeBlocker(context, blockerId);
+    if (denied) return denied;
+
     await env.DB.prepare(`UPDATE blockers SET ${fields.join(", ")} WHERE blocker_id = ?`)
       .bind(...values)
       .run();
@@ -76,13 +110,8 @@ export async function onRequestDelete(context) {
   const { blockerId } = params;
 
   try {
-    const blocker = await env.DB.prepare("SELECT blocker_id FROM blockers WHERE blocker_id = ?")
-      .bind(blockerId)
-      .first();
-
-    if (!blocker) {
-      return Response.json({ error: "Blocker not found" }, { status: 404 });
-    }
+    const denied = await authorizeBlocker(context, blockerId);
+    if (denied) return denied;
 
     await env.DB.prepare("DELETE FROM blockers WHERE blocker_id = ?").bind(blockerId).run();
 

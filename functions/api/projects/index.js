@@ -1,44 +1,54 @@
+import { requireUser } from "../_auth.js";
+
 const VALID_WORKFLOWS = ["scrum", "kanban", "xp"];
 
 /**
  * Cloudflare Pages function: GET /api/projects
  *
- * Lists projects. When `?user_id=N` is supplied, returns only projects
- * where N is a member (via project_members); otherwise returns every
- * project. Each row includes `member_count` so callers can render a
- * picker without a second round-trip.
+ * Lists the projects the authenticated caller is a member of. The caller is
+ * taken from the session (context.data.userId), never from a query param, so a
+ * client cannot enumerate another user's — or every — project. Each row
+ * includes `member_count` so callers can render a picker without a second
+ * round-trip, plus an `is_owner` flag marking the projects this caller created
+ * (the only ones they're allowed to delete).
  *
- * @param {{ env: { DB?: object }, request: Request }} context
+ * @param {{ env: { DB?: object }, data?: { userId?: number|null } }} context
  * @returns {Promise<Response>}
  */
 export async function onRequestGet(context) {
-  const { env, request } = context;
+  const { env } = context;
 
   if (!env.DB) {
     return Response.json({ error: "D1 database binding not configured." }, { status: 500 });
   }
 
-  const url = new URL(request.url);
-  const userIdParam = url.searchParams.get("user_id");
-  const userId = userIdParam ? Number(userIdParam) : null;
+  const denied = requireUser(context);
+  if (denied) return denied;
+  const userId = context.data.userId;
 
   try {
-    const query = userId
-      ? `SELECT p.project_id, p.name, p.description, p.workflow, p.created_by, p.created_at,
-                (SELECT COUNT(*) FROM project_members pm2 WHERE pm2.project_id = p.project_id) AS member_count
-         FROM projects p
-         JOIN project_members pm ON pm.project_id = p.project_id
-         WHERE pm.user_id = ?
-         ORDER BY p.created_at DESC`
-      : `SELECT p.project_id, p.name, p.description, p.workflow, p.created_by, p.created_at,
-                (SELECT COUNT(*) FROM project_members pm2 WHERE pm2.project_id = p.project_id) AS member_count
-         FROM projects p
-         ORDER BY p.created_at DESC`;
+    const { results } = await env.DB.prepare(
+      `SELECT p.project_id, p.name, p.description, p.workflow, p.created_by, p.created_at,
+              (SELECT COUNT(*) FROM project_members pm2 WHERE pm2.project_id = p.project_id) AS member_count
+       FROM projects p
+       JOIN project_members pm ON pm.project_id = p.project_id
+       WHERE pm.user_id = ?
+       ORDER BY p.created_at DESC`
+    )
+      .bind(userId)
+      .all();
 
-    const stmt = userId ? env.DB.prepare(query).bind(userId) : env.DB.prepare(query);
-    const { results } = await stmt.all();
+    // Tag each project with whether this caller created it. Only the creator may
+    // delete a project (enforced by the DELETE handler), so the Projects page
+    // uses this server-derived flag to decide whether to show the delete
+    // control — rather than comparing against client-side state, which the
+    // session cookie can outlive.
+    const projects = (results ?? []).map((p) => ({
+      ...p,
+      is_owner: p.created_by === userId,
+    }));
 
-    return Response.json({ projects: results });
+    return Response.json({ projects });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
   }
@@ -66,12 +76,15 @@ function validateEmail(email) {
  *   - workflow {string}   Optional. One of 'scrum' | 'kanban' | 'xp'. Defaults to 'scrum'.
  *   - description {string|null} Optional.
  *   - members {string[]}  Optional. Invited member emails.
- *   - created_by {number|null} Optional. user_id of the creator; added as a member.
+ *
+ * The creator is the authenticated caller (session), added as a member. Any
+ * `created_by` in the body is ignored so a client cannot create a project owned
+ * by someone else.
  *
  * Response 201:
  *   { project, invited: [{ user_id, email }], not_found: string[] }
  *
- * @param {{ env: { DB?: object }, request: Request }} context
+ * @param {{ env: { DB?: object }, request: Request, data?: { userId?: number|null } }} context
  * @returns {Promise<Response>}
  */
 export async function onRequestPost(context) {
@@ -81,6 +94,10 @@ export async function onRequestPost(context) {
     return Response.json({ error: "D1 database binding not configured." }, { status: 500 });
   }
 
+  const denied = requireUser(context);
+  if (denied) return denied;
+  const creatorId = context.data.userId;
+
   let body;
   try {
     body = await request.json();
@@ -88,7 +105,7 @@ export async function onRequestPost(context) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { name, workflow = "scrum", description = null, members = [], created_by = null } = body;
+  const { name, workflow = "scrum", description = null, members = [] } = body;
 
   if (!name || typeof name !== "string" || name.trim() === "") {
     return Response.json({ error: "Project name is required." }, { status: 400 });
@@ -115,22 +132,8 @@ export async function onRequestPost(context) {
   }
 
   try {
-    // Verify `created_by` actually references a real user before binding
-    // it to the FK. Stale sessionStorage can carry a user_id from a
-    // previous DB seed/reset, which would otherwise trip the projects
-    // → users FK and abort the entire request.
-    let creatorId = null;
-    if (created_by != null) {
-      const creator = await env.DB.prepare("SELECT user_id FROM users WHERE user_id = ?")
-        .bind(created_by)
-        .first();
-      if (creator) {
-        creatorId = creator.user_id;
-      } else {
-        console.warn(`[projects POST] created_by=${created_by} not found; storing NULL`);
-      }
-    }
-
+    // creatorId comes from the verified session (requireUser above), so it
+    // always references a real user — no need to re-check it against the FK.
     const insertProject = await env.DB.prepare(
       `INSERT INTO projects (name, description, workflow, created_by)
        VALUES (?, ?, ?, ?)`
