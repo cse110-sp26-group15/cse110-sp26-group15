@@ -9,3 +9,5 @@ coverage/
 .wrangler
 .claude/
 wrangler.toml
+test-results/
+playwright-report/

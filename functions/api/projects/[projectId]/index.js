@@ -42,3 +42,69 @@ export async function onRequestGet(context) {
     return Response.json({ error: err.message }, { status: 500 });
   }
 }
+
+/**
+ * Cloudflare Pages function: DELETE /api/projects/:projectId
+ *
+ * Permanently deletes a project and everything scoped to it (check-ins and
+ * their blockers, tasks, sprints, and the membership rows). Only the user who
+ * created the project may delete it — membership alone (already enforced by the
+ * scoped middleware) is not enough, since a shared project shouldn't be
+ * destroyable by every member.
+ *
+ * The deletes are issued as a single D1 batch so they apply atomically: either
+ * the whole project and its dependents go, or nothing does. Child rows are
+ * removed before the parent `projects` row because SQLite/D1 enforces the
+ * foreign keys (blockers → checkins → project, tasks/sprints/members → project).
+ *
+ * @param {{ env: { DB?: object }, params: { projectId: string }, data?: { userId?: number|null } }} context
+ * @returns {Promise<Response>}
+ */
+export async function onRequestDelete(context) {
+  const { env, params, data } = context;
+
+  if (!env.DB) {
+    return Response.json({ error: "D1 database binding not configured." }, { status: 500 });
+  }
+
+  const userId = data?.userId;
+  const projectId = params.projectId;
+
+  try {
+    // The scoped middleware already confirmed the caller is a member; here we
+    // additionally require that they are the creator before destroying it.
+    const project = await env.DB.prepare("SELECT created_by FROM projects WHERE project_id = ?")
+      .bind(projectId)
+      .first();
+
+    if (!project) {
+      return Response.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    if (project.created_by !== userId) {
+      return Response.json(
+        { error: "Only the project creator can delete this project." },
+        { status: 403 }
+      );
+    }
+
+    // Order matters: clear the rows that reference this project (and the
+    // blockers that reference its check-ins) before the project row itself.
+    await env.DB.batch([
+      env.DB.prepare(
+        `DELETE FROM blockers
+         WHERE checkin_id IN (SELECT checkin_id FROM checkins WHERE project_id = ?)`
+      ).bind(projectId),
+      env.DB.prepare("DELETE FROM checkins WHERE project_id = ?").bind(projectId),
+      env.DB.prepare("DELETE FROM tasks WHERE project_id = ?").bind(projectId),
+      env.DB.prepare("DELETE FROM sprints WHERE project_id = ?").bind(projectId),
+      env.DB.prepare("DELETE FROM project_members WHERE project_id = ?").bind(projectId),
+      env.DB.prepare("DELETE FROM projects WHERE project_id = ?").bind(projectId),
+    ]);
+
+    return Response.json({ success: true });
+  } catch (err) {
+    console.error("Delete project error:", err);
+    return Response.json({ error: err.message }, { status: 500 });
+  }
+}

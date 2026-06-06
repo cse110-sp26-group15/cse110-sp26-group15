@@ -1,3 +1,5 @@
+import { requireReferencedMember } from "../../_auth.js";
+
 const VALID_AGENT_TYPES = [
   "standup-summarizer",
   "spec-reviewer",
@@ -123,6 +125,15 @@ export async function onRequestPost(context) {
         { status: 400 }
       );
     }
+
+    // The accountable human owner must be on this project too.
+    const ownerContained = await requireReferencedMember(
+      context,
+      projectId,
+      ownerId,
+      "owner_user_id"
+    );
+    if (ownerContained) return ownerContained;
 
     // Reject duplicate emails up front for a clean 409 instead of an FK abort.
     const existing = await env.DB.prepare(`SELECT user_id FROM users WHERE email = ?`)

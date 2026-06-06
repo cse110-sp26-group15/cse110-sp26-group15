@@ -1,3 +1,5 @@
+import { requireProjectMember, requireReferencedMember } from "../_auth.js";
+
 const VALID_STATUSES = ["todo", "in-progress", "done"];
 const VALID_REVIEW_STATUSES = ["not-required", "pending", "approved", "needs-revision"];
 
@@ -66,13 +68,18 @@ export async function onRequestPatch(context) {
 
   try {
     const existing = await env.DB.prepare(
-      `SELECT task_id, assigned_to, reviewer_id, review_status FROM tasks WHERE task_id = ?`
+      `SELECT task_id, project_id, assigned_to, reviewer_id, review_status FROM tasks WHERE task_id = ?`
     )
       .bind(taskId)
       .first();
     if (!existing) {
       return Response.json({ error: "Task not found" }, { status: 404 });
     }
+
+    // The task carries the only project context this route has (no :projectId
+    // in the URL), so resolve membership off the row before mutating it.
+    const denied = await requireProjectMember(context, existing.project_id);
+    if (denied) return denied;
 
     // Compute the post-update assignee/reviewer so we can validate as a
     // single coherent state rather than field-by-field.
@@ -84,6 +91,15 @@ export async function onRequestPatch(context) {
     if (nextAssigned && assignee.kind === "missing") {
       return Response.json({ error: "assigned_to references unknown user" }, { status: 400 });
     }
+
+    // Keep a reassigned task's assignee contained to the task's project.
+    const assigneeContained = await requireReferencedMember(
+      context,
+      existing.project_id,
+      nextAssigned,
+      "assigned_to"
+    );
+    if (assigneeContained) return assigneeContained;
 
     if (assignee.kind === "agent") {
       // If the caller didn't provide a reviewer and the existing reviewer
@@ -180,13 +196,16 @@ export async function onRequestDelete(context) {
   const { taskId } = params;
 
   try {
-    const task = await env.DB.prepare("SELECT task_id FROM tasks WHERE task_id = ?")
+    const task = await env.DB.prepare("SELECT task_id, project_id FROM tasks WHERE task_id = ?")
       .bind(taskId)
       .first();
 
     if (!task) {
       return Response.json({ error: "Task not found" }, { status: 404 });
     }
+
+    const denied = await requireProjectMember(context, task.project_id);
+    if (denied) return denied;
 
     await env.DB.prepare("DELETE FROM tasks WHERE task_id = ?").bind(taskId).run();
 
