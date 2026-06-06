@@ -19,7 +19,7 @@
 // comes from `GET /api/projects/:id/tasks` and "Who can help?" from
 // `GET /api/projects/:id/members`.
 
-import { apiFetch, ApiError, getCurrentUser, getCurrentProjectId } from "../shared/utils.js";
+import { apiFetch, ApiError, getCurrentUser, getCurrentProjectId, requireStoredProject } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 
 initUserMenu();
@@ -555,6 +555,8 @@ function wireSidebar() {
 
 // ── Init ─────────────────────────────────────────────
 async function init() {
+  if (!requireStoredProject("/projects/projects.html")) return;
+
   wireSidebar();
   form = document.getElementById("checkin-form");
   promptBanner = document.getElementById("checkin-prompt");

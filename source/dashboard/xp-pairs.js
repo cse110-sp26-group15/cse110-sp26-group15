@@ -1,9 +1,8 @@
 // xp-pairs.js — XP Pair Programming (API-first, localStorage fallback)
 
-import { apiFetch } from "../shared/utils.js";
+import { apiFetch, getCurrentProjectId } from "../shared/utils.js";
 
-// Hard-coded for now; same TODO as scrum.js / kanban.js.
-const PROJECT_ID = 1;
+const PROJECT_ID = getCurrentProjectId();
 const STORAGE_KEY = "sitrep_pairs";
 
 // Shown when the backend has no project members yet (pre-seed / frontend-only).

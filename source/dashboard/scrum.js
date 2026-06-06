@@ -23,6 +23,7 @@ import {
   showLoading,
   hideLoading,
   getCurrentProjectId,
+  requireStoredProject,
 } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
@@ -1046,10 +1047,37 @@ function switchView(navSlug, label) {
   view.classList.remove("hidden");
 }
 
+/** Read a sidebar view slug from ?view= or #hash (hash survives clean-url redirects). */
+function getViewFromLocation() {
+  const fromQuery = new URLSearchParams(location.search).get("view");
+  if (fromQuery) return fromQuery;
+  const hash = location.hash.replace(/^#/, "");
+  return hash || null;
+}
+
+/** Open a sidebar placeholder tab when arriving via ?view=team, #team, etc. */
+function applyViewFromQuery() {
+  const view = getViewFromLocation();
+  if (!view || view === "dashboard") return;
+
+  const labels = { team: "Team", "weekly-report": "Weekly Report" };
+  const label = labels[view];
+  if (!label) return;
+
+  switchView(view, label);
+  document.querySelectorAll(".nav-item").forEach((n) => {
+    n.classList.toggle("active", n.dataset.nav === view);
+  });
+  const topbarTitle = document.querySelector(".topbar-title");
+  if (topbarTitle) topbarTitle.textContent = label;
+}
+
 // ── Init (DOM-only) ──────────────────────────────────
 // Skip everything below when there's no document — lets the test suite
 // import this module purely for the helpers above.
 function init() {
+  if (!requireStoredProject("/projects/projects.html")) return;
+
   // Restore sprint state from localStorage (if anything is saved).
   const stored = readSprintFromStorage();
   if (stored) sprintState = stored;
@@ -1076,6 +1104,8 @@ function init() {
       if (topbarTitle) topbarTitle.textContent = item.textContent.trim();
     });
   });
+
+  applyViewFromQuery();
 
   // ── Sprint picker controls ─────────────────────────
   document.getElementById("edit-sprint-btn")?.addEventListener("click", openSprintPicker);

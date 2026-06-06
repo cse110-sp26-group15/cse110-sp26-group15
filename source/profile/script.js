@@ -1,15 +1,7 @@
-import { getCurrentUser, saveCurrentUser } from "../shared/utils.js";
+import { getCurrentUser, saveCurrentUser, requireStoredProject } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 
 // ── Shared helpers ────────────────────────────────────
-
-function readProject() {
-  try {
-    return JSON.parse(localStorage.getItem("sitrep_project") ?? "null");
-  } catch {
-    return null;
-  }
-}
 
 /** Resolve display name with consistent priority across the app:
  *  1. localStorage "sitrep_display_name" (set by signup / profile edit)
@@ -43,20 +35,20 @@ const DASH_MAP = {
 };
 
 // ── Bootstrap ─────────────────────────────────────────
+const project = requireStoredProject("/projects/projects.html");
+if (!project) {
+  // Redirecting to the projects list — skip wiring this page.
+} else {
 const user = getCurrentUser();
-const project = readProject();
-const workflow = project?.workflow ?? "scrum";
+const workflow = project.workflow ?? "scrum";
 const dashboardUrl = DASH_MAP[workflow] ?? DASH_MAP.scrum;
 
-// The logo opens the Projects page; the Dashboard nav item stays on the
-// current project's board.
+// The logo opens the Projects page; each nav item has an explicit target.
 document.getElementById("sidebar-logo-link").href = "../projects/projects.html";
 document.getElementById("nav-dashboard").href = dashboardUrl;
-
-// Nav items for other views all route back to the dashboard
-document.querySelectorAll(".sidebar-nav .nav-item").forEach((item) => {
-  if (!item.id) item.href = dashboardUrl;
-});
+document.getElementById("nav-check-ins").href = "../check-in/check-in.html";
+document.getElementById("nav-team").href = `${dashboardUrl}#team`;
+document.getElementById("nav-weekly-report").href = `${dashboardUrl}#weekly-report`;
 
 // ── Populate profile content ──────────────────────────
 const displayName = resolveDisplayName(user);
@@ -117,3 +109,4 @@ saveBtn.addEventListener("click", () => {
   editEl.hidden = true;
   editBtn.hidden = false;
 });
+}

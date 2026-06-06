@@ -1,5 +1,50 @@
 import { test, expect } from "@playwright/test";
 
+const STORED_PROJECT = { project_id: 1, name: "Test Project", workflow: "kanban" };
+
+/** Seed sitrep_project before the page script runs. */
+async function seedProject(page, project = STORED_PROJECT) {
+  await page.addInitScript((p) => {
+    localStorage.setItem("sitrep_project", JSON.stringify(p));
+  }, project);
+}
+
+/** Minimal API mocks for the kanban dashboard (main.js) initial load. */
+async function mockKanbanLoad(page, projectId = 1) {
+  const ok = (body) => ({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify(body),
+  });
+
+  await page.route(`**/api/projects/${projectId}/tasks`, (route) => route.fulfill(ok({ tasks: [] })));
+  await page.route(`**/api/projects/${projectId}/members`, (route) =>
+    route.fulfill(ok({ members: [] }))
+  );
+  await page.route(`**/api/projects/${projectId}/agents`, (route) => route.fulfill(ok({ agents: [] })));
+  await page.route(`**/api/projects/${projectId}/checkins`, (route) =>
+    route.fulfill(ok({ checkins: [] }))
+  );
+  await page.route(`**/api/projects/${projectId}/dashboard`, (route) =>
+    route.fulfill(ok({ checkins: { entries: [] }, blockers: { entries: [] } }))
+  );
+}
+
+/** Minimal API mocks for the check-in page initial load. */
+async function mockCheckinLoad(page, projectId = 1) {
+  const ok = (body) => ({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify(body),
+  });
+
+  await page.route(`**/api/projects/${projectId}/checkins`, (route) => route.fulfill(ok({ checkins: [] })));
+  await page.route(`**/api/projects/${projectId}/tasks`, (route) => route.fulfill(ok({ tasks: [] })));
+  await page.route(`**/api/projects/${projectId}/members`, (route) =>
+    route.fulfill(ok({ members: [] }))
+  );
+}
+
 test.describe("Navigation", () => {
   /**
    * Verifies the root index redirects to the login page via the meta-refresh
@@ -31,5 +76,55 @@ test.describe("Navigation", () => {
     await expect(loginLink).toBeVisible();
     await loginLink.click();
     await expect(page).toHaveURL(/login/);
+  });
+
+  test("check-in Team sidebar shows in-page placeholder", async ({ page }) => {
+    await seedProject(page);
+    await mockCheckinLoad(page);
+    await page.goto("/check-in/check-in.html");
+
+    await page.getByRole("link", { name: "Team" }).click();
+    await expect(page.locator("#team-view")).toBeVisible();
+    await expect(page.locator("#team-view")).toContainText("Team roster and roles");
+  });
+
+  test("profile sidebar links preserve workflow and destinations", async ({ page }) => {
+    await seedProject(page);
+    await page.goto("/profile/");
+
+    await expect(page.locator("#nav-check-ins")).toHaveAttribute("href", "../check-in/check-in.html");
+    await expect(page.locator("#nav-team")).toHaveAttribute(
+      "href",
+      "../dashboard/kanban.html#team"
+    );
+    await expect(page.locator("#nav-weekly-report")).toHaveAttribute(
+      "href",
+      "../dashboard/kanban.html#weekly-report"
+    );
+  });
+
+  test("profile My Check-ins navigates to the check-in page", async ({ page }) => {
+    await seedProject(page);
+    await mockCheckinLoad(page);
+    await page.goto("/profile/");
+
+    await page.locator("#nav-check-ins").click();
+    await expect(page).toHaveURL(/check-in\/check-in/);
+  });
+
+  test("profile Team link opens the Team placeholder on the workflow dashboard", async ({ page }) => {
+    await seedProject(page);
+    await mockKanbanLoad(page);
+    await page.goto("/profile/");
+
+    await page.locator("#nav-team").click();
+    await expect(page).toHaveURL(/dashboard\/kanban#team/);
+    await expect(page.locator("#team-view")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Team" })).toHaveClass(/active/);
+  });
+
+  test("profile redirects to projects when no session project is stored", async ({ page }) => {
+    await page.goto("/profile/");
+    await expect(page).toHaveURL(/projects\/projects/);
   });
 });

@@ -1,15 +1,7 @@
-import { getCurrentUser } from "../shared/utils.js";
+import { getCurrentUser, requireStoredProject } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 
 // ── Helpers ───────────────────────────────────────────
-
-function readProject() {
-  try {
-    return JSON.parse(localStorage.getItem("sitrep_project") ?? "null");
-  } catch {
-    return null;
-  }
-}
 
 const DASH_MAP = {
   scrum: "../dashboard/scrum.html",
@@ -18,19 +10,19 @@ const DASH_MAP = {
 };
 
 // ── Bootstrap ─────────────────────────────────────────
-const project = readProject();
-const workflow = project?.workflow ?? "scrum";
+const project = requireStoredProject("/projects/projects.html");
+if (!project) {
+  // Redirecting to the projects list — skip wiring this page.
+} else {
+const workflow = project.workflow ?? "scrum";
 const dashboardUrl = DASH_MAP[workflow] ?? DASH_MAP.scrum;
 
-// The logo opens the Projects page; the Dashboard nav item stays on the
-// current project's board.
+// The logo opens the Projects page; each nav item has an explicit target.
 document.getElementById("sidebar-logo-link").href = "../projects/projects.html";
 document.getElementById("nav-dashboard").href = dashboardUrl;
-
-// All other nav items route back to dashboard
-document.querySelectorAll(".sidebar-nav .nav-item").forEach((item) => {
-  if (!item.id) item.href = dashboardUrl;
-});
+document.getElementById("nav-check-ins").href = "../check-in/check-in.html";
+document.getElementById("nav-team").href = `${dashboardUrl}#team`;
+document.getElementById("nav-weekly-report").href = `${dashboardUrl}#weekly-report`;
 
 // ── Populate About section ────────────────────────────
 const workflowLabel = { scrum: "Scrum", kanban: "Kanban", xp: "XP" }[workflow] ?? "—";
@@ -86,3 +78,4 @@ rememberToggle.addEventListener("change", () => {
     }
   }
 });
+}
