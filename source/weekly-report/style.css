@@ -18,7 +18,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-lg);
-  margin-bottom: var(--space-2xl);
+  margin-bottom: var(--space-md);
 }
 
 .report-toolbar .section-title {
@@ -58,7 +58,7 @@
 .report-document {
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-soft);
   padding: var(--space-xl) clamp(var(--space-xl), 4vw, var(--space-3xl));
 }
@@ -215,7 +215,7 @@
   top: var(--space-lg);
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-soft);
   padding: var(--space-xl);
   display: flex;
