@@ -5,8 +5,10 @@
 }
 
 /* ── Page header ───────────────────────────────────── */
+/* Fill the content area like the scrum/kanban dashboards. (Previously capped
+   at 1100px, which left a band of empty space on the right on wider screens.) */
 .xp-dashboard {
-  max-width: 1100px;
+  width: 100%;
 }
 
 .xp-page-header {
@@ -460,6 +462,15 @@
   font-size: var(--text-sm);
   color: var(--color-error);
   margin: 0;
+}
+
+/* Shown in place of the member pickers when the project has fewer than two
+   members, so the user knows why they can't create a pair yet. */
+.pm-empty {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.4;
 }
 
 .pm-footer {

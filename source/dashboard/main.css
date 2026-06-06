@@ -632,6 +632,15 @@ body {
   min-height: 0;
 }
 
+/* Keep cards at their natural height inside the scrolling lists/columns.
+   Without this, a full column's flex layout shrinks the cards to fit —
+   "smooshing" them into unreadable slivers instead of scrolling. */
+.task-list > .task-card,
+.kanban-column-list > .task-card,
+.kanban-col__cards > .task-card {
+  flex-shrink: 0;
+}
+
 /* ── Loading overlay + spinner ───────────────────────────────
    Injected by showLoading() (shared/utils.js) over the content area
    during the initial data fetch, then removed on completion. The
@@ -793,4 +802,48 @@ body {
   .kanban-board {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Task-card Edit/Delete controls ──────────────────
+   Appended by main.js below each task card on the kanban + XP
+   dashboards so tasks can be edited or removed inline. Kept
+   self-contained (no reliance on the shared .btn base) since
+   main.html loads main.css without components.css. */
+.task-card-row-delete {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-surface);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.task-card-edit,
+.task-card-delete {
+  font-size: var(--text-xs);
+  padding: var(--space-2xs) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.task-card-edit:hover {
+  background: var(--color-bg-subtle);
+}
+
+/* Muted error palette for the destructive action; deepens on hover. */
+.task-card-delete {
+  background: var(--color-error-muted);
+  border-color: var(--color-error);
+  color: var(--color-text-on-error-muted);
+}
+
+.task-card-delete:hover {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-text-on-error);
 }
