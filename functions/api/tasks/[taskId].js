@@ -2,6 +2,7 @@ import { requireProjectMember, requireReferencedMember } from "../_auth.js";
 
 const VALID_STATUSES = ["todo", "in-progress", "done"];
 const VALID_REVIEW_STATUSES = ["not-required", "pending", "approved", "needs-revision"];
+const VALID_PRIORITIES = ["urgent", "high", "medium", "low"];
 
 /**
  * Resolve a user_id to "human" / "agent" / "missing". See the matching
@@ -51,8 +52,18 @@ export async function onRequestPatch(context) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { status, assigned_to, reviewer_id, review_status, description } = body;
+  const { status, assigned_to, reviewer_id, review_status, description, title, priority } = body;
+  const { pair_assignee } = body;
 
+  if (title !== undefined && (typeof title !== "string" || title.trim() === "")) {
+    return Response.json({ error: "title must be a non-empty string" }, { status: 400 });
+  }
+  if (priority !== undefined && !VALID_PRIORITIES.includes(priority)) {
+    return Response.json(
+      { error: `priority must be one of: ${VALID_PRIORITIES.join(", ")}` },
+      { status: 400 }
+    );
+  }
   if (status !== undefined && !VALID_STATUSES.includes(status)) {
     return Response.json(
       { error: `status must be one of: ${VALID_STATUSES.join(", ")}` },
@@ -138,6 +149,14 @@ export async function onRequestPatch(context) {
 
     const fields = [];
     const values = [];
+    if (title !== undefined) {
+      fields.push("title = ?");
+      values.push(title.trim());
+    }
+    if (priority !== undefined) {
+      fields.push("priority = ?");
+      values.push(priority);
+    }
     if (status !== undefined) {
       fields.push("status = ?");
       values.push(status);
@@ -149,6 +168,10 @@ export async function onRequestPatch(context) {
     if (description !== undefined) {
       fields.push("description = ?");
       values.push(description);
+    }
+    if (pair_assignee !== undefined) {
+      fields.push("pair_assignee = ?");
+      values.push(pair_assignee);
     }
     // Always write the resolved reviewer/review_status so defaults stick.
     if (nextReviewer !== existing.reviewer_id) {
@@ -172,7 +195,7 @@ export async function onRequestPatch(context) {
 
     const task = await env.DB.prepare(
       `SELECT t.task_id, t.title, t.description, t.status, t.github_issue_url,
-              t.reviewer_id, t.review_status,
+              t.reviewer_id, t.review_status, t.priority, t.created_at, t.pair_assignee,
               u.user_id, u.full_name,
               CASE WHEN a.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_agent,
               r.full_name AS reviewer_name
