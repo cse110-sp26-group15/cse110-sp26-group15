@@ -26,6 +26,7 @@ import {
 } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
+import { renderTeamPanel } from "../shared/team-panel.js";
 
 initUserMenu();
 
@@ -1043,6 +1044,11 @@ function switchView(navSlug, label) {
     view.innerHTML = `<p>${escapeHtml(label)}</p><span>${escapeHtml(target.subtitle ?? "Coming soon")}</span>`;
     root.appendChild(view);
   }
+
+  if (navSlug === "team") {
+    renderTeamPanel(view, { projectId: PROJECT_ID });
+  }
+
   view.classList.remove("hidden");
 }
 

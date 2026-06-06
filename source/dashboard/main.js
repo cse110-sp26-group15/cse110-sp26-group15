@@ -10,6 +10,7 @@ import {
 } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
+import { renderTeamPanel } from "../shared/team-panel.js";
 
 initUserMenu();
 
@@ -56,6 +57,10 @@ function switchView(label) {
     view.className = "page-view placeholder";
     view.innerHTML = `<p>${label}</p><span>Coming soon</span>`;
     document.getElementById("page-content")?.appendChild(view);
+  }
+
+  if (label === "Team") {
+    renderTeamPanel(view, { projectId: PROJECT_ID });
   }
 
   view.classList.remove("hidden");
