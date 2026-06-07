@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getStoredProject, getCurrentProjectId, requireStoredProject } from "../../shared/utils.js";
+import {
+  getStoredProject,
+  getCurrentProjectId,
+  requireStoredProject,
+  dashboardPathFor,
+  setCurrentProject,
+  getCurrentProject,
+  defaultAssigneeId,
+} from "../../shared/utils.js";
 
+/** Minimal Storage stand-in that stubs the global localStorage. */
 function makeStorage(initial = {}) {
   let store = { ...initial };
   return {
@@ -11,6 +20,16 @@ function makeStorage(initial = {}) {
     removeItem: (k) => {
       delete store[k];
     },
+  };
+}
+
+/** In-memory Storage that callers pass explicitly (no globals). */
+function memStore() {
+  const m = new Map();
+  return {
+    getItem: (k) => (m.has(k) ? m.get(k) : null),
+    setItem: (k, v) => m.set(k, String(v)),
+    removeItem: (k) => m.delete(k),
   };
 }
 
@@ -73,26 +92,8 @@ describe("project context helpers", () => {
 
     expect(requireStoredProject("/projects/projects.html")).toBeNull();
     expect(href).toHaveBeenCalledWith("/projects/projects.html");
-import { describe, it, expect } from "vitest";
-import {
-  dashboardPathFor,
-  setCurrentProject,
-  getCurrentProject,
-  defaultAssigneeId,
-} from "../../shared/utils.js";
-
-/**
- * Minimal in-memory Storage stand-in for Node (no real localStorage).
- * @returns {{ getItem: Function, setItem: Function, removeItem: Function }}
- */
-function memStore() {
-  const m = new Map();
-  return {
-    getItem: (k) => (m.has(k) ? m.get(k) : null),
-    setItem: (k, v) => m.set(k, String(v)),
-    removeItem: (k) => m.delete(k),
-  };
-}
+  });
+});
 
 describe("dashboardPathFor", () => {
   it("maps each workflow to its dashboard page", () => {

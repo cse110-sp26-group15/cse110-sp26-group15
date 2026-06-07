@@ -3,7 +3,6 @@
 import { apiFetch, getCurrentProjectId } from "../shared/utils.js";
 
 const PROJECT_ID = getCurrentProjectId();
-const STORAGE_KEY = "sitrep_pairs";
 
 // Pair sessions from the most recent load. Cached so the XP dashboard can link
 // task pair-partners with these sessions without an extra round trip.

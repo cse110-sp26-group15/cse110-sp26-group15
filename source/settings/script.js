@@ -10,36 +10,42 @@ const DASH_MAP = {
 };
 
 // ── Bootstrap ─────────────────────────────────────────
-const project = readProject();
-const workflow = project?.workflow ?? "scrum";
-const dashboardUrl = DASH_MAP[workflow] ?? DASH_MAP.scrum;
+const project = requireStoredProject("/projects/projects.html");
+if (!project) {
+  // Redirecting to the projects list — skip wiring this page.
+} else {
+  const workflow = project.workflow ?? "scrum";
+  const dashboardUrl = DASH_MAP[workflow] ?? DASH_MAP.scrum;
 
-// The logo opens the Projects page; the Dashboard nav item stays on the
-// current project's board.
-document.getElementById("sidebar-logo-link").href = "../projects/projects.html";
-document.getElementById("nav-dashboard").href = dashboardUrl;
+  // The logo opens the Projects page; each nav item has an explicit target.
+  document.getElementById("sidebar-logo-link").href = "../projects/projects.html";
+  document.getElementById("nav-dashboard").href = dashboardUrl;
+  document.getElementById("nav-check-ins").href = "../check-in/check-in.html";
+  document.getElementById("nav-team").href = `${dashboardUrl}#team`;
+  document.getElementById("nav-weekly-report").href = `${dashboardUrl}#weekly-report`;
 
-// Placeholder nav items (href="#", e.g. My Check-ins / Team) route back to the
-// dashboard. Items with a real destination (e.g. Weekly Report) are left alone.
-document.querySelectorAll(".sidebar-nav .nav-item").forEach((item) => {
-  if (!item.id && item.getAttribute("href") === "#") item.href = dashboardUrl;
-});
+  // ── Populate About section ────────────────────────────
+  const workflowLabel = { scrum: "Scrum", kanban: "Kanban", xp: "XP" }[workflow] ?? "—";
+  document.getElementById("about-workspace").textContent = project?.name ?? "—";
+  document.getElementById("about-workflow").textContent = workflowLabel;
 
-// ── Populate About section ────────────────────────────
-const workflowLabel = { scrum: "Scrum", kanban: "Kanban", xp: "XP" }[workflow] ?? "—";
-document.getElementById("about-workspace").textContent = project?.name ?? "—";
-document.getElementById("about-workflow").textContent = workflowLabel;
+  // ── Init user menu ────────────────────────────────────
+  initUserMenu();
 
-// ── Init user menu ────────────────────────────────────
-initUserMenu();
+  // ── Theme management (Light / Dark only) ─────────────
+  const THEME_KEY = "sitrep_theme";
 
-  function setActiveThemeBtn(value) {
+  const applyTheme = (value) => {
+    document.documentElement.setAttribute("data-theme", value);
+  };
+
+  const setActiveThemeBtn = (value) => {
     document.querySelectorAll(".theme-btn").forEach((btn) => {
       const isActive = btn.dataset.theme === value;
       btn.classList.toggle("active", isActive);
       btn.setAttribute("aria-pressed", String(isActive));
     });
-  }
+  };
 
   const savedTheme = localStorage.getItem(THEME_KEY) ?? "light";
   applyTheme(savedTheme);
