@@ -7,6 +7,7 @@ import {
   showLoading,
   hideLoading,
   getCurrentProjectId,
+  requireStoredProject,
 } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 import { initLocalPairs, loadPairs, getLoadedPairs, ensurePairSession } from "./xp-pairs.js";
@@ -66,6 +67,33 @@ function switchView(label) {
 
   view.classList.remove("hidden");
 }
+
+const VIEW_FROM_QUERY = {
+  team: "Team",
+  "weekly-report": "Weekly Report",
+};
+
+/** Read a sidebar view slug from ?view= or #hash (hash survives clean-url redirects). */
+function getViewFromLocation() {
+  const fromQuery = new URLSearchParams(location.search).get("view");
+  if (fromQuery) return fromQuery;
+  const hash = location.hash.replace(/^#/, "");
+  return hash || null;
+}
+
+/** Open a sidebar placeholder tab when arriving via ?view=team, #team, etc. */
+function applyViewFromQuery() {
+  const view = getViewFromLocation();
+  const label = VIEW_FROM_QUERY[view];
+  if (!label) return;
+
+  switchView(label);
+  document.querySelectorAll(".nav-item").forEach((n) => {
+    n.classList.toggle("active", n.textContent.trim() === label);
+  });
+}
+
+applyViewFromQuery();
 
 // ── Task API ──────────────────────────────────────────
 
@@ -901,6 +929,8 @@ document.querySelectorAll(".kanban-col__cards").forEach((zone) => {
  * @returns {Promise<void>}
  */
 async function initImpl() {
+  if (!requireStoredProject("/projects/projects.html")) return;
+
   try {
     projectMembers = await fetchMembers();
   } catch (err) {
@@ -947,6 +977,8 @@ async function initImpl() {
       },
     });
   });
+
+  applyViewFromQuery();
 }
 
 // Public entry point — shows a loading overlay over the content area

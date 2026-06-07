@@ -426,8 +426,39 @@ export function defaultAssigneeId(members, currentUser) {
  * @param {number} [fallback=1]
  * @returns {number}
  */
+export function getStoredProject() {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(CURRENT_PROJECT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const id = parsed?.project_id;
+    if (!Number.isInteger(id) || id <= 0) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Redirect to the projects list when no valid project is stored in
+ * localStorage. Returns the stored project object when present, or null
+ * after starting a redirect (or when storage is unavailable, e.g. Node).
+ *
+ * @param {string} [redirectPath="/projects/projects.html"]
+ * @returns {{ project_id: number, name?: string, workflow?: string } | null}
+ */
+export function requireStoredProject(redirectPath = "/projects/projects.html") {
+  const project = getStoredProject();
+  if (project) return project;
+  if (typeof location !== "undefined") {
+    location.href = redirectPath;
+  }
+  return null;
+}
+
 export function getCurrentProjectId(fallback = 1) {
-  const project = getCurrentProject();
-  const id = project?.project_id;
-  return Number.isInteger(id) && id > 0 ? id : fallback;
+  const stored = getStoredProject();
+  if (stored) return stored.project_id;
+  return fallback;
 }

@@ -2,9 +2,6 @@
 
 import { apiFetch, getCurrentProjectId } from "../shared/utils.js";
 
-// The project the user is currently viewing (chosen at project setup, read from
-// localStorage). Matches main.js / scrum.js so pairs load for the active
-// project rather than always project 1.
 const PROJECT_ID = getCurrentProjectId();
 
 // Pair sessions from the most recent load. Cached so the XP dashboard can link
