@@ -66,6 +66,24 @@
   min-width: 140px;
 }
 
+/* The sprint number is auto-assigned, so it's shown as read-only text rather
+   than an input. Match the input's height/weight so the row stays aligned. */
+.sprint-number-display {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* `.btn` sets display:inline-flex, which overrides the browser default for the
+   `hidden` attribute — so a hidden .btn would still show. Re-assert none here so
+   scrum.js can fully remove the "New sprint" button while a sprint is running. */
+.btn[hidden] {
+  display: none;
+}
+
 .sprint-picker-buttons {
   display: flex;
   gap: var(--space-xs);
@@ -235,12 +253,16 @@
 /* ── Sprint progress ───────────────────────────────── */
 .sprint-progress-row {
   display: flex;
-  align-items: center;
-  gap: var(--space-md);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-xs);
 }
 
 .progress-bar {
-  flex: 1;
+  /* Column layout: the row stretches the bar to full width, so it must NOT flex
+     on the (now vertical) main axis — flex:1 there would zero out its height. */
+  flex: none;
+  width: 100%;
   height: var(--space-sm);
   background: var(--color-border);
   border-radius: var(--radius-full);
@@ -251,10 +273,19 @@
   height: 100%;
   background: var(--color-primary);
   border-radius: var(--radius-full);
-  transition: width var(--duration-slow) var(--ease-default);
+  transition:
+    width var(--duration-slow) var(--ease-default),
+    background-color var(--duration-slow) var(--ease-default);
+}
+
+/* All tasks done — turn the bar green to signal sprint completion. */
+.progress-bar-fill--complete {
+  background: var(--color-success);
 }
 
 .progress-meta {
+  /* Sit above the full-width bar (the bar is first in the DOM). */
+  order: -1;
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -370,33 +401,106 @@
   color: var(--color-text-muted);
 }
 
+/* ── Check-in details modal ("view update") ─────────── */
+/* Shared .tf-modal uses --color-bg, which is nearly identical to the page
+   background in dark mode, so the window blends into the dimmed backdrop. Use a
+   lighter surface + border here so it reads as a distinct dialog above the dim
+   (the tf-backdrop dimming itself is the same as the add-task modal). */
+.tf-modal.checkin-modal {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+}
+
+/* Compact summary header (Status / When) — tighter than the tf-body gap, with
+   labels aligned in a fixed column so the values line up. */
+.checkin-modal-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.checkin-modal-row {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.checkin-modal-value {
+  color: var(--color-text);
+}
+
+/* Content sections (Blocker / Work done / Work planned), each separated by a
+   subtle divider for clear visual grouping. */
+.checkin-modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.checkin-modal-label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.checkin-modal-text {
+  margin: 0;
+  color: var(--color-text);
+  line-height: var(--line-height-normal);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Blocker detail block: tinted panel so it stands out from the plain
+   work-done/planned text. */
+.checkin-modal-blocker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding: var(--space-sm);
+  background: var(--color-error-muted);
+  border-left: 3px solid var(--color-error);
+  border-radius: var(--radius-sm);
+}
+
+.checkin-modal-blocker .checkin-modal-text {
+  color: var(--color-text-on-error-muted);
+}
+
+.checkin-modal-blocker .checkin-modal-meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-on-error-muted);
+}
+
 /* ── Status badge ──────────────────────────────────── */
+/* Plain colored status text — no pill (no background, padding, or border) so it
+   reads as a label, not a clickable control. The status color is carried by the
+   text alone. */
 .status-badge {
   display: inline-block;
   font-size: var(--text-xs);
   font-weight: var(--font-weight-medium);
-  padding: var(--space-2xs) var(--space-sm);
-  border-radius: var(--radius-full);
-  border: 1px solid transparent;
   white-space: nowrap;
 }
 
 .status-badge.status-on-track {
-  background: var(--color-success-muted);
   color: var(--color-text-on-success-muted);
-  border-color: var(--color-success);
 }
 
 .status-badge.status-blocked {
-  background: var(--color-error-muted);
   color: var(--color-text-on-error-muted);
-  border-color: var(--color-error);
 }
 
 .status-badge.status-needs-help {
-  background: var(--color-warning-muted);
-  color: var(--color-text-on-warning-muted);
-  border-color: var(--color-warning-bg);
+  /* Use the brighter amber fill token (not the dark warning-text) so "needs
+     help" reads as orange and stays distinct from the blocked red in light
+     mode. */
+  color: var(--color-warning-bg);
 }
 
 /* ── Small action buttons inside checkin cards ─────── */
@@ -415,12 +519,17 @@
 }
 
 .btn-mini.danger {
-  color: var(--color-error);
+  /* Match the light-red danger look used across the rest of the UI
+     (e.g. .input.is-invalid) instead of the plain white surface. */
+  background: var(--color-error-muted);
+  color: var(--color-text-on-error-muted);
   border-color: var(--color-error);
 }
 
 .btn-mini.danger:hover {
-  background: var(--color-error-muted);
+  /* Deepen to a solid error fill on hover for clear feedback. */
+  background: var(--color-error);
+  color: var(--color-text-on-error);
 }
 
 /* main.css defines the three baseline status-select colors but not the
@@ -627,4 +736,20 @@
    wrap nicely on narrower viewports. */
 .task-form {
   flex-wrap: wrap;
+}
+
+/* ── Bottom spacing ────────────────────────────────── */
+/* Add breathing room below the last panel (Sprint Tasks) so the bottom of
+   the list scrolls comfortably into view instead of sitting flush against
+   the edge of the scroll area.
+
+   #dashboard-view is a flex:1 column that the flexbox shrinks to the visible
+   height while its panels overflow into .content-area's scroll, so a
+   padding-bottom here would render up at the fold instead of after the last
+   panel. A non-shrinking spacer flex item lives in the overflow flow, so it
+   reliably reserves space below the final panel. */
+#dashboard-view::after {
+  content: "";
+  display: block;
+  flex: 0 0 var(--space-md);
 }

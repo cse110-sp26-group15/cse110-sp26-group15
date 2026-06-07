@@ -306,9 +306,9 @@ export async function mountBlockerRail({
 function setupPlaceholderToggle(placeholder) {
   placeholder.setAttribute("role", "button");
   placeholder.setAttribute("tabindex", "0");
-  placeholder.setAttribute("aria-expanded", "true");
   placeholder.setAttribute("aria-label", "Toggle blockers section");
-  wireCollapseToggle({ trigger: placeholder });
+  // No blockers → start collapsed; wireCollapseToggle keeps aria-expanded in sync.
+  wireCollapseToggle({ trigger: placeholder, defaultCollapsed: true });
 }
 
 // ── Auto-mount on the dashboard view only ─────────────

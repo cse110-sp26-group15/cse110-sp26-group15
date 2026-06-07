@@ -10,8 +10,11 @@ const COLLAPSE_STORAGE_KEY = "blocker-rail:collapsed";
  * @param {object} options
  * @param {HTMLElement} options.trigger  Element that receives click/keydown.
  * @param {HTMLElement} [options.stateEl=trigger]  Element that carries `data-collapsed` (used by CSS).
+ * @param {boolean} [options.defaultCollapsed=false]  Initial state when the user
+ *        hasn't toggled before (no stored preference). The rail (real blockers)
+ *        starts expanded; the empty-state placeholder starts collapsed.
  */
-export function wireCollapseToggle({ trigger, stateEl = trigger }) {
+export function wireCollapseToggle({ trigger, stateEl = trigger, defaultCollapsed = false }) {
   function setCollapsed(collapsed) {
     stateEl.dataset.collapsed = String(collapsed);
     trigger.setAttribute("aria-expanded", String(!collapsed));
@@ -33,11 +36,16 @@ export function wireCollapseToggle({ trigger, stateEl = trigger }) {
   });
 
   try {
-    if (localStorage.getItem(COLLAPSE_STORAGE_KEY) === "true") {
-      setCollapsed(true);
-    }
+    // A stored preference (the user explicitly toggled) wins; otherwise fall
+    // back to the caller's default so the empty placeholder starts collapsed
+    // while a rail with real blockers starts expanded.
+    const stored = localStorage.getItem(COLLAPSE_STORAGE_KEY);
+    if (stored === "true") setCollapsed(true);
+    else if (stored === "false") setCollapsed(false);
+    else setCollapsed(defaultCollapsed);
   } catch {
     /* localStorage unavailable */
+    setCollapsed(defaultCollapsed);
   }
 }
 
