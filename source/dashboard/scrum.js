@@ -1270,7 +1270,8 @@ function renderAgentContributionsMeta(agents, tasks) {
   ).length;
   const parts = [`${agents.length} agent${agents.length === 1 ? "" : "s"}`];
   parts.push(`${completed} task${completed === 1 ? "" : "s"} done`);
-  if (pendingReview > 0) parts.push(`${pendingReview} pending review`);
+  if (pendingReview > 0)
+    parts.push(`${pendingReview} pending review${pendingReview === 1 ? "" : "s"}`);
   meta.textContent = parts.join(" · ");
 }
 
