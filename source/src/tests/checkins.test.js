@@ -4,10 +4,18 @@ import {
   onRequestPost,
 } from "../../../functions/api/projects/[projectId]/checkins.js";
 
-function createMockDb({ allResult, firstResult, runResult } = {}) {
+function createMockDb({ allResult, firstResult, runResult, existingCheckin = null } = {}) {
+  // onRequestPost calls .first() twice: once for the one-per-day guard lookup
+  // (should be falsy to allow the insert) and once to read back the inserted
+  // row. `existingCheckin` drives the guard; `firstResult` the read-back.
+  let firstCalls = 0;
   const bound = {
     all: vi.fn(async () => allResult ?? { results: [] }),
-    first: vi.fn(async () => firstResult ?? null),
+    first: vi.fn(async () => {
+      firstCalls += 1;
+      if (firstCalls === 1) return existingCheckin;
+      return firstResult ?? null;
+    }),
     run: vi.fn(async () => runResult ?? { meta: { last_row_id: 1 } }),
   };
   return {
@@ -102,6 +110,18 @@ describe("POST /projects/:projectId/checkins", () => {
 
     expect(res.status).toBe(201);
     expect(data).toEqual({ checkin: created });
+  });
+
+  it("returns 409 when the user already checked in today", async () => {
+    const db = createMockDb({ existingCheckin: { checkin_id: 3 } });
+
+    const res = await onRequestPost(
+      createContext({ db, body: { user_id: 1, work_done: "again" } })
+    );
+    const data = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(data.error).toBe("You've already checked in today.");
   });
 
   it("creates without a body user_id (author comes from the session)", async () => {

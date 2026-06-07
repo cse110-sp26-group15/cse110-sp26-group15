@@ -99,8 +99,11 @@ export function initials(name) {
  */
 export function formatDate(d) {
   if (!d) return "";
-  const date = new Date(d);
-  if (Number.isNaN(date.getTime())) return "";
+  // A bare "YYYY-MM-DD" must be read at LOCAL midnight (parseISODate); passing
+  // it straight to new Date() parses as UTC midnight and renders as the
+  // previous day west of UTC. Full ISO timestamps parse fine as-is.
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(d) ? parseISODate(d) : new Date(d);
+  if (!date || Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
@@ -115,6 +118,40 @@ export function classifyMood(mood) {
     return { cls: "status-needs-help", label: "needs help" };
   }
   return { cls: "status-on-track", label: "on track" };
+}
+
+// Human labels for the workload values the check-in form encodes into
+// status_mood as "workload:<value>" (it has no dedicated workload column).
+// Mirrors WORKLOAD_LABELS in check-in.js.
+export const WORKLOAD_LABELS = {
+  "very-light": "Very Light",
+  light: "Light",
+  moderate: "Moderate",
+  heavy: "Heavy",
+  overloaded: "Overloaded",
+};
+
+/**
+ * Pull the human workload label out of a status_mood string, or null when no
+ * "workload:" token is present (e.g. seed rows that store a plain mood).
+ */
+export function workloadFromStatusMood(statusMood) {
+  const match = String(statusMood ?? "").match(/workload:([a-z-]+)/i);
+  if (!match) return null;
+  return WORKLOAD_LABELS[match[1].toLowerCase()] ?? match[1];
+}
+
+/**
+ * Strip the "workload:<value>" token (and any leftover separators) out of a
+ * status_mood string, leaving just the real mood text — "" when the field was
+ * nothing but the encoded workload. Lets classifyMood read the actual mood
+ * instead of misclassifying "workload:moderate" as a mood.
+ */
+export function moodFromStatusMood(statusMood) {
+  return String(statusMood ?? "")
+    .replace(/workload:[a-z-]+/i, "")
+    .replace(/^[\s·]+|[\s·]+$/g, "")
+    .trim();
 }
 
 /**
@@ -465,7 +502,11 @@ function renderSprintHeader(checkins) {
   const parts = [];
   if (sprintState.number) parts.push(`Sprint ${sprintState.number}`);
   if (range) parts.push(range);
-  parts.push(`${checkins.length} checked in today`);
+  // Count distinct people who checked in TODAY — not raw rows. The checkins
+  // list spans multiple days and could hold more than one row per user, so
+  // counting length over-reports participation.
+  const checkedInToday = new Set(checkins.filter((c) => isCheckinToday(c)).map((c) => c.user_id));
+  parts.push(`${checkedInToday.size} checked in today`);
   metaEl.textContent = parts.join(" · ");
 
   titleEl.textContent = sprintState.number
@@ -562,9 +603,18 @@ function blockersForCheckin(checkinId) {
 
 // Build the HTML for a single check-in card.
 function buildCheckinCardHtml(c) {
-  const mood = classifyMood(c.status_mood);
-  const time = c.checkin_date ? formatDate(c.checkin_date) : "today";
+  // status_mood may carry an encoded "workload:<value>" token (real check-ins
+  // from the form) or a plain mood (seed rows). Split the two apart so the
+  // badge classifies the actual mood and the meta line shows a readable
+  // "Workload: Moderate" instead of the raw "workload:moderate".
+  const moodText = moodFromStatusMood(c.status_mood);
+  const mood = classifyMood(moodText);
+  const workload = workloadFromStatusMood(c.status_mood);
+  const time = c.checkin_date ? formatDate(c.checkin_date) || "today" : "today";
   const work = c.work_done || c.work_planned || "—";
+  // Treat empty/whitespace names as Unknown (??-coalesce only catches null).
+  const name = c.full_name && c.full_name.trim() ? c.full_name : "Unknown";
+  const detail = workload ? `Workload: ${workload}` : moodText;
   // Label the footer button by whether this check-in actually has an open
   // blocker, not by mood — so it matches what the modal will show.
   const hasBlocker = blockersForCheckin(c.checkin_id).length > 0;
@@ -572,14 +622,14 @@ function buildCheckinCardHtml(c) {
         <div class="checkin-card" data-checkin-id="${escapeHtml(c.checkin_id)}">
           <div class="checkin-top">
             <div class="checkin-user">
-              <div class="avatar">${escapeHtml(initials(c.full_name))}</div>
-              <span class="checkin-name">${escapeHtml(c.full_name ?? "Unknown")}</span>
+              <div class="avatar">${escapeHtml(initials(name))}</div>
+              <span class="checkin-name">${escapeHtml(name)}</span>
             </div>
             <span class="status-badge ${mood.cls}">${mood.label}</span>
           </div>
           <div class="checkin-body">${escapeHtml(work)}</div>
           <div class="checkin-footer">
-            <span class="checkin-meta">${escapeHtml(time)}${c.status_mood ? " · " + escapeHtml(c.status_mood) : ""}</span>
+            <span class="checkin-meta">${escapeHtml(time)}${detail ? " · " + escapeHtml(detail) : ""}</span>
             ${
               hasBlocker
                 ? `<button class="btn-mini danger" data-action="view-checkin">view blocker</button>`
