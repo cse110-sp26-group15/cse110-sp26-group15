@@ -615,6 +615,9 @@ function buildCheckinCardHtml(c) {
   // Treat empty/whitespace names as Unknown (??-coalesce only catches null).
   const name = c.full_name && c.full_name.trim() ? c.full_name : "Unknown";
   const detail = workload ? `Workload: ${workload}` : moodText;
+  // Label the footer button by whether this check-in actually has an open
+  // blocker, not by mood — so it matches what the modal will show.
+  const hasBlocker = blockersForCheckin(c.checkin_id).length > 0;
   return `
         <div class="checkin-card" data-checkin-id="${escapeHtml(c.checkin_id)}">
           <div class="checkin-top">
