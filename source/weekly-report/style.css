@@ -1,0 +1,309 @@
+/* =========================================================
+   Weekly Report — style.css
+   Matches HTML class names exactly:
+     .weekly-layout, .report-document, .document-header,
+     .document-kicker, .document-section, .report-chat-panel,
+     .chat-panel-header, .chat-log, .chat-bubble,
+     .chat-input-row, .error-banner, .report-toolbar,
+     .workload-list / .workload-row / .workload-bar
+   ========================================================= */
+
+:root {
+  color-scheme: light;
+}
+
+/* ── Page toolbar (eyebrow + title + refresh button) ── */
+.report-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.report-toolbar .section-title {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-2xs) 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.page-title {
+  margin: 0;
+  font-size: var(--text-h1);
+  line-height: var(--line-height-tight);
+}
+
+.page-description {
+  margin: var(--space-xs) 0 0 0;
+  color: var(--color-text-muted);
+}
+
+/* ── Two-column layout ── */
+.weekly-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--space-2xl);
+  align-items: start;
+}
+
+/* ── Report document card ── */
+.report-document {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: var(--space-xl) clamp(var(--space-xl), 4vw, var(--space-3xl));
+}
+
+/* Document header / cover */
+.document-header {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.document-kicker {
+  margin: 0 0 var(--space-xs) 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.document-header h2 {
+  margin: 0;
+  font-size: var(--text-h4);
+  line-height: 1.1;
+}
+
+.document-header p:last-child {
+  margin: var(--space-sm) 0 0 0;
+  color: var(--color-text-muted);
+}
+
+/* Document sections */
+.document-section {
+  padding: var(--space-lg) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.document-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.document-section h3 {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: var(--text-h3);
+}
+
+.document-section h4 {
+  margin: var(--space-md) 0 var(--space-xs) 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.document-section p {
+  margin: 0;
+  color: var(--color-text);
+  line-height: var(--line-height-relaxed);
+}
+
+/* Generic list container used inside sections */
+.report-list {
+  color: var(--color-text);
+}
+
+/* Bullet list variant */
+.report-bullet-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.report-bullet-list li {
+  padding-left: var(--space-md);
+  border-left: 3px solid var(--color-border);
+}
+
+.report-bullet-list strong {
+  display: block;
+  font-weight: var(--font-weight-semibold);
+}
+
+.report-bullet-list span {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--line-height-relaxed);
+  margin-top: var(--space-3xs);
+}
+
+.compact-list {
+  margin-top: var(--space-md);
+}
+
+.empty-state {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* Workload bars */
+.workload-list {
+  display: grid;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.workload-row {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.workload-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  font-size: var(--text-sm);
+}
+
+.workload-meta span:first-child {
+  font-weight: var(--font-weight-semibold);
+}
+
+.workload-meta span:last-child {
+  color: var(--color-text-muted);
+}
+
+.workload-bar {
+  height: 0.65rem;
+  background: var(--color-bg-muted);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.workload-bar span {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: inherit;
+}
+
+/* Two-column subsection inside a document section */
+.report-two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xl);
+}
+
+/* ── Chat sidebar ── */
+.report-chat-panel {
+  position: sticky;
+  top: var(--space-lg);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.chat-panel-header h2 {
+  margin: var(--space-2xs) 0 var(--space-xs) 0;
+  font-size: var(--text-h3);
+}
+
+.chat-panel-header p {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: var(--line-height-relaxed);
+  font-size: var(--text-sm);
+}
+
+.chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-height: 32rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.chat-bubble {
+  max-width: 90%;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-muted);
+  color: var(--color-text);
+  line-height: var(--line-height-relaxed);
+  white-space: pre-wrap;
+  font-size: var(--text-sm);
+}
+
+.chat-bubble--user {
+  align-self: flex-end;
+  background: var(--color-primary);
+  color: var(--color-bg-surface);
+}
+
+.chat-bubble--bot {
+  align-self: flex-start;
+}
+
+.chat-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-sm);
+}
+
+/* ── Error banner ── */
+.error-banner {
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  background: var(--color-danger-muted);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger-emphasis);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ── Responsive breakpoints ── */
+@media (max-width: 1180px) {
+  .weekly-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .report-chat-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 800px) {
+  .report-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .report-two-column,
+  .chat-input-row {
+    grid-template-columns: 1fr;
+  }
+}

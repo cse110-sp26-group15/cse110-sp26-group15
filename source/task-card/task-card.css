@@ -488,44 +488,6 @@
   background: var(--color-bg);
 }
 
-.task-card__priority-target {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  margin: -2px -8px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background-color 0.12s ease;
-}
-
-.task-card__priority-target:hover,
-.task-card__priority-target:focus-within {
-  background-color: rgba(255, 255, 255, 0.55);
-}
-
-.task-card__priority-text {
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-}
-
-.task-card__select--priority {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  padding: 0;
-  margin: 0;
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-}
-
-.task-card__select--priority:focus-visible {
-  outline: none;
-}
-
 /* ── Editable points / hours (banner-meta inputs) ─── */
 .task-card__points-input {
   display: inline-block;
@@ -602,30 +564,6 @@
   color: var(--color-text);
   max-width: 140px;
   text-overflow: ellipsis;
-}
-
-.task-card__select--status {
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  font-size: 10px;
-  font-weight: var(--font-weight-medium);
-  text-align: center;
-  text-align-last: center;
-}
-
-.task-card__select--status.task-card__status--todo {
-  background-color: var(--color-bg-surface);
-  color: var(--color-text-muted);
-}
-
-.task-card__select--status.task-card__status--in-progress {
-  background-color: var(--status-in-progress-bg);
-  color: var(--status-in-progress-fg);
-}
-
-.task-card__select--status.task-card__status--done {
-  background-color: var(--status-done-bg);
-  color: var(--status-done-fg);
 }
 
 /* ── Blocker control (interactive cards) ──────────── */
@@ -707,4 +645,40 @@
    is left in the DOM (JS still builds it) — re-enable by deleting this rule. */
 .task-card__blocker-remove {
   display: none;
+}
+
+/* ── Created date + "how long ago" strip ──────────────
+   Sits just below the banner. Each value gets its own slot: a label, the
+   creation date (text or an editable date picker), and a relative-age pill. */
+.task-card__created {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding: 6px 12px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.task-card__created-label {
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+}
+
+.task-card__created-date {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+/* Relative-age pill in its own slot, pushed to the right of the strip. */
+.task-card__age {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-subtle);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 }

@@ -53,9 +53,10 @@ const dashboardUrl = DASH_MAP[workflow] ?? DASH_MAP.scrum;
 document.getElementById("sidebar-logo-link").href = "../projects/projects.html";
 document.getElementById("nav-dashboard").href = dashboardUrl;
 
-// Nav items for other views all route back to the dashboard
+// Placeholder nav items (href="#", e.g. My Check-ins / Team) route back to the
+// dashboard. Items with a real destination (e.g. Weekly Report) are left alone.
 document.querySelectorAll(".sidebar-nav .nav-item").forEach((item) => {
-  if (!item.id) item.href = dashboardUrl;
+  if (!item.id && item.getAttribute("href") === "#") item.href = dashboardUrl;
 });
 
 // ── Populate profile content ──────────────────────────

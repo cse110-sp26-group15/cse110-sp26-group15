@@ -9,7 +9,7 @@ import {
   getCurrentProjectId,
 } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
-import { initLocalPairs, loadPairs } from "./xp-pairs.js";
+import { initLocalPairs, loadPairs, getLoadedPairs, ensurePairSession } from "./xp-pairs.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 import { renderTeamPanel } from "../shared/team-panel.js";
 
@@ -134,6 +134,8 @@ async function createTask(data) {
     description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
     status,
+    priority: data.priority ?? "medium",
+    ...(data.pair_assignee != null ? { pair_assignee: data.pair_assignee } : {}),
     ...(data.reviewer_id != null ? { reviewer_id: data.reviewer_id } : {}),
     ...(data.review_status != null ? { review_status: data.review_status } : {}),
   };
@@ -144,6 +146,12 @@ async function createTask(data) {
     body: JSON.stringify(payload),
   });
   if (!task) return { task: null };
+
+  // XP: if the new task pairs two people who aren't already a session, create
+  // one so the pairing surfaces in the Pair Programming section.
+  if (data.pair_assignee) {
+    await createPairSessionFromTask(data.assigned_to ?? null, data.pair_assignee);
+  }
 
   task.user_id = task.assigned_to ?? data.assigned_to ?? null;
   task.full_name = task.full_name ?? assigneeName(task.user_id);
@@ -165,19 +173,204 @@ async function updateTask(taskId, fields) {
 }
 
 /**
+ * Persist an inline task-card edit. Only status, assignee, priority, and
+ * pair_assignee have backend columns; other inline edits (tags, points,
+ * blocker) update the card locally but aren't PATCHed.
+ *
+ * On XP, this also keeps task pairs and Pair Programming sessions in sync:
+ * choosing an assignee who is already paired auto-fills the task's partner,
+ * and manually pairing two people on a task creates a session if one is
+ * missing. (Both no-op off the XP page, where there are no pair sessions.)
+ * @param {number|string} taskId
+ * @param {object} fields - The single changed field from the task card.
+ * @returns {Promise<void>}
+ */
+async function persistCardChange(taskId, fields) {
+  const payload = {};
+  if ("status" in fields) payload.status = fields.status;
+  if ("assigned_to" in fields) payload.assigned_to = fields.assigned_to;
+  if ("priority" in fields) payload.priority = fields.priority;
+  if ("pair_assignee" in fields) payload.pair_assignee = fields.pair_assignee;
+  if (Object.keys(payload).length === 0) return;
+
+  // Direction 1 — pull from existing sessions: picking an assignee who is
+  // already in a Pair Programming session auto-fills the task's pair partner
+  // from that session (unless the same change already set one explicitly).
+  if ("assigned_to" in fields && fields.assigned_to != null && !("pair_assignee" in fields)) {
+    const partnerName = pairPartnerNameFor(fields.assigned_to);
+    if (partnerName) payload.pair_assignee = partnerName;
+  }
+
+  // Reload when the task moves columns, changes assignee, or gains a pair so
+  // the re-rendered card reflects the (possibly auto-filled) pair partner.
+  const needsReload = "status" in fields || "assigned_to" in fields || "pair_assignee" in payload;
+
+  try {
+    await updateTask(taskId, payload);
+
+    // Direction 2 — push to sessions: manually pairing two people on a task
+    // creates a matching Pair Programming session if one doesn't exist yet.
+    if ("pair_assignee" in fields && fields.pair_assignee) {
+      const task = currentTasks.find((t) => String(t.task_id) === String(taskId)) ?? {};
+      const assigneeId = "assigned_to" in payload ? payload.assigned_to : task.user_id;
+      await createPairSessionFromTask(assigneeId, fields.pair_assignee);
+    }
+
+    if (needsReload) await loadTasks();
+  } catch (err) {
+    console.error("[main] card change failed", err);
+    alert(`Couldn't update task: ${err.message}`);
+    await loadTasks();
+  }
+}
+
+/**
+ * Look up the partner of `userId` in an existing Pair Programming session.
+ * @param {number|string} userId
+ * @returns {string|null} The partner's full name, or null when not paired.
+ */
+function pairPartnerNameFor(userId) {
+  const id = Number(userId);
+  if (!id) return null;
+  for (const p of getLoadedPairs()) {
+    if (Number(p.member1?.user_id) === id) return p.member2?.full_name ?? null;
+    if (Number(p.member2?.user_id) === id) return p.member1?.full_name ?? null;
+  }
+  return null;
+}
+
+/**
+ * Create a Pair Programming session for a task's (assignee, pair-partner) when
+ * both resolve to project members and they aren't already paired. The partner
+ * is identified by display name, matching the task card's pair contract.
+ * @param {number|string|null} assigneeId
+ * @param {string} partnerName
+ * @returns {Promise<void>}
+ */
+async function createPairSessionFromTask(assigneeId, partnerName) {
+  if (assigneeId == null || !partnerName) return;
+  const assignee = projectMembers.find((m) => Number(m.user_id) === Number(assigneeId));
+  const partner = projectMembers.find((m) => m.full_name === partnerName);
+  if (!assignee || !partner || Number(assignee.user_id) === Number(partner.user_id)) return;
+  try {
+    await ensurePairSession(assignee, partner);
+  } catch (err) {
+    // Best-effort: a failed session create shouldn't undo the task pairing.
+    console.warn("[main] could not create pair session from task", err);
+  }
+}
+
+/**
  * Deletes a task by id.
  * @param {number|string} taskId - Task identifier.
  * @returns {Promise<object>} API response body.
  */
-// async function deleteTask(taskId) {
-//   try {
-//     const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
-//     if (res.ok) return await res.json();
-//   } catch {
-//     /* fall through */
-//   }
-//   return {};
-// }
+async function deleteTask(taskId) {
+  return apiFetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+}
+
+// task-form.js is already loaded as a separate module script on every page
+// main.js drives, but main.js doesn't import it statically. Dynamic-import it
+// on first edit so we can reuse its openTaskModal in edit mode; ESM dedupes,
+// so this returns the same module instance the page already loaded.
+let taskFormModulePromise = null;
+function loadTaskFormModule() {
+  if (!taskFormModulePromise) taskFormModulePromise = import("../task-form/task-form.js");
+  return taskFormModulePromise;
+}
+
+/**
+ * Map the task-form modal's output to a PATCH body for an edit. When there's
+ * no reviewer (human/unassigned) we explicitly clear the reviewer + review
+ * pill; when there is one (agent task) we omit review_status so the API
+ * preserves/promotes whatever it already had.
+ * @param {object} data - Modal submission object.
+ * @returns {object} PATCH body.
+ */
+function buildEditPayload(data) {
+  const payload = {
+    title: data.title,
+    description: data.description ?? null,
+    assigned_to: data.assigned_to ?? null,
+    status: data.status,
+  };
+  if (data.priority) payload.priority = data.priority;
+  if (data.pair_assignee !== undefined) payload.pair_assignee = data.pair_assignee;
+  if (data.reviewer_id != null) {
+    payload.reviewer_id = data.reviewer_id;
+  } else {
+    payload.reviewer_id = null;
+    payload.review_status = "not-required";
+  }
+  return payload;
+}
+
+/**
+ * Opens the shared task-form modal pre-filled with an existing task, PATCHing
+ * the changes and refreshing the board/list on save.
+ * @param {object} task - The task to edit.
+ * @returns {Promise<void>}
+ */
+async function openEditTaskModal(task) {
+  const { openTaskModal } = await loadTaskFormModule();
+  openTaskModal(
+    async (data) => {
+      try {
+        await updateTask(task.task_id, buildEditPayload(data));
+        // XP: keep pair sessions in sync when the edit sets a pair partner.
+        if (data.pair_assignee) {
+          await createPairSessionFromTask(
+            data.assigned_to ?? task.user_id ?? null,
+            data.pair_assignee
+          );
+        }
+        await loadTasks();
+      } catch (err) {
+        console.error("[main] editTask failed", err);
+        alert(`Couldn't update task: ${err.message}`);
+      }
+    },
+    { task }
+  );
+}
+
+/**
+ * Appends an Edit + Delete control row below a task card so tasks can be
+ * managed inline on the kanban + XP dashboards. Both actions refresh the
+ * view on success.
+ * @param {HTMLElement} card - The task-card element.
+ * @param {object} task - The task the card represents.
+ * @returns {void}
+ */
+function appendTaskControls(card, task) {
+  const row = document.createElement("div");
+  row.className = "task-card-row-delete";
+
+  const editBtn = document.createElement("button");
+  editBtn.type = "button";
+  editBtn.className = "btn task-card-edit";
+  editBtn.textContent = "Edit";
+  editBtn.dataset.taskId = task.task_id;
+  editBtn.addEventListener("click", () => openEditTaskModal(task));
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.className = "btn task-card-delete";
+  deleteBtn.textContent = "Delete";
+  deleteBtn.dataset.taskId = task.task_id;
+  deleteBtn.addEventListener("click", async () => {
+    try {
+      await deleteTask(task.task_id);
+      await loadTasks();
+    } catch (err) {
+      console.error("[main] deleteTask failed", err);
+      alert(`Couldn't delete task: ${err.message}`);
+    }
+  });
+
+  row.append(editBtn, deleteBtn);
+  card.appendChild(row);
+}
 
 // ── Members cache ─────────────────────────────────────
 let projectMembers = [];
@@ -185,6 +378,10 @@ let projectMembers = [];
 // AI agents on this project. Mirrors the projectMembers cache so the
 // task-form modal can identify which assignees are agents.
 let projectAgents = [];
+
+// Most recently loaded tasks, cached so the pair-linkage logic can look up a
+// task's current assignee when only its pair-partner field changed.
+let currentTasks = [];
 
 // Maps a task title → the description of an open blocker filed against it (via
 // the daily check-in). Rebuilt each loadTasks; used to show a blocker chip on
@@ -276,12 +473,7 @@ function renderBoard(tasks) {
     for (const task of colTasks) {
       const card = createTaskCard(enrichTaskWithBlocker(task), "kanban", {
         members: projectMembers,
-        onChange: async (taskId, fields) => {
-          await updateTask(taskId, fields);
-          if (fields.status !== undefined) {
-            await loadTasks();
-          }
-        },
+        onChange: persistCardChange,
       });
 
       card.setAttribute("draggable", "true");
@@ -296,6 +488,7 @@ function renderBoard(tasks) {
         draggingCard = null;
       });
 
+      appendTaskControls(card, task);
       container.appendChild(card);
     }
   }
@@ -328,14 +521,11 @@ function renderTaskList(tasks) {
   for (const task of tasks) {
     const card = createTaskCard(enrichTaskWithBlocker(task), variant, {
       members: projectMembers,
-      editPair: false,
-      onChange: async (taskId, fields) => {
-        await updateTask(taskId, fields);
-        if (fields.status !== undefined) {
-          await loadTasks();
-        }
-      },
+      // XP cards get an editable pair-partner picker; pair_assignee persists
+      // via persistCardChange. (No effect on the kanban variant.)
+      onChange: persistCardChange,
     });
+    appendTaskControls(card, task);
     list.appendChild(card);
   }
 }
@@ -387,6 +577,7 @@ async function loadTasks() {
     blockerByTask = new Map();
   }
 
+  currentTasks = tasks;
   renderBoard(tasks);
   renderTaskList(tasks);
   await refreshBlockerBanner();
@@ -727,6 +918,11 @@ async function initImpl() {
   if (document.getElementById("pair-list")) {
     initLocalPairs();
     await loadPairs();
+    // XP dashboard only: enable the task-form's pair selection and feed it the
+    // current Pair Programming sessions. No other dashboard sets these, so the
+    // pair UI stays exclusive to XP.
+    window.taskFormShowPairs = true;
+    window.getProjectPairs = () => getLoadedPairs();
   }
   // No-op on pages without an #agents-list container.
   await loadAgents();

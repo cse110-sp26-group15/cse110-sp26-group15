@@ -88,6 +88,35 @@ INSERT INTO tasks (project_id, assigned_to, title, status, reviewer_id, review_s
   (2, 7, 'Agent: classify mobile crash reports',    'todo',        4, 'pending'),
   (3, 6, 'Agent: summarise overnight commits',      'done',        2, 'needs-revision');
 
+-- Give the seeded tasks a spread of urgencies and creation times so the task
+-- card's urgency banner and "Created · how long ago" strip show realistic
+-- variety. created_at is nullable (ALTER-added), so set it explicitly here;
+-- both columns key off task_id purely to vary the values.
+UPDATE tasks
+   SET priority = CASE task_id % 4
+                    WHEN 0 THEN 'urgent'
+                    WHEN 1 THEN 'high'
+                    WHEN 2 THEN 'medium'
+                    ELSE 'low'
+                  END,
+       created_at = datetime('now', '-' || (task_id * 2) || ' days');
+
+-- Pair up a couple of tasks on the dashboard project (project 1) so the XP
+-- dashboard shows the second pair-partner avatar + picker alongside the
+-- primary assignee. Partners are project-1 members so the inline pair picker
+-- pre-selects correctly, and they line up with the pair sessions seeded below.
+UPDATE tasks SET pair_assignee = 'Jordan Smith'
+  WHERE project_id = 1 AND title = 'Develop wireframes';
+UPDATE tasks SET pair_assignee = 'Mia Carter'
+  WHERE project_id = 1 AND title = 'Wire dashboard to live API';
+
+-- ── Pair Programming sessions ─────────────────────────────────────────
+-- Seed pair sessions matching the task pair-partners above so the XP
+-- dashboard's pairing section is populated and the two views stay in sync.
+INSERT INTO xp_pairs (project_id, member1_id, member2_id) VALUES
+  (1, 2, 3),  -- Sam Chen ↔ Jordan Smith
+  (1, 4, 5);  -- Wayne Dyer ↔ Mia Carter
+
 -- ── Check-ins ─────────────────────────────────────────────────────────
 -- Exercises every status_mood string the UI special-cases:
 --   scrum.js classifyMood():  "block", "help"/"overwhelm"/"stuck", default

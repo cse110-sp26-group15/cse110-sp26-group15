@@ -372,6 +372,7 @@ async function createTask(data, { forceStatus } = {}) {
     description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
     status,
+    priority: data.priority ?? "medium",
     // reviewer_id + review_status only flow through when the task-form
     // modal sets them (agent-assigned tasks). Server enforces the rule
     // either way; we just avoid sending null spam for human tasks.
@@ -627,13 +628,14 @@ function toggleCheckinHistory() {
 // ── Task rendering helpers (shared by list + kanban) ──
 // onChange handler for the shared task-card's interactive controls. The card
 // can edit priority, story points, tags, blocker, assignee and status inline,
-// but only assigned_to + status have backend persistence right now — the rest
-// update locally and are intentionally not PATCHed. Blocker persistence is
+// but only assigned_to, status + priority have backend persistence right now —
+// the rest update locally and are intentionally not PATCHed. Blocker persistence is
 // owned by another branch, so we leave is_blocked/blocker_reason untouched too.
 async function persistTaskChange(taskId, fields) {
   const payload = {};
   if ("assigned_to" in fields) payload.assigned_to = fields.assigned_to;
   if ("status" in fields) payload.status = fields.status;
+  if ("priority" in fields) payload.priority = fields.priority;
   if (Object.keys(payload).length === 0) return;
 
   try {
@@ -646,12 +648,62 @@ async function persistTaskChange(taskId, fields) {
   }
 }
 
-// Adds the page-specific delete button in a row below the task-card. Assignee
-// and status editing now come from the shared component's interactive mode;
-// the component intentionally doesn't provide a delete button, so we add it.
+/**
+ * Map the task-form modal's output to a PATCH body for an edit. Mirrors the
+ * create payload but clears the reviewer + review pill when no reviewer is
+ * set (human/unassigned), and omits review_status otherwise so the API
+ * preserves/promotes whatever the agent task already had.
+ * @param {object} data - Modal submission object.
+ * @returns {object} PATCH body.
+ */
+function buildEditPayload(data) {
+  const payload = {
+    title: data.title,
+    description: data.description ?? null,
+    assigned_to: data.assigned_to ?? null,
+    status: data.status,
+  };
+  if (data.priority) payload.priority = data.priority;
+  if (data.reviewer_id != null) {
+    payload.reviewer_id = data.reviewer_id;
+  } else {
+    payload.reviewer_id = null;
+    payload.review_status = "not-required";
+  }
+  return payload;
+}
+
+// Opens the shared task-form modal pre-filled with an existing task, PATCHing
+// the changes and refreshing the dashboard on save.
+async function openEditTaskModal(task) {
+  const { openTaskModal } = await loadTaskFormModule();
+  openTaskModal(
+    async (data) => {
+      try {
+        await updateTask(task.task_id, buildEditPayload(data));
+        await loadAll();
+      } catch (err) {
+        console.error("[scrum] editTask failed", err);
+        alert(`Couldn't update task: ${err.message}`);
+      }
+    },
+    { task }
+  );
+}
+
+// Adds the page-specific edit + delete buttons in a row below the task-card.
+// Assignee and status editing come from the shared component's interactive
+// mode; the component intentionally doesn't provide these, so we add them.
 function appendTaskControls(card, task) {
   const row = document.createElement("div");
   row.className = "task-card-row-delete";
+
+  const editBtn = document.createElement("button");
+  editBtn.type = "button";
+  editBtn.className = "btn task-card-edit";
+  editBtn.dataset.taskId = task.task_id;
+  editBtn.textContent = "Edit";
+  editBtn.addEventListener("click", () => openEditTaskModal(task));
 
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
@@ -668,6 +720,7 @@ function appendTaskControls(card, task) {
     }
   });
 
+  row.appendChild(editBtn);
   row.appendChild(deleteBtn);
   card.appendChild(row);
 }
