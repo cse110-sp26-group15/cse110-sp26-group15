@@ -15,9 +15,19 @@ const COLLAPSE_STORAGE_KEY = "blocker-rail:collapsed";
  *        starts expanded; the empty-state placeholder starts collapsed.
  */
 export function wireCollapseToggle({ trigger, stateEl = trigger, defaultCollapsed = false }) {
-  function setCollapsed(collapsed) {
+  // Apply collapsed state to the DOM only. Kept separate from persistence so
+  // initialization can set the visual state without writing localStorage —
+  // otherwise the placeholder's default-collapsed would leak onto the shared
+  // key before the rail mounts, collapsing a rail that has real blockers.
+  function applyCollapsed(collapsed) {
     stateEl.dataset.collapsed = String(collapsed);
     trigger.setAttribute("aria-expanded", String(!collapsed));
+  }
+
+  // Persist + apply. Only used for explicit user toggles, so a real preference
+  // is what gets stored and shared across the placeholder and rail.
+  function setCollapsed(collapsed) {
+    applyCollapsed(collapsed);
     try {
       localStorage.setItem(COLLAPSE_STORAGE_KEY, String(collapsed));
     } catch {
@@ -38,14 +48,15 @@ export function wireCollapseToggle({ trigger, stateEl = trigger, defaultCollapse
   try {
     // A stored preference (the user explicitly toggled) wins; otherwise fall
     // back to the caller's default so the empty placeholder starts collapsed
-    // while a rail with real blockers starts expanded.
+    // while a rail with real blockers starts expanded. Initialization never
+    // persists — it only reflects the existing preference (or the default).
     const stored = localStorage.getItem(COLLAPSE_STORAGE_KEY);
-    if (stored === "true") setCollapsed(true);
-    else if (stored === "false") setCollapsed(false);
-    else setCollapsed(defaultCollapsed);
+    if (stored === "true") applyCollapsed(true);
+    else if (stored === "false") applyCollapsed(false);
+    else applyCollapsed(defaultCollapsed);
   } catch {
     /* localStorage unavailable */
-    setCollapsed(defaultCollapsed);
+    applyCollapsed(defaultCollapsed);
   }
 }
 
