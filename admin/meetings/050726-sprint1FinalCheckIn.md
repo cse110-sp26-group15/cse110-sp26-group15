@@ -6,7 +6,7 @@ Discuss next steps for sprint 2 and complete group worksheet.
 
 ## Members Present:
 
-Thomas Arreola, Erick Garcia Dealba, Dylan Williams, Michael Sun, Mikey Nguyen, Sasha Terry, Pablo Wells, Yizhen Han, Unnati Goyal, 
+Thomas Arreola, Erick Garcia Dealba, Dylan Williams, Michael Sun, Mikey Nguyen, Sasha Terry, Pablo Wells, Yizhen Han, Unnati Goyal,
 Laksh Goyal, Harvir Ghuman
 
 ## Meeting Location and time:

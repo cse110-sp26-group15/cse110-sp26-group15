@@ -10,7 +10,7 @@ Laksh Goyal, Michael Sun, Thomas Arreola, Unnati Goyal
 
 ## Members Missings:
 
-Yizhen Han, Sasha Terry, Mikey Nguyen, Dylan Williams, Harvir Ghuman, Erick Garcia Dealba, Pablo Wells, 
+Yizhen Han, Sasha Terry, Mikey Nguyen, Dylan Williams, Harvir Ghuman, Erick Garcia Dealba, Pablo Wells,
 
 ## Meeting Location and time:
 
