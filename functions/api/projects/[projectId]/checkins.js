@@ -31,17 +31,12 @@ export async function onRequestPost(context) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const {
-    user_id,
-    status_mood = null,
-    work_done = null,
-    work_planned = null,
-    checkin_date = null,
-  } = body;
+  const { status_mood = null, work_done = null, work_planned = null, checkin_date = null } = body;
 
-  if (user_id === undefined || user_id === null) {
-    return Response.json({ error: "user_id is required" }, { status: 400 });
-  }
+  // The author is the authenticated caller (the project-scoped middleware has
+  // already confirmed they are a member), never a client-supplied user_id — so
+  // a member cannot post a check-in as a teammate.
+  const user_id = context.data.userId;
 
   try {
     // Enforce one check-in per user per day, scoped to this project (a user

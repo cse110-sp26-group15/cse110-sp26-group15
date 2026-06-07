@@ -23,8 +23,11 @@ function createMockDb({ allResult, firstResult, runResult, existingCheckin = nul
   };
 }
 
-function createContext({ projectId = "1", body, db } = {}) {
-  const ctx = { env: { DB: db }, params: { projectId } };
+function createContext({ projectId = "1", body, db, userId = 1 } = {}) {
+  // The POST handler takes the author from context.data.userId (the middleware
+  // sets it from the session); the project-scoped middleware also guarantees
+  // membership in production.
+  const ctx = { env: { DB: db }, params: { projectId }, data: { userId } };
   if (body !== undefined) {
     ctx.request = new Request("http://localhost/", {
       method: "POST",
@@ -121,14 +124,15 @@ describe("POST /projects/:projectId/checkins", () => {
     expect(data.error).toBe("You've already checked in today.");
   });
 
-  it("returns 400 when user_id is missing", async () => {
-    const db = createMockDb();
+  it("creates without a body user_id (author comes from the session)", async () => {
+    // The old "user_id is required" 400 is gone: the author is the session user.
+    const db = createMockDb({
+      runResult: { meta: { last_row_id: 6 } },
+      firstResult: { checkin_id: 6, user_id: 1 },
+    });
 
     const res = await onRequestPost(createContext({ db, body: { work_done: "oops" } }));
-    const data = await res.json();
-
-    expect(res.status).toBe(400);
-    expect(data.error).toBe("user_id is required");
+    expect(res.status).toBe(201);
   });
 
   it("returns 400 on invalid JSON", async () => {
@@ -149,7 +153,7 @@ describe("POST /projects/:projectId/checkins", () => {
     expect(data.error).toBe("Invalid JSON body");
   });
 
-  it("accepts a body with only user_id (optional fields default to null)", async () => {
+  it("creates with optional fields defaulting to null", async () => {
     const db = createMockDb({
       runResult: { meta: { last_row_id: 5 } },
       firstResult: {

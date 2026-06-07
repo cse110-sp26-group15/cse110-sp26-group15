@@ -37,7 +37,7 @@ function generateSessionToken() {
  * and sets it as an httpOnly `sitrep_token` cookie. Rejects duplicate emails
  * with 409. The email is normalized (trimmed + lowercased) before storage.
  *
- * Request body: { email: string, password: string }
+ * Request body: { email: string, password: string, full_name?: string }
  * Response 201: { user: { user_id, email, full_name }, token: string }
  *
  * @param {{ env: { DB: object }, request: Request }} context
@@ -53,7 +53,7 @@ export async function onRequestPost(context) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { email, password } = body;
+  const { email, password, full_name } = body;
 
   // Validation
   if (!email || typeof email !== "string" || !validateEmail(email.trim())) {
@@ -85,17 +85,26 @@ export async function onRequestPost(context) {
       `INSERT INTO users (email, password_hash, full_name, is_active)
        VALUES (?, ?, ?, 1)`
     )
-      .bind(email.trim().toLowerCase(), passwordHash, "")
+      .bind(
+        email.trim().toLowerCase(),
+        passwordHash,
+        typeof full_name === "string" ? full_name.trim() : ""
+      )
       .run();
 
     const userId = result.meta.last_row_id;
 
-    // Generate session token
+    // Generate session token and persist it so the middleware can resolve the
+    // cookie back to this user on later requests. Mirrors login.js: `expires_at`
+    // is computed in SQL to match the middleware's freshness check, and the
+    // 7-day window mirrors the cookie Max-Age=604800 set below.
     const sessionToken = generateSessionToken();
 
-    // In a real app, you'd store this token in a sessions table
-    // For now, we'll include it in the cookie
-    // TODO: Create sessions table to track tokens
+    await env.DB.prepare(
+      "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now', '+7 days'))"
+    )
+      .bind(sessionToken, userId)
+      .run();
 
     // Fetch the created user
     const user = await env.DB.prepare(

@@ -106,9 +106,9 @@ test.describe("Signup page", () => {
 
   /**
    * Mocks a successful signup API response and verifies the page
-   * navigates to project-setup after a valid form submission.
+   * navigates to the /app dispatcher after a valid form submission.
    */
-  test("redirects to project-setup on successful signup", async ({ page }) => {
+  test("redirects to /app on successful signup", async ({ page }) => {
     await page.route(`**${API_SIGNUP}`, (route) =>
       route.fulfill({
         status: 201,
@@ -129,6 +129,6 @@ test.describe("Signup page", () => {
     await page.locator("#confirm-password").fill("password123");
     await page.locator("#submit-btn").click();
 
-    await expect(page).toHaveURL(/project-setup/);
+    await expect(page).toHaveURL(/app/);
   });
 });

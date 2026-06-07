@@ -128,6 +128,19 @@ export async function apiFetch(url, opts = {}) {
   }
 
   if (!res.ok) {
+    // 401 = no/expired session. Bounce to login here (not in every caller) so
+    // every guarded fetch behaves the same, but skip it when we're already on
+    // an auth page to avoid a redirect loop. Still throw so the in-flight
+    // caller stops cleanly while the navigation happens.
+    if (
+      res.status === 401 &&
+      typeof location !== "undefined" &&
+      !location.pathname.includes("/login") &&
+      !location.pathname.includes("/signup")
+    ) {
+      const here = encodeURIComponent(location.pathname + location.search);
+      location.href = `/login/?next=${here}`;
+    }
     const message = body?.error || `Request to ${url} failed (${res.status})`;
     throw new ApiError(message, { status: res.status, body });
   }
@@ -182,24 +195,48 @@ export async function apiSignup({ email, password, full_name }) {
  * Creates a project on the backend and (optionally) seeds the creator and
  * invited member emails into `project_members`.
  *
+ * The creator is taken from the session cookie by the server, so it is not part
+ * of the payload.
+ *
  * @param {object}    args
  * @param {string}    args.name          Project display name.
  * @param {string}    args.workflow      One of 'scrum' | 'kanban' | 'xp'.
  * @param {string[]}  args.members       Invited member emails.
- * @param {number|null} [args.created_by] user_id of the creator, if known.
- * @returns {Promise<{ project: object, invited: Array<{user_id:number,email:string}>, not_found: string[] }>}
+ * @returns {Promise<{ project: object, invited: Array<{user_id:number,email:string}>, pending: string[] }>}
  * @throws {Error} When the server responds with a non-2xx status.
  */
-export async function apiCreateProject({ name, workflow, members, created_by = null }) {
+export async function apiCreateProject({ name, workflow, members }) {
   const res = await fetch("/api/projects", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, workflow, members, created_by }),
+    body: JSON.stringify({ name, workflow, members }),
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || "Failed to create project");
+  }
+
+  return res.json();
+}
+
+/**
+ * DELETE /api/projects/:projectId
+ *
+ * Permanently deletes a project the caller created (the server rejects the
+ * request with 403 if the caller is a member but not the creator). The session
+ * cookie identifies the caller, so no body is needed.
+ *
+ * @param {number|string} projectId
+ * @returns {Promise<{ success: boolean }>}
+ * @throws {Error} When the server responds with a non-2xx status.
+ */
+export async function apiDeleteProject(projectId) {
+  const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to delete project");
   }
 
   return res.json();
@@ -251,4 +288,146 @@ export function getCurrentUser() {
   } catch {
     return null;
   }
+}
+
+// ── Current project helpers ─────────────────────────────
+
+const CURRENT_PROJECT_KEY = "sitrep_project";
+
+/** Workflow → dashboard page path (relative to a page under source/<dir>/). */
+const DASHBOARD_PATHS = {
+  scrum: "../dashboard/scrum.html",
+  kanban: "../dashboard/kanban.html",
+  xp: "../dashboard/xp.html",
+};
+
+/**
+ * Map a project workflow to its dashboard page path. Unknown workflows
+ * fall back to the scrum dashboard.
+ * @param {string} workflow - "scrum" | "kanban" | "xp"
+ * @returns {string}
+ */
+export function dashboardPathFor(workflow) {
+  return DASHBOARD_PATHS[workflow] ?? DASHBOARD_PATHS.scrum;
+}
+
+/**
+ * Best-effort access to localStorage; returns null in non-browser envs
+ * (e.g. Vitest under Node) so callers degrade gracefully.
+ * @returns {Storage|null}
+ */
+function safeLocalStorage() {
+  try {
+    return typeof localStorage !== "undefined" ? localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Persist the active project so dashboards can scope their API calls to it
+ * without an auth round-trip. Stop-gap mirroring {@link saveCurrentUser}.
+ * @param {{ project_id: number, name: string, workflow: string }|null} project
+ * @param {Storage|null} [storage] - injectable for tests
+ */
+export function setCurrentProject(project, storage = safeLocalStorage()) {
+  if (!storage) return;
+  try {
+    if (project) {
+      storage.setItem(
+        CURRENT_PROJECT_KEY,
+        JSON.stringify({
+          project_id: project.project_id,
+          name: project.name,
+          workflow: project.workflow,
+        })
+      );
+    } else {
+      storage.removeItem(CURRENT_PROJECT_KEY);
+    }
+  } catch {
+    /* storage unavailable — ignore */
+  }
+}
+
+/**
+ * Read the active project previously stored by {@link setCurrentProject}.
+ * @param {Storage|null} [storage] - injectable for tests
+ * @returns {{ project_id: number, name: string, workflow: string }|null}
+ */
+export function getCurrentProject(storage = safeLocalStorage()) {
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(CURRENT_PROJECT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * GET /api/projects?user_id=N — the projects a user belongs to
+ * (most-recent first).
+ * @param {number} userId
+ * @returns {Promise<{ projects: object[] }>}
+ */
+export async function apiGetProjects(userId) {
+  return apiFetch(`/api/projects?user_id=${encodeURIComponent(userId)}`);
+}
+
+/**
+ * GET /api/invites?email=… — a user's pending project invites.
+ * @param {string} email
+ * @returns {Promise<{ invites: object[] }>}
+ */
+export async function apiGetInvites(email) {
+  return apiFetch(`/api/invites?email=${encodeURIComponent(email)}`);
+}
+
+/**
+ * POST /api/projects/:projectId/members — add a member by email.
+ * @param {number|string} projectId
+ * @param {string} email
+ * @returns {Promise<{ status: string, member?: object }>}
+ */
+export async function apiAddMember(projectId, email) {
+  return apiFetch(`/api/projects/${projectId}/members`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
+
+/**
+ * Pick the default assignee id for a new task: the current user when they
+ * are a project member, otherwise the first member, otherwise null.
+ * @param {Array<{ user_id: number }>} members
+ * @param {{ user_id: number }|null} currentUser
+ * @returns {number|null}
+ */
+export function defaultAssigneeId(members, currentUser) {
+  if (!Array.isArray(members) || members.length === 0) return null;
+  if (currentUser && members.some((m) => Number(m.user_id) === Number(currentUser.user_id))) {
+    return Number(currentUser.user_id);
+  }
+  return Number(members[0].user_id);
+}
+
+/**
+ * Read just the id of the project the user is currently working in — a thin
+ * convenience over {@link getCurrentProject} for the dashboards and check-in
+ * page, which only need the id to scope their API calls and never the name or
+ * workflow.
+ *
+ * Falls back to `fallback` when nothing is stored, the stored value predates
+ * this field, or storage is unavailable (e.g. under Node during tests) — this
+ * keeps direct navigation and the unit suite working unchanged.
+ *
+ * @param {number} [fallback=1]
+ * @returns {number}
+ */
+export function getCurrentProjectId(fallback = 1) {
+  const project = getCurrentProject();
+  const id = project?.project_id;
+  return Number.isInteger(id) && id > 0 ? id : fallback;
 }

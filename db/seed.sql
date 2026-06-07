@@ -88,6 +88,35 @@ INSERT INTO tasks (project_id, assigned_to, title, status, reviewer_id, review_s
   (2, 7, 'Agent: classify mobile crash reports',    'todo',        4, 'pending'),
   (3, 6, 'Agent: summarise overnight commits',      'done',        2, 'needs-revision');
 
+-- Give the seeded tasks a spread of urgencies and creation times so the task
+-- card's urgency banner and "Created · how long ago" strip show realistic
+-- variety. created_at is nullable (ALTER-added), so set it explicitly here;
+-- both columns key off task_id purely to vary the values.
+UPDATE tasks
+   SET priority = CASE task_id % 4
+                    WHEN 0 THEN 'urgent'
+                    WHEN 1 THEN 'high'
+                    WHEN 2 THEN 'medium'
+                    ELSE 'low'
+                  END,
+       created_at = datetime('now', '-' || (task_id * 2) || ' days');
+
+-- Pair up a couple of tasks on the dashboard project (project 1) so the XP
+-- dashboard shows the second pair-partner avatar + picker alongside the
+-- primary assignee. Partners are project-1 members so the inline pair picker
+-- pre-selects correctly, and they line up with the pair sessions seeded below.
+UPDATE tasks SET pair_assignee = 'Jordan Smith'
+  WHERE project_id = 1 AND title = 'Develop wireframes';
+UPDATE tasks SET pair_assignee = 'Mia Carter'
+  WHERE project_id = 1 AND title = 'Wire dashboard to live API';
+
+-- ── Pair Programming sessions ─────────────────────────────────────────
+-- Seed pair sessions matching the task pair-partners above so the XP
+-- dashboard's pairing section is populated and the two views stay in sync.
+INSERT INTO xp_pairs (project_id, member1_id, member2_id) VALUES
+  (1, 2, 3),  -- Sam Chen ↔ Jordan Smith
+  (1, 4, 5);  -- Wayne Dyer ↔ Mia Carter
+
 -- ── Check-ins ─────────────────────────────────────────────────────────
 -- Exercises every status_mood string the UI special-cases:
 --   scrum.js classifyMood():  "block", "help"/"overwhelm"/"stuck", default
@@ -120,3 +149,9 @@ INSERT INTO blockers (checkin_id, description, task, helper, is_resolved) VALUES
   (3, 'Figma file is missing dark-mode tokens.',           'Develop wireframes',        'Sam Chen',    1),
   (7, 'Agent: missing context for 3 PRs — owner ping.',    'Agent: audit PR #142 vs acceptance criteria', 'Wayne Dyer', 0),
   (8, 'Apple developer account renewal stuck in finance.', NULL,                        'Wayne Dyer',  0);
+
+-- ── Pending invite ────────────────────────────────────────────────────
+-- Invited to the scrum project but has no account yet; appears as
+-- "Pending" in the Team view until they sign up and join.
+INSERT INTO project_invites (project_id, email, invited_by) VALUES
+  (1, 'newteammate@ucsd.edu', 1);

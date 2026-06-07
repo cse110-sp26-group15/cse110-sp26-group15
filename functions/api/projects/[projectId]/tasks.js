@@ -1,5 +1,8 @@
+import { requireReferencedMember } from "../../_auth.js";
+
 const VALID_STATUSES = ["todo", "in-progress", "done"];
 const VALID_REVIEW_STATUSES = ["not-required", "pending", "approved", "needs-revision"];
+const VALID_PRIORITIES = ["urgent", "high", "medium", "low"];
 
 /**
  * Resolve a user_id to "human" / "agent" / "missing" along with the
@@ -48,7 +51,7 @@ export async function onRequestGet(context) {
   try {
     const { results } = await env.DB.prepare(
       `SELECT t.task_id, t.title, t.description, t.status, t.github_issue_url,
-              t.reviewer_id, t.review_status,
+              t.reviewer_id, t.review_status, t.priority, t.created_at, t.pair_assignee,
               u.user_id, u.full_name,
               CASE WHEN a.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_agent,
               r.full_name AS reviewer_name
@@ -103,6 +106,8 @@ export async function onRequestPost(context) {
     assigned_to = null,
     github_issue_url = null,
     status = "todo",
+    priority = "medium",
+    pair_assignee = null,
   } = body;
   let { reviewer_id = null, review_status = null } = body;
 
@@ -115,9 +120,22 @@ export async function onRequestPost(context) {
       { status: 400 }
     );
   }
+  if (!VALID_PRIORITIES.includes(priority)) {
+    return Response.json(
+      { error: `priority must be one of: ${VALID_PRIORITIES.join(", ")}` },
+      { status: 400 }
+    );
+  }
   if (review_status !== null && !VALID_REVIEW_STATUSES.includes(review_status)) {
     return Response.json(
       { error: `review_status must be one of: ${VALID_REVIEW_STATUSES.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
+  if (assigned_to === null || assigned_to === undefined || assigned_to === "") {
+    return Response.json(
+      { error: "A task must be assigned to a project member." },
       { status: 400 }
     );
   }
@@ -127,6 +145,16 @@ export async function onRequestPost(context) {
     if (assigned_to && assignee.kind === "missing") {
       return Response.json({ error: "assigned_to references unknown user" }, { status: 400 });
     }
+
+    // Keep the assignee contained to this project — a member can't assign a
+    // task to a user (or agent) who isn't on the project.
+    const assigneeContained = await requireReferencedMember(
+      context,
+      projectId,
+      assigned_to,
+      "assigned_to"
+    );
+    if (assigneeContained) return assigneeContained;
 
     if (assignee.kind === "agent") {
       // Default reviewer to the agent's owner when client omits it.
@@ -166,8 +194,9 @@ export async function onRequestPost(context) {
 
     const result = await env.DB.prepare(
       `INSERT INTO tasks (project_id, assigned_to, title, description, status,
-                          github_issue_url, reviewer_id, review_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+                          github_issue_url, reviewer_id, review_status, priority,
+                          pair_assignee, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
     )
       .bind(
         projectId,
@@ -177,13 +206,15 @@ export async function onRequestPost(context) {
         status,
         github_issue_url,
         reviewer_id,
-        review_status
+        review_status,
+        priority,
+        pair_assignee
       )
       .run();
 
     const task = await env.DB.prepare(
       `SELECT t.task_id, t.title, t.description, t.status, t.github_issue_url,
-              t.reviewer_id, t.review_status,
+              t.reviewer_id, t.review_status, t.priority, t.created_at, t.pair_assignee,
               u.user_id, u.full_name,
               CASE WHEN a.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_agent,
               r.full_name AS reviewer_name

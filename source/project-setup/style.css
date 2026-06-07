@@ -432,6 +432,37 @@ body {
   color: var(--color-text-subtle);
 }
 
+/* Pending invitations */
+.invites-section {
+  margin-bottom: 1.5rem;
+}
+.invites-title {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+.invites-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.invite-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+}
+.invites-divider {
+  text-align: center;
+  color: var(--text-muted, #64748b);
+  font-size: 0.85rem;
+  margin: 1rem 0 0;
+}
+
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 680px) {
   .setup-card {

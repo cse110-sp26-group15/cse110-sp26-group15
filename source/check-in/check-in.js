@@ -19,15 +19,15 @@
 // comes from `GET /api/projects/:id/tasks` and "Who can help?" from
 // `GET /api/projects/:id/members`.
 
-import { apiFetch, ApiError, getCurrentUser } from "../shared/utils.js";
+import { apiFetch, ApiError, getCurrentUser, getCurrentProjectId } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 
 initUserMenu();
 
 // ── Constants ────────────────────────────────────────
-// Hard-coded for now; will switch to the logged-in project once auth
-// context is plumbed through (same TODO as scrum.js / kanban.js).
-export const PROJECT_ID = 1;
+// The project the user is currently viewing, chosen at project setup and read
+// from localStorage. Falls back to 1 when nothing is stored.
+export const PROJECT_ID = getCurrentProjectId();
 
 // Non-task-specific blocker option shown first in the "Blocked on" picker.
 export const GENERAL_BLOCKER = "General";
@@ -464,7 +464,7 @@ async function handleSubmit(event) {
 
   try {
     const checkin = await postCheckin({
-      user_id: userId,
+      // The author is derived from the session server-side; no user_id is sent.
       // Encode workload inside status_mood since the schema has no
       // dedicated workload column.
       status_mood: `workload:${workload}`,

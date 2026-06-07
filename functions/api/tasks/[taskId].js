@@ -1,5 +1,8 @@
+import { requireProjectMember, requireReferencedMember } from "../_auth.js";
+
 const VALID_STATUSES = ["todo", "in-progress", "done"];
 const VALID_REVIEW_STATUSES = ["not-required", "pending", "approved", "needs-revision"];
+const VALID_PRIORITIES = ["urgent", "high", "medium", "low"];
 
 /**
  * Resolve a user_id to "human" / "agent" / "missing". See the matching
@@ -49,8 +52,18 @@ export async function onRequestPatch(context) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { status, assigned_to, reviewer_id, review_status, description } = body;
+  const { status, assigned_to, reviewer_id, review_status, description, title, priority } = body;
+  const { pair_assignee } = body;
 
+  if (title !== undefined && (typeof title !== "string" || title.trim() === "")) {
+    return Response.json({ error: "title must be a non-empty string" }, { status: 400 });
+  }
+  if (priority !== undefined && !VALID_PRIORITIES.includes(priority)) {
+    return Response.json(
+      { error: `priority must be one of: ${VALID_PRIORITIES.join(", ")}` },
+      { status: 400 }
+    );
+  }
   if (status !== undefined && !VALID_STATUSES.includes(status)) {
     return Response.json(
       { error: `status must be one of: ${VALID_STATUSES.join(", ")}` },
@@ -64,15 +77,27 @@ export async function onRequestPatch(context) {
     );
   }
 
+  if (assigned_to !== undefined && (assigned_to === null || assigned_to === "")) {
+    return Response.json(
+      { error: "A task must be assigned to a project member." },
+      { status: 400 }
+    );
+  }
+
   try {
     const existing = await env.DB.prepare(
-      `SELECT task_id, assigned_to, reviewer_id, review_status FROM tasks WHERE task_id = ?`
+      `SELECT task_id, project_id, assigned_to, reviewer_id, review_status FROM tasks WHERE task_id = ?`
     )
       .bind(taskId)
       .first();
     if (!existing) {
       return Response.json({ error: "Task not found" }, { status: 404 });
     }
+
+    // The task carries the only project context this route has (no :projectId
+    // in the URL), so resolve membership off the row before mutating it.
+    const denied = await requireProjectMember(context, existing.project_id);
+    if (denied) return denied;
 
     // Compute the post-update assignee/reviewer so we can validate as a
     // single coherent state rather than field-by-field.
@@ -84,6 +109,15 @@ export async function onRequestPatch(context) {
     if (nextAssigned && assignee.kind === "missing") {
       return Response.json({ error: "assigned_to references unknown user" }, { status: 400 });
     }
+
+    // Keep a reassigned task's assignee contained to the task's project.
+    const assigneeContained = await requireReferencedMember(
+      context,
+      existing.project_id,
+      nextAssigned,
+      "assigned_to"
+    );
+    if (assigneeContained) return assigneeContained;
 
     if (assignee.kind === "agent") {
       // If the caller didn't provide a reviewer and the existing reviewer
@@ -122,6 +156,14 @@ export async function onRequestPatch(context) {
 
     const fields = [];
     const values = [];
+    if (title !== undefined) {
+      fields.push("title = ?");
+      values.push(title.trim());
+    }
+    if (priority !== undefined) {
+      fields.push("priority = ?");
+      values.push(priority);
+    }
     if (status !== undefined) {
       fields.push("status = ?");
       values.push(status);
@@ -133,6 +175,10 @@ export async function onRequestPatch(context) {
     if (description !== undefined) {
       fields.push("description = ?");
       values.push(description);
+    }
+    if (pair_assignee !== undefined) {
+      fields.push("pair_assignee = ?");
+      values.push(pair_assignee);
     }
     // Always write the resolved reviewer/review_status so defaults stick.
     if (nextReviewer !== existing.reviewer_id) {
@@ -156,7 +202,7 @@ export async function onRequestPatch(context) {
 
     const task = await env.DB.prepare(
       `SELECT t.task_id, t.title, t.description, t.status, t.github_issue_url,
-              t.reviewer_id, t.review_status,
+              t.reviewer_id, t.review_status, t.priority, t.created_at, t.pair_assignee,
               u.user_id, u.full_name,
               CASE WHEN a.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_agent,
               r.full_name AS reviewer_name
@@ -180,13 +226,16 @@ export async function onRequestDelete(context) {
   const { taskId } = params;
 
   try {
-    const task = await env.DB.prepare("SELECT task_id FROM tasks WHERE task_id = ?")
+    const task = await env.DB.prepare("SELECT task_id, project_id FROM tasks WHERE task_id = ?")
       .bind(taskId)
       .first();
 
     if (!task) {
       return Response.json({ error: "Task not found" }, { status: 404 });
     }
+
+    const denied = await requireProjectMember(context, task.project_id);
+    if (denied) return denied;
 
     await env.DB.prepare("DELETE FROM tasks WHERE task_id = ?").bind(taskId).run();
 

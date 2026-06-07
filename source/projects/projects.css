@@ -1,0 +1,305 @@
+/* ============================================================
+   projects.css — "Your projects" landing page
+   ============================================================
+   Styles the page reached by clicking the SitRep logo: a list
+   of the projects the current user belongs to plus a small
+   "new project" form. All values come from theme.css tokens so
+   the page tracks light/dark mode automatically. Load order:
+
+     <link rel="stylesheet" href="../shared/theme.css" />
+     <link rel="stylesheet" href="../shared/components.css" />
+     <link rel="stylesheet" href="./projects.css" />
+
+   Class naming follows the project BEM convention
+   (.block__element--modifier), matching the IDs/classes that
+   projects.js builds at runtime.
+   ============================================================ */
+
+/* --- No-sidebar layout --------------------------------------
+   Unlike the dashboards, this page has no sidebar. Instead the two
+   fixtures the sidebar provided are pinned to the viewport corners:
+   the SitRep logo (top-left) and the user/account menu (bottom-left).
+   That frees the content area to own the full width, so we center it
+   as a readable column between them. */
+
+/* Without the .app-shell flex wrapper, let <body> stack the content
+   area so it fills the viewport and scrolls on its own while the fixed
+   logo + user menu stay put. (main.css gives <body> height:100vh.) */
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Center the content column and pad the top/bottom so it never tucks
+   under the logo or user menu pinned in the corners. */
+.content-area {
+  align-items: center;
+  padding-top: calc(var(--space-lg) + var(--space-2xl));
+  padding-bottom: calc(var(--space-lg) + var(--space-2xl));
+}
+
+/* SitRep logo — pinned to the top-left corner (was the sidebar header).
+   The .sidebar-logo/.logo-mark/.logo-text styles come from main.css. */
+.projects-logo {
+  position: fixed;
+  top: var(--space-lg);
+  left: var(--space-lg);
+  z-index: var(--z-sticky);
+}
+
+/* User/account menu — pinned to the bottom-left corner (was the sidebar
+   footer). A sidebar-like width keeps the upward-opening dropdown (which
+   spans the menu's width, per main.css) a comfortable size. */
+.projects-user-menu {
+  position: fixed;
+  bottom: var(--space-lg);
+  left: var(--space-lg);
+  width: var(--sidebar-width);
+  z-index: var(--z-sticky);
+}
+
+/* --- Content column -----------------------------------------
+   Cap the width of the project content so it stays a readable column
+   on wide screens instead of stretching edge to edge. */
+.projects-page__header,
+.project-list,
+#empty,
+#error,
+.project-create {
+  width: 100%;
+  max-width: var(--container-sm);
+}
+
+/* --- Header -------------------------------------------------- */
+.projects-page__header {
+  margin-bottom: var(--space-xs);
+}
+
+.projects-page__header h1 {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.projects-page__subtitle {
+  margin: var(--space-2xs) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* --- Project list -------------------------------------------
+   Reset the <ul> defaults and stack cards in a single column. */
+.project-list {
+  list-style: none;
+  margin: 0 0 var(--space-xl);
+  padding: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Each list item lays the open-button and the (optional) delete
+   control on one row; the button flexes to fill the space left of
+   the fixed-size delete affordance. */
+.project-card {
+  margin: 0;
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-xs);
+}
+
+/* The card body is one button so its whole surface is a single,
+   keyboard-focusable click target that opens the project's
+   dashboard. It flexes to fill the row beside the delete control. */
+.project-card__btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  min-width: 0;
+
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+
+  background-color: var(--color-bg-surface);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+
+  box-shadow: var(--shadow-xs);
+  transition:
+    border-color var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default),
+    background-color var(--duration-fast) var(--ease-default);
+}
+
+.project-card__btn:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Shared focus ring (same pattern as components.css controls). */
+.project-card__btn:focus-visible {
+  outline: var(--focus-outline-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-outline-offset);
+  box-shadow: var(--shadow-focus);
+}
+
+.project-card__name {
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Workflow type (and member count) — a quiet, capitalized chip
+   so "scrum" / "kanban" / "xp" read as a label, not body copy. */
+.project-card__meta {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-transform: capitalize;
+}
+
+/* Delete control — only rendered for projects the user created.
+   A quiet, bordered square that warms to the error color on hover
+   to signal its destructive intent (mirrors .member-item__remove). */
+.project-card__delete {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-2xl);
+
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+
+  transition:
+    border-color var(--duration-fast) var(--ease-default),
+    background-color var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default);
+}
+
+.project-card__delete:hover {
+  border-color: var(--color-error);
+  background-color: var(--color-error-muted);
+  color: var(--color-error);
+}
+
+.project-card__delete:focus-visible {
+  outline: var(--focus-outline-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-outline-offset);
+}
+
+/* --- Empty / error states ----------------------------------- */
+#empty {
+  margin: 0 0 var(--space-xl);
+  color: var(--color-text-muted);
+}
+
+.error {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-error);
+  font-size: var(--text-sm);
+}
+
+/* --- New project form ---------------------------------------
+   A bordered surface that visually separates "create" from the
+   list of existing projects above it. */
+.project-create {
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg-surface);
+}
+
+.project-create h2 {
+  margin: 0 0 var(--space-md);
+  font-size: var(--text-h4);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Stack the form controls with even spacing. */
+.project-create form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Email field + "Add" button sit on one row; the input flexes
+   to fill the space left of the fixed-width button. */
+.member-invite {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.member-invite .input {
+  flex: 1;
+}
+
+/* --- Invited members list ----------------------------------- */
+.member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg-subtle);
+}
+
+.member-item__email {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+/* Small, low-emphasis "remove" affordance that warms to the
+   error color on hover to signal its destructive intent. */
+.member-item__remove {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: var(--space-2xs) var(--space-xs);
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  color: var(--color-text-muted);
+  transition:
+    background-color var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default);
+}
+
+.member-item__remove:hover {
+  background-color: var(--color-error-muted);
+  color: var(--color-error);
+}
+
+.member-item__remove:focus-visible {
+  outline: var(--focus-outline-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-outline-offset);
+}
+
+/* Post-create confirmation note (e.g. emails that weren't found). */
+.create-note {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
