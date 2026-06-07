@@ -28,6 +28,13 @@
 
           <div class="form-error-banner" id="error-banner" role="alert" aria-live="polite"></div>
 
+          <!-- Pending invitations for the signed-in user (populated by script.js) -->
+          <section class="invites-section" id="invites-section" hidden>
+            <h2 class="invites-title">You've been invited</h2>
+            <ul class="invites-list" id="invites-list" aria-label="Pending invitations"></ul>
+            <p class="invites-divider"><span>or create a new project</span></p>
+          </section>
+
           <form id="setup-form" novalidate>
             <!-- Project name -->
             <div class="field">

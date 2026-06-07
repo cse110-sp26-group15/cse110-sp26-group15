@@ -2,11 +2,14 @@ node_modules/
 dist/
 build/
 coverage/
+playwright-report/
+test-results/
 .DS_Store
 *.log
 .env
 .env.local
 .wrangler
 .claude/
+wrangler.toml
 test-results/
 playwright-report/

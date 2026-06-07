@@ -10,34 +10,28 @@ const DASH_MAP = {
 };
 
 // ── Bootstrap ─────────────────────────────────────────
-const project = requireStoredProject("/projects/projects.html");
-if (!project) {
-  // Redirecting to the projects list — skip wiring this page.
-} else {
-  const workflow = project.workflow ?? "scrum";
-  const dashboardUrl = DASH_MAP[workflow] ?? DASH_MAP.scrum;
+const project = readProject();
+const workflow = project?.workflow ?? "scrum";
+const dashboardUrl = DASH_MAP[workflow] ?? DASH_MAP.scrum;
 
-  // The logo opens the Projects page; each nav item has an explicit target.
-  document.getElementById("sidebar-logo-link").href = "../projects/projects.html";
-  document.getElementById("nav-dashboard").href = dashboardUrl;
-  document.getElementById("nav-check-ins").href = "../check-in/check-in.html";
-  document.getElementById("nav-team").href = `${dashboardUrl}#team`;
-  document.getElementById("nav-weekly-report").href = `${dashboardUrl}#weekly-report`;
+// The logo opens the Projects page; the Dashboard nav item stays on the
+// current project's board.
+document.getElementById("sidebar-logo-link").href = "../projects/projects.html";
+document.getElementById("nav-dashboard").href = dashboardUrl;
 
-  // ── Populate About section ────────────────────────────
-  const workflowLabel = { scrum: "Scrum", kanban: "Kanban", xp: "XP" }[workflow] ?? "—";
-  document.getElementById("about-workspace").textContent = project?.name ?? "—";
-  document.getElementById("about-workflow").textContent = workflowLabel;
+// Placeholder nav items (href="#", e.g. My Check-ins / Team) route back to the
+// dashboard. Items with a real destination (e.g. Weekly Report) are left alone.
+document.querySelectorAll(".sidebar-nav .nav-item").forEach((item) => {
+  if (!item.id && item.getAttribute("href") === "#") item.href = dashboardUrl;
+});
 
-  // ── Init user menu ────────────────────────────────────
-  initUserMenu();
+// ── Populate About section ────────────────────────────
+const workflowLabel = { scrum: "Scrum", kanban: "Kanban", xp: "XP" }[workflow] ?? "—";
+document.getElementById("about-workspace").textContent = project?.name ?? "—";
+document.getElementById("about-workflow").textContent = workflowLabel;
 
-  // ── Theme management (Light / Dark only) ─────────────
-  const THEME_KEY = "sitrep_theme";
-
-  function applyTheme(value) {
-    document.documentElement.setAttribute("data-theme", value);
-  }
+// ── Init user menu ────────────────────────────────────
+initUserMenu();
 
   function setActiveThemeBtn(value) {
     document.querySelectorAll(".theme-btn").forEach((btn) => {

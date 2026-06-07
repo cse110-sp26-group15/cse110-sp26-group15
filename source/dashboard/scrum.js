@@ -27,18 +27,13 @@ import {
 } from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
+import { renderTeamPanel } from "../shared/team-panel.js";
 
 initUserMenu();
 
-// task-form.js runs `document.addEventListener(...)` at module top, so we
-// can't import it statically — it would crash the node-side tests where
-// there's no document. We dynamic-import it inside openCreateTaskModal
-// instead. The module's own DOMContentLoaded auto-init becomes a no-op
-// when the module is loaded after DCL has already fired in the browser,
-// which is exactly what we want — scrum.js owns the wiring.
-//
-// `taskFormModulePromise` caches the import so repeated clicks reuse the
-// same module instance instead of re-fetching it.
+// task-form.js adds a top-level document listener, so it's dynamic-imported
+// (not static) to keep the node-side tests from crashing. Cached so repeated
+// opens reuse the same module instance.
 let taskFormModulePromise = null;
 function loadTaskFormModule() {
   if (!taskFormModulePromise) {
@@ -53,10 +48,8 @@ function loadTaskFormModule() {
 // navigation, or the unit suite running under Node with no localStorage).
 export const PROJECT_ID = getCurrentProjectId();
 
-// localStorage key for the sprint picker selection. Namespaced by
-// project so multiple projects can each remember their own sprint.
-// (This is a UI preference, not data — we keep it in localStorage on
-// purpose so the user's last-picked sprint survives reloads.)
+// localStorage key for the picked sprint, namespaced per project so the
+// last-picked sprint survives reloads.
 const SPRINT_STORAGE_KEY = `sitrep.scrum.sprint.project-${PROJECT_ID}`;
 
 // Column definitions for the kanban view. Order is left → right.
@@ -135,6 +128,50 @@ export function parseISODate(s) {
   if (!y || !m || !d) return null;
   const date = new Date(y, m - 1, d);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** Format a Date as a local YYYY-MM-DD string. */
+function formatISODate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Today as a local YYYY-MM-DD string. Gates the sprint picker's date inputs. */
+export function todayISODate() {
+  return formatISODate(new Date());
+}
+
+/**
+ * Add `days` to a YYYY-MM-DD string, returning YYYY-MM-DD (or null if invalid).
+ * Used to suggest a default 1-week range for a new sprint.
+ */
+export function addDaysISO(iso, days) {
+  const date = parseISODate(iso);
+  if (!date) return null;
+  date.setDate(date.getDate() + days);
+  return formatISODate(date);
+}
+
+/**
+ * True when a sprint is currently running. Used to lock the "New sprint" action
+ * so a fresh sprint can't be started mid-sprint (one sprint at a time).
+ *
+ * A sprint counts as "in progress" when it's configured (has a start date or a
+ * number) and hasn't ended yet — i.e. it has no end date (open-ended sprint) or
+ * its end date is today or later. Returns false when there's no sprint at all
+ * or the sprint's end date has already passed, so a new sprint can be started.
+ */
+export function isSprintInProgress(sprint) {
+  if (!sprint) return false;
+  // Nothing configured yet → not in progress.
+  if (!sprint.start_date && !sprint.number) return false;
+  const end = parseISODate(sprint.end_date);
+  // Configured but no (valid) end date → treat as still running.
+  if (!end) return true;
+  // Otherwise it runs until the end date passes.
+  return end >= parseISODate(todayISODate());
 }
 
 /**
@@ -287,30 +324,21 @@ export function writeSprintToStorage(sprint, storage = globalThis.localStorage) 
 }
 
 // ── Module-level state ───────────────────────────────
-// `sprintState` holds the currently-shown sprint metadata (number + date
-// range). It is loaded from localStorage on init and overwritten when the
-// user saves the picker.
+// Currently-shown sprint (number + date range); loaded from localStorage on
+// init, overwritten when the user saves the picker.
 let sprintState = { number: null, start_date: null, end_date: null };
 
-// Real sprint_id of the current sprint, when the API knows one. Used to wire
-// the create-modal's sprint dropdown. Null until /sprints/current returns a
-// row (localStorage picks carry only a number, never a sprint_id).
+// Real sprint_id from /sprints/current (localStorage picks carry only a
+// number). Used to wire the create-modal's sprint dropdown.
 let currentSprintId = null;
 
-// Maps a task title → the description of an open blocker filed against it (via
-// the daily check-in). Rebuilt each loadAll; used to show a blocker chip on
-// the matching task card. Blockers are read-only here — they're raised and
-// resolved through the check-in flow, not the cards.
+// task title → open-blocker description, for the "Blocked" chip on task cards.
+// Read-only here; blockers are raised/resolved through the check-in flow.
 let blockerByTask = new Map();
 
-// Build the title→reason lookup from the open-blocker list. First (most
-// recent, since the API sorts DESC) open blocker per task wins.
-//
-// Blockers the user resolved from the blocker rail are persisted to
-// localStorage (by blocker-card.js) but aren't yet reflected by the API, so we
-// also skip any blocker whose id is in that resolved set. This keeps the
-// "Blocked" chip off a task card after its blocker was resolved on a different
-// dashboard type and the user switched back here.
+// Build the title→reason lookup; first open blocker per task wins (API sorts
+// DESC). Skips blockers resolved from the rail (persisted to localStorage by
+// blocker-card.js but not yet reflected by the API) so the chip stays off.
 function buildBlockerIndex(blockers) {
   const map = new Map();
   const resolvedIds = readResolvedBlockerIds();
@@ -321,34 +349,32 @@ function buildBlockerIndex(blockers) {
   return map;
 }
 
-// "list" or "kanban" — controls which view of Sprint Tasks is visible.
+// "list" or "kanban" — which Sprint Tasks view is visible.
 let viewMode = "list";
 
-// Cache of the most recently-fetched task list, so the kanban view can
-// re-render after a status change without an extra round trip.
+// Last-fetched tasks, so the kanban view can re-render without a round trip.
 let currentTasks = [];
 
-// Cache of the most recently-fetched check-ins plus whether the Daily Standup
-// grid is currently showing history (past days) rather than today. Both back
-// the "View history" toggle (toggleCheckinHistory).
+// Last-fetched check-ins + whether the standup grid is showing history; both
+// back the "View history" toggle.
 let checkinsCache = [];
 let showingCheckinHistory = false;
 
-// Cache of project members — populated by fetchMembers() during loadAll
-// and exposed to the task-form modal via `window.getProjectMembers` so
-// the assignee dropdown can be populated.
+// Last-fetched open blockers, so the check-in modal can show a check-in's
+// blocker(s) (matched by checkin_id).
+let blockersCache = [];
+
+// Project members, exposed to the task-form modal via window.getProjectMembers
+// for the assignee dropdown.
 let projectMembers = [];
 
-// Cache of AI agents on this project. Exposed via window.getProjectAgents
-// so the task-form modal can identify which assignees are agents and
-// auto-enforce the reviewer-required rule on the client side.
+// AI agents on this project, exposed via window.getProjectAgents so the
+// task-form modal can require a reviewer when an agent is assigned.
 let projectAgents = [];
 
 // ── API calls ────────────────────────────────────────
-// All requests go through apiFetch (10s timeout, throws ApiError on
-// non-2xx). loadAll() catches once at the top so a single failure
-// surfaces as an inline error in the relevant panel rather than a
-// half-rendered dashboard.
+// All requests go through apiFetch (10s timeout, throws ApiError on non-2xx);
+// loadAll() catches once at the top and shows an inline error.
 
 async function fetchTasks() {
   const data = await apiFetch(`/api/projects/${PROJECT_ID}/tasks`);
@@ -356,14 +382,8 @@ async function fetchTasks() {
 }
 
 /**
- * Create a task. `data` is whatever openTaskModal hands back:
- *   { title, description, assigned_to, status }
- *
- * `forceStatus` overrides whatever status the modal returned — used by
- * kanban-column + buttons so the task always lands in the right column.
- *
- * New tasks automatically join the currently-active sprint — there's no
- * manual sprint picker, since a task created "now" belongs to "now"'s sprint.
+ * Create a task from the openTaskModal payload. `forceStatus` overrides the
+ * modal's status (used by the kanban column + buttons).
  */
 async function createTask(data, { forceStatus } = {}) {
   const status = forceStatus ?? data.status ?? "todo";
@@ -372,14 +392,14 @@ async function createTask(data, { forceStatus } = {}) {
     description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
     status,
+    priority: data.priority ?? "medium",
     // reviewer_id + review_status only flow through when the task-form
     // modal sets them (agent-assigned tasks). Server enforces the rule
     // either way; we just avoid sending null spam for human tasks.
     ...(data.reviewer_id != null ? { reviewer_id: data.reviewer_id } : {}),
     ...(data.review_status != null ? { review_status: data.review_status } : {}),
-    // Auto-assign to the active sprint. TODO(sprint-persistence): the tasks
-    // table has no sprint_id column yet, so the API silently drops this. Once
-    // the migration + API land, this will actually link the task to a sprint.
+    // TODO(sprint-persistence): tasks have no sprint_id column yet, so the API
+    // currently drops this.
     sprint_id: currentSprintId,
   };
 
@@ -413,10 +433,9 @@ async function fetchBlockers() {
   return (data.blockers ?? []).map((b) => ({
     blocker_id: b.blocker_id,
     description: b.description,
-    // The task title this blocker is filed against (null = project-wide).
-    // Used to show a blocker chip on the matching task card.
-    task: b.task ?? null,
+    task: b.task ?? null, // null = project-wide; drives the task-card chip
     tag: b.helper || null,
+    checkin_id: b.checkin_id ?? null, // links the blocker to its check-in
     full_name: b.reported_by || b.full_name || "",
     is_resolved: Boolean(b.is_resolved),
   }));
@@ -464,6 +483,10 @@ function renderSprintProgress(tasks) {
 
   const { done, total, pct } = computeSprintProgress(tasks);
   fill.style.width = `${pct}%`;
+  // Keep the progressbar's accessible value in sync with the visual fill.
+  fill.parentElement?.setAttribute("aria-valuenow", String(pct));
+  // At 100% the bar turns green to signal the sprint is fully complete.
+  fill.classList.toggle("progress-bar-fill--complete", pct >= 100);
   text.textContent = `${done} / ${total} tasks · ${pct}% complete`;
 
   const dayInfo = computeDayOfSprint(sprintState.start_date, sprintState.end_date);
@@ -528,11 +551,24 @@ function isCheckinToday(checkin, now = new Date()) {
   );
 }
 
+// Open blockers raised from a given check-in (matched by checkin_id). Single
+// source of truth so the card's "view blocker" button and the modal's blocker
+// section always agree — driving them off different signals (mood vs. blocker
+// data) is what let a "view update" card still show a blocker in the modal.
+function blockersForCheckin(checkinId) {
+  return blockersCache.filter(
+    (b) => !b.is_resolved && b.checkin_id != null && String(b.checkin_id) === String(checkinId)
+  );
+}
+
 // Build the HTML for a single check-in card.
 function buildCheckinCardHtml(c) {
   const mood = classifyMood(c.status_mood);
   const time = c.checkin_date ? formatDate(c.checkin_date) : "today";
   const work = c.work_done || c.work_planned || "—";
+  // Label the footer button by whether this check-in actually has an open
+  // blocker, not by mood — so it matches what the modal will show.
+  const hasBlocker = blockersForCheckin(c.checkin_id).length > 0;
   return `
         <div class="checkin-card" data-checkin-id="${escapeHtml(c.checkin_id)}">
           <div class="checkin-top">
@@ -546,12 +582,108 @@ function buildCheckinCardHtml(c) {
           <div class="checkin-footer">
             <span class="checkin-meta">${escapeHtml(time)}${c.status_mood ? " · " + escapeHtml(c.status_mood) : ""}</span>
             ${
-              mood.cls === "status-blocked"
-                ? `<button class="btn-mini danger">view blocker</button>`
-                : `<button class="btn-mini">view update</button>`
+              hasBlocker
+                ? `<button class="btn-mini danger" data-action="view-checkin">view blocker</button>`
+                : `<button class="btn-mini" data-action="view-checkin">view update</button>`
             }
           </div>
         </div>`;
+}
+
+// Open a read-only modal showing the full details of a single check-in.
+// Reuses the shared task-form modal styles (tf-*, loaded via task-form.css on
+// this page) so it matches the app's other dialogs.
+function openCheckinModal(checkin) {
+  if (!checkin) return;
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "tf-backdrop";
+
+  const modal = document.createElement("div");
+  modal.className = "tf-modal checkin-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-label", "Check-in details");
+
+  const mood = classifyMood(checkin.status_mood);
+  const when = checkin.checkin_date ? formatDate(checkin.checkin_date) : "today";
+  const moodSuffix = checkin.status_mood ? " · " + escapeHtml(checkin.status_mood) : "";
+
+  // Open blockers raised from this check-in. Same source as the card's
+  // "view blocker" button so the two never disagree.
+  const relatedBlockers = blockersForCheckin(checkin.checkin_id);
+  const blockerSection = relatedBlockers.length
+    ? `
+      <div class="checkin-modal-section">
+        <span class="checkin-modal-label">Blocker${relatedBlockers.length > 1 ? "s" : ""}</span>
+        ${relatedBlockers
+          .map(
+            (b) => `
+          <div class="checkin-modal-blocker">
+            <p class="checkin-modal-text">${escapeHtml(b.description || "—")}</p>
+            ${b.task ? `<span class="checkin-modal-meta">Task: ${escapeHtml(b.task)}</span>` : ""}
+            ${b.tag ? `<span class="checkin-modal-meta">Helper: ${escapeHtml(b.tag)}</span>` : ""}
+          </div>`
+          )
+          .join("")}
+      </div>`
+    : "";
+
+  modal.innerHTML = `
+    <div class="tf-header">
+      <h2 class="tf-title">${escapeHtml(checkin.full_name ?? "Unknown")} · Check-in</h2>
+      <button type="button" class="tf-close" aria-label="Close">✕</button>
+    </div>
+    <div class="tf-body">
+      <div class="checkin-modal-summary">
+        <div class="checkin-modal-row">
+          <span class="checkin-modal-label">Status</span>
+          <span class="status-badge ${mood.cls}">${escapeHtml(mood.label)}</span>
+        </div>
+        <div class="checkin-modal-row">
+          <span class="checkin-modal-label">When</span>
+          <span class="checkin-modal-value">${escapeHtml(when)}${moodSuffix}</span>
+        </div>
+      </div>
+      ${blockerSection}
+      <div class="checkin-modal-section">
+        <span class="checkin-modal-label">Work done</span>
+        <p class="checkin-modal-text">${escapeHtml(checkin.work_done || "—")}</p>
+      </div>
+      <div class="checkin-modal-section">
+        <span class="checkin-modal-label">Work planned</span>
+        <p class="checkin-modal-text">${escapeHtml(checkin.work_planned || "—")}</p>
+      </div>
+    </div>`;
+
+  backdrop.appendChild(modal);
+  document.body.appendChild(backdrop);
+
+  function close() {
+    document.removeEventListener("keydown", onKeyDown);
+    backdrop.remove();
+  }
+  function onKeyDown(e) {
+    if (e.key === "Escape") close();
+  }
+  modal.querySelector(".tf-close")?.addEventListener("click", close);
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) close();
+  });
+  document.addEventListener("keydown", onKeyDown);
+  modal.querySelector(".tf-close")?.focus();
+}
+
+// Delegated handler for the Daily Standup grid: "view update" / "view blocker"
+// both open the check-in details modal for that card's person. Looks the
+// check-in up in checkinsCache by id, so it works for today's grid and history.
+function onCheckinGridClick(e) {
+  const btn = e.target.closest('[data-action="view-checkin"]');
+  if (!btn) return;
+  const id = btn.closest(".checkin-card")?.dataset.checkinId;
+  if (id == null) return;
+  const checkin = checkinsCache.find((c) => String(c.checkin_id) === String(id));
+  if (checkin) openCheckinModal(checkin);
 }
 
 // Render the Daily Standup grid. Only today's check-ins are shown here;
@@ -627,13 +759,14 @@ function toggleCheckinHistory() {
 // ── Task rendering helpers (shared by list + kanban) ──
 // onChange handler for the shared task-card's interactive controls. The card
 // can edit priority, story points, tags, blocker, assignee and status inline,
-// but only assigned_to + status have backend persistence right now — the rest
-// update locally and are intentionally not PATCHed. Blocker persistence is
+// but only assigned_to, status + priority have backend persistence right now —
+// the rest update locally and are intentionally not PATCHed. Blocker persistence is
 // owned by another branch, so we leave is_blocked/blocker_reason untouched too.
 async function persistTaskChange(taskId, fields) {
   const payload = {};
   if ("assigned_to" in fields) payload.assigned_to = fields.assigned_to;
   if ("status" in fields) payload.status = fields.status;
+  if ("priority" in fields) payload.priority = fields.priority;
   if (Object.keys(payload).length === 0) return;
 
   try {
@@ -646,18 +779,68 @@ async function persistTaskChange(taskId, fields) {
   }
 }
 
-// Adds the page-specific delete button in a row below the task-card. Assignee
-// and status editing now come from the shared component's interactive mode;
-// the component intentionally doesn't provide a delete button, so we add it.
+/**
+ * Map the task-form modal's output to a PATCH body for an edit. Mirrors the
+ * create payload but clears the reviewer + review pill when no reviewer is
+ * set (human/unassigned), and omits review_status otherwise so the API
+ * preserves/promotes whatever the agent task already had.
+ * @param {object} data - Modal submission object.
+ * @returns {object} PATCH body.
+ */
+function buildEditPayload(data) {
+  const payload = {
+    title: data.title,
+    description: data.description ?? null,
+    assigned_to: data.assigned_to ?? null,
+    status: data.status,
+  };
+  if (data.priority) payload.priority = data.priority;
+  if (data.reviewer_id != null) {
+    payload.reviewer_id = data.reviewer_id;
+  } else {
+    payload.reviewer_id = null;
+    payload.review_status = "not-required";
+  }
+  return payload;
+}
+
+// Opens the shared task-form modal pre-filled with an existing task, PATCHing
+// the changes and refreshing the dashboard on save.
+async function openEditTaskModal(task) {
+  const { openTaskModal } = await loadTaskFormModule();
+  openTaskModal(
+    async (data) => {
+      try {
+        await updateTask(task.task_id, buildEditPayload(data));
+        await loadAll();
+      } catch (err) {
+        console.error("[scrum] editTask failed", err);
+        alert(`Couldn't update task: ${err.message}`);
+      }
+    },
+    { task }
+  );
+}
+
+// Adds the page-specific edit + delete buttons in a row below the task-card.
+// Assignee and status editing come from the shared component's interactive
+// mode; the component intentionally doesn't provide these, so we add them.
 function appendTaskControls(card, task) {
   const row = document.createElement("div");
   row.className = "task-card-row-delete";
+
+  const editBtn = document.createElement("button");
+  editBtn.type = "button";
+  editBtn.className = "btn task-card-edit";
+  editBtn.dataset.taskId = task.task_id;
+  editBtn.textContent = "Edit";
+  editBtn.addEventListener("click", () => openEditTaskModal(task));
 
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
   deleteBtn.className = "btn task-card-delete";
   deleteBtn.dataset.taskId = task.task_id;
-  deleteBtn.textContent = "Delete";
+  deleteBtn.textContent = "delete";
   deleteBtn.addEventListener("click", async () => {
     try {
       await deleteTask(task.task_id);
@@ -668,22 +851,20 @@ function appendTaskControls(card, task) {
     }
   });
 
+  row.appendChild(editBtn);
   row.appendChild(deleteBtn);
   card.appendChild(row);
 }
 
-// Build a task-card element for the list view (uses scrum-style card).
+// Build a task-card element, enriched with the active sprint label and any
+// open check-in blocker for this task.
 function buildTaskCard(task, { compact = false } = {}) {
-  // Mix in the active sprint number so the card banner reads
-  // "Urgent · Sprint 3" the way the task-card scrum variant expects.
   const blockerReason = blockerByTask.get(task.title);
   const enriched = {
     ...task,
-    // The card's assignee dropdown keys off assigned_to; scrum rows carry the
-    // assignee as user_id, so mirror it across for correct pre-selection.
+    // Mirror user_id → assigned_to so the card's assignee dropdown pre-selects.
     assigned_to: task.assigned_to ?? task.user_id ?? null,
     sprint: sprintState.number ? `Sprint ${sprintState.number}` : task.sprint,
-    // Surface an open check-in blocker (if any) as the card's blocker chip.
     ...(blockerReason ? { is_blocked: true, blocker_reason: blockerReason } : null),
   };
   const card = createTaskCard(enriched, "scrum", {
@@ -791,14 +972,8 @@ function setViewMode(mode) {
 }
 
 // ── Add-task flow (uses task-form modal) ─────────────
-// Opens the shared modal from ../task-form/task-form.js. The modal's
-// onSubmit fires once the user clicks "Create task" with a valid title.
-//
-// `lockedStatus`, when provided, forces the new task into that status
-// regardless of what the user picked in the modal — used by the kanban
-// column + buttons so a click on the "Blocked" column's + reliably
-// produces a blocked task. We also hide the status field in the modal
-// when it's locked so the UI doesn't lie about what the dropdown does.
+// `lockedStatus` forces the new task into that status and hides the modal's
+// status field (used by the kanban column + buttons).
 async function openCreateTaskModal({ lockedStatus, defaultStatus = "todo" } = {}) {
   const { openTaskModal } = await loadTaskFormModule();
 
@@ -812,10 +987,8 @@ async function openCreateTaskModal({ lockedStatus, defaultStatus = "todo" } = {}
     }
   });
 
-  // Tweak the just-opened modal: preselect the column's status, and hide
-  // the status field entirely when it's locked (kanban + buttons).
-  // openTaskModal builds the DOM synchronously, so the elements are
-  // already on the page by the time this code runs.
+  // openTaskModal builds the DOM synchronously, so the status field is already
+  // present: preselect the wanted status, and hide it when locked.
   const statusSelect = document.getElementById("tf-input-status");
   if (statusSelect) {
     const wanted = lockedStatus ?? defaultStatus;
@@ -829,20 +1002,58 @@ async function openCreateTaskModal({ lockedStatus, defaultStatus = "todo" } = {}
 }
 
 // ── Sprint picker ────────────────────────────────────
-function openSprintPicker() {
+// The sprint number is auto-assigned ("New sprint" increments, "Edit sprint"
+// keeps); the open picker stashes the value it will save here.
+let pickerSprintNumber = null;
+
+// One sprint at a time: hide "New sprint" while a sprint is in progress.
+function updateSprintButtons() {
+  const newBtn = document.getElementById("new-sprint-btn");
+  if (!newBtn) return;
+  newBtn.hidden = isSprintInProgress(sprintState);
+}
+
+/**
+ * Open the sprint picker.
+ *
+ * @param {"new"|"edit"} mode  "new" auto-increments the sprint number and
+ *        suggests the next 1-week range; "edit" keeps the current number and
+ *        prefills the current dates. The number is read-only either way.
+ */
+function openSprintPicker(mode = "edit") {
   const picker = document.getElementById("sprint-picker");
-  const numberInput = document.getElementById("sprint-number-input");
+  const numberDisplay = document.getElementById("sprint-number-display");
   const startInput = document.getElementById("sprint-start-input");
   const endInput = document.getElementById("sprint-end-input");
-  if (!picker || !numberInput || !startInput || !endInput) return;
+  if (!picker || !numberDisplay || !startInput || !endInput) return;
 
-  // Prefill with the current state so editing is non-destructive.
-  numberInput.value = sprintState.number ?? "";
-  startInput.value = sprintState.start_date ?? "";
-  endInput.value = sprintState.end_date ?? "";
+  // Guard: can't start a new sprint while one is in progress.
+  if (mode === "new" && isSprintInProgress(sprintState)) return;
+
+  if (mode === "new") {
+    // Auto-increment from the current sprint (1 for the very first sprint), and
+    // suggest a 1-week range starting today, which the user can adjust.
+    pickerSprintNumber = (sprintState.number ?? 0) + 1;
+    const start = todayISODate();
+    startInput.value = start;
+    endInput.value = addDaysISO(start, 6) ?? "";
+  } else {
+    // Editing: keep the current number and prefill the current dates so the
+    // edit is non-destructive. Fall back to sprint 1 if none is set yet.
+    pickerSprintNumber = sprintState.number ?? 1;
+    startInput.value = sprintState.start_date ?? "";
+    endInput.value = sprintState.end_date ?? "";
+  }
+  numberDisplay.textContent = String(pickerSprintNumber);
+
+  // A sprint can't start before today: grey out past days in the date pickers.
+  // saveSprintPicker re-checks this since `min` only guides the calendar UI.
+  const today = todayISODate();
+  startInput.min = today;
+  endInput.min = today;
 
   picker.classList.remove("hidden");
-  numberInput.focus();
+  startInput.focus();
 }
 
 function closeSprintPicker() {
@@ -856,15 +1067,24 @@ function closeSprintPicker() {
 }
 
 function saveSprintPicker() {
-  const numberInput = document.getElementById("sprint-number-input");
   const startInput = document.getElementById("sprint-start-input");
   const endInput = document.getElementById("sprint-end-input");
   const err = document.getElementById("sprint-picker-error");
-  if (!numberInput || !startInput || !endInput || !err) return;
+  if (!startInput || !endInput || !err) return;
 
-  const number = numberInput.value ? Number(numberInput.value) : null;
+  // Number is auto-assigned by openSprintPicker (new = +1, edit = unchanged),
+  // never typed.
+  const number = pickerSprintNumber;
   const start = startInput.value || null;
   const end = endInput.value || null;
+
+  // Validate: a sprint can't start before today. Checked here (not just via the
+  // input's `min`) because a user can still type a past date into the field.
+  if (start && parseISODate(start) < parseISODate(todayISODate())) {
+    err.hidden = false;
+    err.textContent = "Sprint can't start before today.";
+    return;
+  }
 
   // Validate: when both dates are set, end ≥ start.
   if (start && end && parseISODate(start) > parseISODate(end)) {
@@ -883,6 +1103,8 @@ function saveSprintPicker() {
   // Also re-render tasks so the "Sprint N" banner label on each card
   // reflects the new sprint number.
   renderTasks(currentTasks);
+  // Lock/unlock "New sprint" now that the sprint's dates may have changed.
+  updateSprintButtons();
 }
 
 // Paint a visible error state across every panel so failures are loud,
@@ -918,9 +1140,7 @@ async function loadAllImpl() {
       fetchBlockers(),
       fetchSprint(),
       fetchMembers(),
-      // The agents endpoint is best-effort — a missing/empty response
-      // shouldn't blow up the dashboard. Catch + log so the rest of
-      // loadAll() proceeds even when agents 500s.
+      // Best-effort: a failing agents endpoint shouldn't break the dashboard.
       fetchAgents().catch((err) => {
         console.warn("[scrum] fetchAgents failed; rendering empty agents rail", err);
         return [];
@@ -936,10 +1156,7 @@ async function loadAllImpl() {
     return;
   }
 
-  // If /members returned something, trust it; otherwise reverse-engineer
-  // members from rows that include user info (legacy / partial APIs).
-  // Either way, cache the result so the create modal's assignee dropdown
-  // can populate (it reads via window.getProjectMembers).
+  // Trust /members if non-empty; otherwise derive members from task/checkin rows.
   projectMembers = apiMembers.length ? apiMembers : deriveMembers(tasks, checkins);
   projectAgents = apiAgents;
 
@@ -958,6 +1175,8 @@ async function loadAllImpl() {
 
   // Index open blockers by task title so cards can show a blocker chip.
   blockerByTask = buildBlockerIndex(blockers);
+  // Cache the raw blockers so the check-in modal can surface details per person.
+  blockersCache = blockers;
 
   // Cache check-ins and reset the Daily Standup grid to today's view; the
   // "View history" toggle reads this cache to show past days on demand.
@@ -974,6 +1193,8 @@ async function loadAllImpl() {
   renderTasks(tasks);
   renderAgents(document.getElementById("agents-list"), projectAgents);
   renderAgentContributionsMeta(projectAgents, tasks);
+  // Lock "New sprint" if the loaded sprint is still in progress.
+  updateSprintButtons();
 }
 
 /**
@@ -1044,6 +1265,11 @@ function switchView(navSlug, label) {
     view.innerHTML = `<p>${escapeHtml(label)}</p><span>${escapeHtml(target.subtitle ?? "Coming soon")}</span>`;
     root.appendChild(view);
   }
+
+  if (navSlug === "team") {
+    renderTeamPanel(view, { projectId: PROJECT_ID });
+  }
+
   view.classList.remove("hidden");
 }
 
@@ -1081,12 +1307,11 @@ function init() {
   // Restore sprint state from localStorage (if anything is saved).
   const stored = readSprintFromStorage();
   if (stored) sprintState = stored;
+  // Set the initial "New sprint" visibility (loadAll refreshes it later).
+  updateSprintButtons();
 
   // ── Sidebar nav ────────────────────────────────────
-  // Real `href`s do the navigation (e.g. My Check-ins → check-in.html).
-  // In-page tabs (href="#") swap the visible .page-view to a placeholder
-  // so the user sees the click took effect — full pages for Team /
-  // Weekly Report aren't built yet.
+  // Real hrefs navigate; in-page tabs (href="#") swap to a placeholder view.
   document.querySelectorAll(".nav-item").forEach((item) => {
     item.addEventListener("click", (e) => {
       const href = item.getAttribute("href");
@@ -1108,7 +1333,13 @@ function init() {
   applyViewFromQuery();
 
   // ── Sprint picker controls ─────────────────────────
-  document.getElementById("edit-sprint-btn")?.addEventListener("click", openSprintPicker);
+  // Arrow wrappers so the click event isn't passed as the mode argument.
+  document
+    .getElementById("new-sprint-btn")
+    ?.addEventListener("click", () => openSprintPicker("new"));
+  document
+    .getElementById("edit-sprint-btn")
+    ?.addEventListener("click", () => openSprintPicker("edit"));
   document.getElementById("save-sprint-btn")?.addEventListener("click", saveSprintPicker);
   document.getElementById("cancel-sprint-btn")?.addEventListener("click", closeSprintPicker);
 
@@ -1117,11 +1348,12 @@ function init() {
     btn.addEventListener("click", () => setViewMode(btn.dataset.view));
   });
 
+  // ── Daily Standup: "view update" → check-in details modal ──
+  // Delegated so it covers cards re-rendered for today and the history view.
+  document.getElementById("checkin-grid")?.addEventListener("click", onCheckinGridClick);
+
   // ── Add-agent button (opens agent-form modal) ──────
-  // Members are filtered to non-agents inside openAgentModal — we pass
-  // the full cached list. createAgent posts to the API; on success we
-  // reload everything so the new agent shows in the rail + the
-  // assignee/owner pickers.
+  // openAgentModal filters members to non-agents; reload after a create.
   document.getElementById("add-agent-btn")?.addEventListener("click", () => {
     openAgentModal({
       members: projectMembers,
@@ -1133,48 +1365,34 @@ function init() {
   });
 
   // ── Add-task button (opens task-form modal) ────────
-  // task-form.js is dynamic-imported on first click (so the node-side
-  // tests don't crash on its top-level `document.addEventListener`).
-  // Because that import happens after DOMContentLoaded, the module's
-  // own auto-init won't fire — which means we own #add-task-btn outright
-  // and don't have to fight over it.
+  // task-form.js is dynamic-imported on first click (see loadTaskFormModule).
   document.getElementById("add-task-btn")?.addEventListener("click", () => {
     openCreateTaskModal({ defaultStatus: "todo" });
   });
 
-  // task-form's modal builder reads the project's member list off
-  // `window.getProjectMembers` to populate the assignee dropdown — we
-  // expose ours here so the dropdown isn't empty.
+  // Expose the caches the task-form modal reads to populate its assignee
+  // dropdown and enforce the reviewer-required rule for agents.
   if (typeof window !== "undefined") {
     window.getProjectMembers = () => projectMembers;
-    // The task-form modal also needs to know which members are AI agents
-    // so it can auto-default + require a reviewer when one is selected.
     window.getProjectAgents = () => projectAgents;
   }
 
   // ── Daily Standup "View history" toggle ────────────
-  // Swaps the standup grid between today's check-ins and past days.
   document.getElementById("checkin-history-link")?.addEventListener("click", (e) => {
     e.preventDefault();
     toggleCheckinHistory();
   });
 
-  // ── Check-in button ────────────────────────────────
-  // Sends the user to the dedicated check-in page (source/check-in), which
-  // hosts the daily stand-up form. Same destination as the "My Check-ins"
-  // sidebar link, so both entry points land on the same flow.
+  // ── Check-in button → dedicated check-in page ──────
   document.getElementById("checkin-today-btn")?.addEventListener("click", () => {
     window.location.href = "../check-in/check-in.html";
   });
 
-  // Apply the saved view mode (defaults to "list") and kick off the
-  // first load (with a loading overlay).
+  // Apply the saved view mode and kick off the first load (with a spinner).
   setViewMode(viewMode);
   loadAll(true);
 }
 
 if (typeof document !== "undefined") {
-  // Modules are deferred by default, so the DOM is parsed by the time
-  // we get here; no DOMContentLoaded listener required.
-  init();
+  init(); // deferred module: the DOM is already parsed
 }
