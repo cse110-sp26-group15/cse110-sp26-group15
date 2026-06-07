@@ -149,3 +149,9 @@ INSERT INTO blockers (checkin_id, description, task, helper, is_resolved) VALUES
   (3, 'Figma file is missing dark-mode tokens.',           'Develop wireframes',        'Sam Chen',    1),
   (7, 'Agent: missing context for 3 PRs — owner ping.',    'Agent: audit PR #142 vs acceptance criteria', 'Wayne Dyer', 0),
   (8, 'Apple developer account renewal stuck in finance.', NULL,                        'Wayne Dyer',  0);
+
+-- ── Pending invite ────────────────────────────────────────────────────
+-- Invited to the scrum project but has no account yet; appears as
+-- "Pending" in the Team view until they sign up and join.
+INSERT INTO project_invites (project_id, email, invited_by) VALUES
+  (1, 'newteammate@ucsd.edu', 1);

@@ -133,6 +133,13 @@ export async function onRequestPost(context) {
     );
   }
 
+  if (assigned_to === null || assigned_to === undefined || assigned_to === "") {
+    return Response.json(
+      { error: "A task must be assigned to a project member." },
+      { status: 400 }
+    );
+  }
+
   try {
     const assignee = await classifyUser(env.DB, assigned_to);
     if (assigned_to && assignee.kind === "missing") {

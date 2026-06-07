@@ -11,6 +11,7 @@ import {
 import { initUserMenu } from "../shared/user-menu.js";
 import { initLocalPairs, loadPairs, getLoadedPairs, ensurePairSession } from "./xp-pairs.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
+import { renderTeamPanel } from "../shared/team-panel.js";
 
 initUserMenu();
 
@@ -57,6 +58,10 @@ function switchView(label) {
     view.className = "page-view placeholder";
     view.innerHTML = `<p>${label}</p><span>Coming soon</span>`;
     document.getElementById("page-content")?.appendChild(view);
+  }
+
+  if (label === "Team") {
+    renderTeamPanel(view, { projectId: PROJECT_ID });
   }
 
   view.classList.remove("hidden");
@@ -413,19 +418,18 @@ function enrichTaskWithBlocker(task) {
 
 /**
  * Builds the inner HTML for an assignee `<select>`, populated from the cached
- * project members list with the given member pre-selected.
- * @param {number|null} selectedUserId - Member user_id to mark selected, or null for "Unassigned".
+ * project members list with the given member pre-selected. The first member is
+ * the default when no selectedUserId matches.
+ * @param {number|null} selectedUserId - Member user_id to mark selected.
  * @returns {string} The concatenated `<option>` markup.
  */
 function buildAssigneeOptions(selectedUserId) {
-  const unassigned = `<option value=""${!selectedUserId ? " selected" : ""}>Unassigned</option>`;
-  const memberOpts = projectMembers
+  return projectMembers
     .map(
       (m) =>
         `<option value="${m.user_id}"${m.user_id === selectedUserId ? " selected" : ""}>${m.full_name}</option>`
     )
     .join("");
-  return unassigned + memberOpts;
 }
 
 /**
@@ -436,7 +440,7 @@ function buildAssigneeOptions(selectedUserId) {
 function populateCreateFormAssignees() {
   const sel = document.getElementById("new-task-assignee");
   if (!sel) return;
-  sel.innerHTML = buildAssigneeOptions(null);
+  sel.innerHTML = buildAssigneeOptions(projectMembers[0]?.user_id ?? null);
 }
 
 // ── Board rendering (kanban) ──────────────────────────

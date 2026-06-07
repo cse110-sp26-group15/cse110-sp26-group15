@@ -145,7 +145,10 @@ describe("task priority (urgency)", () => {
   it("POST stores a valid priority", async () => {
     const db = createMockDb({
       firstResults: [
-        // post-insert SELECT (unassigned task, so no classifyUser DB hit)
+        // assignee classify → human (a task must be assigned to a member)
+        { user_id: 1, agent_user_id: null, owner_user_id: null },
+        { ok: 1 }, // assignee containment check (member of project)
+        // post-insert SELECT
         {
           task_id: 10,
           title: "x",
@@ -156,15 +159,15 @@ describe("task priority (urgency)", () => {
           review_status: "not-required",
           priority: "high",
           created_at: "2026-06-05 00:00:00",
-          user_id: null,
-          full_name: null,
+          user_id: 1,
+          full_name: "Alex",
           is_agent: 0,
           reviewer_name: null,
         },
       ],
       runResults: [{ meta: { last_row_id: 10 } }],
     });
-    const res = await postTask(ctx({ body: { title: "x", priority: "high" } }, db));
+    const res = await postTask(ctx({ body: { title: "x", assigned_to: 1, priority: "high" } }, db));
     expect(res.status).toBe(201);
     const data = await res.json();
     expect(data.task.priority).toBe("high");

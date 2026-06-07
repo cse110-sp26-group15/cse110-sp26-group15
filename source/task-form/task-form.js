@@ -6,6 +6,8 @@
 // that agent's owning human. The API also enforces this — the client
 // rule is a UX nicety, not a security boundary.
 
+import { getCurrentUser, defaultAssigneeId } from "../shared/utils.js";
+
 /**
  * Pull project members from the host page (the various dashboards expose
  * `window.getProjectMembers`). Returns `[]` when the host hasn't set it.
@@ -129,11 +131,6 @@ export function openTaskModal(onSubmit, options = {}) {
   assigneeSelect.id = "tf-input-assignee";
   assigneeSelect.className = "tf-select";
 
-  const unassignedOpt = document.createElement("option");
-  unassignedOpt.value = "";
-  unassignedOpt.textContent = "Unassigned";
-  assigneeSelect.appendChild(unassignedOpt);
-
   // Populate from cached project members. Agents are tagged inline so
   // the picker reads "Name · AI" — a visual cue that picking this option
   // will surface the reviewer field below.
@@ -150,9 +147,17 @@ export function openTaskModal(onSubmit, options = {}) {
     if (isAgent) o.dataset.agent = "true";
     assigneeSelect.appendChild(o);
   }
+  const defaultId = defaultAssigneeId(members, getCurrentUser());
+  if (defaultId != null) assigneeSelect.value = String(defaultId);
 
   assigneeField.appendChild(assigneeLabel);
   assigneeField.appendChild(assigneeSelect);
+
+  const assigneeError = document.createElement("p");
+  assigneeError.className = "tf-error";
+  assigneeError.hidden = true;
+  assigneeError.textContent = "Please select an assignee.";
+  assigneeField.appendChild(assigneeError);
 
   const statusField = document.createElement("div");
   statusField.className = "tf-field";
@@ -493,6 +498,13 @@ export function openTaskModal(onSubmit, options = {}) {
       return;
     }
 
+    if (!assigneeSelect.value) {
+      assigneeError.hidden = false;
+      assigneeSelect.focus();
+      return;
+    }
+    assigneeError.hidden = true;
+
     const assigneeId = assigneeSelect.value ? Number(assigneeSelect.value) : null;
     const isAgent = assigneeId != null && agentOwnerByUserId.has(assigneeId);
     const reviewerId = reviewerSelect.value ? Number(reviewerSelect.value) : null;
@@ -540,21 +552,23 @@ export function openTaskModal(onSubmit, options = {}) {
 }
 
 // ── Self-initialization ───────────────────────────────
-document.addEventListener("DOMContentLoaded", () => {
-  // Inject stylesheet
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = "../task-form/task-form.css";
-  document.head.appendChild(link);
+if (typeof document !== "undefined") {
+  document.addEventListener("DOMContentLoaded", () => {
+    // Inject stylesheet
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "../task-form/task-form.css";
+    document.head.appendChild(link);
 
-  // Remove the old inline form
-  document.getElementById("add-task-form")?.remove();
+    // Remove the old inline form
+    document.getElementById("add-task-form")?.remove();
 
-  // Hook up the existing add-task button
-  document.getElementById("add-task-btn")?.addEventListener("click", () => {
-    openTaskModal(async (data) => {
-      await window.createTask(data);
-      await window.loadTasks();
+    // Hook up the existing add-task button
+    document.getElementById("add-task-btn")?.addEventListener("click", () => {
+      openTaskModal(async (data) => {
+        await window.createTask(data);
+        await window.loadTasks();
+      });
     });
   });
-});
+}
