@@ -4,8 +4,8 @@ import {
   fallbackSummary,
   callAnthropic,
   onRequestPost,
-} from "../../../functions/api/projects/[projectId]/summary.js";
-import { renderSummaryHtml } from "../../dashboard/scrum.js";
+} from "../../functions/api/projects/[projectId]/summary.js";
+import { renderSummaryHtml } from "../dashboard/scrum.js";
 
 function makeDb({ checkins = [], blockers = [], throwOn = null } = {}) {
   return {

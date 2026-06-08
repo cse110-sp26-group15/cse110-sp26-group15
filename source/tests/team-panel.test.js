@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildTeamPanelHtml } from "../../shared/team-panel.js";
+import { buildTeamPanelHtml } from "../shared/team-panel.js";
 
 describe("buildTeamPanelHtml", () => {
   it("renders members with name and email", () => {

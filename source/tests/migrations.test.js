@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 // Resolve db/migrations relative to this file so the test is robust to
 // vitest's cwd.
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const MIGRATIONS_DIR = join(REPO_ROOT, "db", "migrations");
 
 /**

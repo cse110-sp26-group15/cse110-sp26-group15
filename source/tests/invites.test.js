@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { onRequestGet as getInvites } from "../../../functions/api/invites/index.js";
+import { onRequestGet as getInvites } from "../../functions/api/invites/index.js";
 
 /**
  * Mock D1: first() returns the seeded user row (for the email lookup), all()

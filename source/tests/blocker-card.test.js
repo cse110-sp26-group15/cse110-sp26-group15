@@ -4,7 +4,7 @@ import {
   mapApiBlocker,
   matchTaskByName,
   normalizeTaskName,
-} from "../../blocker-card/blocker-card.js";
+} from "../blocker-card/blocker-card.js";
 
 describe("mapApiBlocker", () => {
   it("passes through a fully-populated API row", () => {

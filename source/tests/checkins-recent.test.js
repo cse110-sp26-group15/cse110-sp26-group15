@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { onRequestGet } from "../../../functions/api/projects/[projectId]/checkins/recent.js";
+import { onRequestGet } from "../../functions/api/projects/[projectId]/checkins/recent.js";
 
 function createMockDb({ allResult, throws } = {}) {
   return {

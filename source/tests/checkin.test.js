@@ -17,7 +17,7 @@ import {
   isSameDay,
   hasCheckinToday,
   buildBlockerBlock,
-} from "../../check-in/check-in.js";
+} from "../check-in/check-in.js";
 
 // ── Module constants ─────────────────────────────────
 describe("check-in module constants", () => {

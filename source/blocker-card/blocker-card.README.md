@@ -228,6 +228,6 @@ Cards are a fixed `240px` so they line up cleanly in the scroll rail. The rail u
 
 ## Tests
 
-Pure helpers are covered in `source/src/tests/blocker-card.test.js` (run with `npm test`).
+Pure helpers are covered in `source/tests/blocker-card.test.js` (run with `npm test`).
 
 DOM-level behavior (mount/refresh/click flash) is **not** covered — the project doesn't have a DOM test environment configured. Add `jsdom` or `happy-dom` as a Vitest environment if you want to extend coverage there.

@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import {
   onRequestGet as listSprints,
   onRequestPost as createSprint,
-} from "../../../functions/api/projects/[projectId]/sprints/index.js";
-import { onRequestPatch as patchSprint } from "../../../functions/api/projects/[projectId]/sprints/[sprintId].js";
+} from "../../functions/api/projects/[projectId]/sprints/index.js";
+import { onRequestPatch as patchSprint } from "../../functions/api/projects/[projectId]/sprints/[sprintId].js";
 
 /**
  * Ordered-result mock D1. Same shape as the other handler tests in this dir.

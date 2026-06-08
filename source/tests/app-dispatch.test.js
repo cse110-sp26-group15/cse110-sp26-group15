@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { onRequestGet as dispatch } from "../../../functions/app.js";
+import { onRequestGet as dispatch } from "../../functions/app.js";
 
 /** Mock D1 whose project-count query returns `count`. */
 function mockDb(count) {

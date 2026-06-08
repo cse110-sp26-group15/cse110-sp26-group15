@@ -2,11 +2,11 @@ import { describe, it, expect, vi } from "vitest";
 import {
   onRequestGet as getProjectAgents,
   onRequestPost as postProjectAgent,
-} from "../../../functions/api/projects/[projectId]/agents.js";
+} from "../../functions/api/projects/[projectId]/agents.js";
 import {
   onRequestGet as getAgent,
   onRequestPatch as patchAgent,
-} from "../../../functions/api/agents/[userId].js";
+} from "../../functions/api/agents/[userId].js";
 
 /**
  * Build a mock D1 whose `first()` calls return values in the order

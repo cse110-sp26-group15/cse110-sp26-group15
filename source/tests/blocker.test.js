@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { onRequest, onRequestPost } from "../../../functions/api/projects/[projectId]/blockers.js";
+import { onRequest, onRequestPost } from "../../functions/api/projects/[projectId]/blockers.js";
 
 function createMockDb({ allResult, firstQueue = [], runResult } = {}) {
   const firstQ = [...firstQueue];

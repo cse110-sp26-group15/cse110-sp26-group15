@@ -3,10 +3,10 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
   onRequestPost as forgotHandler,
   generateResetToken,
-} from "../../../functions/api/auth/forgot-password.js";
-import { onRequestPost as resetHandler } from "../../../functions/api/auth/reset-password.js";
-import { requestPasswordReset } from "../../forgot-password/script.js";
-import { submitPasswordReset, tokenFromSearch } from "../../reset-password/script.js";
+} from "../../functions/api/auth/forgot-password.js";
+import { onRequestPost as resetHandler } from "../../functions/api/auth/reset-password.js";
+import { requestPasswordReset } from "../forgot-password/script.js";
+import { submitPasswordReset, tokenFromSearch } from "../reset-password/script.js";
 
 /**
  * In-memory mock D1 binding. Supports the exact queries the two handlers

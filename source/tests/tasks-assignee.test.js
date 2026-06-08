@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { onRequestPost as postTask } from "../../../functions/api/projects/[projectId]/tasks.js";
-import { onRequestPatch as patchTask } from "../../../functions/api/tasks/[taskId].js";
+import { onRequestPost as postTask } from "../../functions/api/projects/[projectId]/tasks.js";
+import { onRequestPatch as patchTask } from "../../functions/api/tasks/[taskId].js";
 
 /**
  * Ordered-result mock D1.

@@ -7,7 +7,7 @@ import {
   setCurrentProject,
   getCurrentProject,
   defaultAssigneeId,
-} from "../../shared/utils.js";
+} from "../shared/utils.js";
 
 /** Minimal Storage stand-in that stubs the global localStorage. */
 function makeStorage(initial = {}) {

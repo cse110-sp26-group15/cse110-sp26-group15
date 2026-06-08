@@ -21,7 +21,7 @@ import {
   formatSprintRange,
   readSprintFromStorage,
   writeSprintToStorage,
-} from "../../dashboard/scrum.js";
+} from "../dashboard/scrum.js";
 
 // ── Module constants ────────────────────────────────
 describe("scrum module constants", () => {

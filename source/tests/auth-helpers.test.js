@@ -3,7 +3,7 @@ import {
   requireUser,
   requireProjectMember,
   requireReferencedMember,
-} from "../../../functions/api/_auth.js";
+} from "../../functions/api/_auth.js";
 
 /**
  * Minimal D1 mock whose `first()` resolves to `firstResult` (default null),

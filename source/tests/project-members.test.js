@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   onRequestGet as getMembers,
   onRequestPost as addMember,
-} from "../../../functions/api/projects/[projectId]/members.js";
+} from "../../functions/api/projects/[projectId]/members.js";
 
 /**
  * Ordered-result mock D1 (same pattern as agents.test.js).

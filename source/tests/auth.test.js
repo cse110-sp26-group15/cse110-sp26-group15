@@ -1,6 +1,6 @@
 import bcryptjs from "bcryptjs";
 import { describe, expect, it, vi } from "vitest";
-import { onRequestPost as signupHandler } from "../../../functions/api/auth/signup.js";
+import { onRequestPost as signupHandler } from "../../functions/api/auth/signup.js";
 
 // These tests verify the auth API endpoints work correctly
 // Run with: npm test

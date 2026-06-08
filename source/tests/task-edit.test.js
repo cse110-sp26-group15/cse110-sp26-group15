@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import {
   onRequestPatch as patchTask,
   onRequestDelete as deleteTaskHandler,
-} from "../../../functions/api/tasks/[taskId].js";
-import { onRequestPost as postTask } from "../../../functions/api/projects/[projectId]/tasks.js";
+} from "../../functions/api/tasks/[taskId].js";
+import { onRequestPost as postTask } from "../../functions/api/projects/[projectId]/tasks.js";
 
 /**
  * Mock D1 that returns first()/run() results in the order given. Mirrors the

@@ -9,9 +9,9 @@ import {
   getCheckinDateRange,
   mapOpenBlocker,
   mapCheckinEntry,
-} from "../../../functions/api/projects/[projectId]/dashboard.js";
+} from "../../functions/api/projects/[projectId]/dashboard.js";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DB_NAME = "cse110-sp26-group15";
 
 /**

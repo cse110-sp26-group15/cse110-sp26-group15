@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { onRequestPost as createProject } from "../../../functions/api/projects/index.js";
+import { onRequestPost as createProject } from "../../functions/api/projects/index.js";
 
 /**
  * Ordered-result mock D1 (same pattern as agents.test.js). `first()` and

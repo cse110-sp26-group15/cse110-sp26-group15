@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { onRequestPatch } from "../../../functions/api/blockers/[blockerId].js";
+import { onRequestPatch } from "../../functions/api/blockers/[blockerId].js";
 
 function createMockDb({ firstResult, runResult } = {}) {
   const sqlCalls = [];

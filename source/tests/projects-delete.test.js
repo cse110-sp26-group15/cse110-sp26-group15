@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { onRequestDelete as deleteProject } from "../../../functions/api/projects/[projectId]/index.js";
+import { onRequestDelete as deleteProject } from "../../functions/api/projects/[projectId]/index.js";
 
 /**
  * Minimal D1 mock. The DELETE handler does one read (the project's `created_by`)
