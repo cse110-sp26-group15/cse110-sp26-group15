@@ -65,7 +65,7 @@ export function buildTeamPanelHtml({ members = [], pending_invites = [] } = {}) 
       <form class="team-add" id="team-add-form">
         <input type="email" id="team-add-email" class="team-add-input"
                placeholder="teammate@example.com" autocomplete="off" />
-        <button type="submit" class="btn-add-member">Add member</button>
+        <button type="submit" class="btn btn--primary btn-add-member">Add member</button>
         <p class="team-add-status" id="team-add-status" aria-live="polite"></p>
       </form>
     </div>`;

@@ -22,7 +22,7 @@ if (!project) {
   document.getElementById("nav-dashboard").href = dashboardUrl;
   document.getElementById("nav-check-ins").href = "../check-in/check-in.html";
   document.getElementById("nav-team").href = `${dashboardUrl}#team`;
-  document.getElementById("nav-weekly-report").href = `${dashboardUrl}#weekly-report`;
+  document.getElementById("nav-weekly-report").href = "../weekly-report/index.html";
 
   // ── Populate About section ────────────────────────────
   const workflowLabel = { scrum: "Scrum", kanban: "Kanban", xp: "XP" }[workflow] ?? "—";

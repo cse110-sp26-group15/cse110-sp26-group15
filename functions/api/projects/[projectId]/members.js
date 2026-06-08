@@ -1,3 +1,5 @@
+import { requireUser } from "../../_auth.js";
+
 /**
  * Returns true when `email` matches the basic local@domain.tld shape.
  * @param {string} email
@@ -56,12 +58,15 @@ export async function onRequestGet(context) {
  * Response 201: { status: "added", member } | { status: "already_member" }
  *               | { status: "pending" }
  *
- * @param {{ env: { DB: object }, params: { projectId: string }, request: Request }} context
+ * @param {{ env: { DB: object }, params: { projectId: string }, request: Request, data?: { userId?: number|null } }} context
  * @returns {Promise<Response>}
  */
 export async function onRequestPost(context) {
   const { env, params, request } = context;
   const { projectId } = params;
+
+  const denied = requireUser(context);
+  if (denied) return denied;
 
   let body;
   try {

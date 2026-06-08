@@ -77,9 +77,9 @@ export async function onRequestPost(context) {
         hash,
         row.user_id
       ),
-      env.DB.prepare(
-        "UPDATE password_resets SET used_at = CURRENT_TIMESTAMP WHERE token = ?"
-      ).bind(token),
+      env.DB.prepare("UPDATE password_resets SET used_at = CURRENT_TIMESTAMP WHERE token = ?").bind(
+        token
+      ),
       env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(row.user_id),
     ];
     if (typeof env.DB.batch === "function") {

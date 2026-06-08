@@ -1,4 +1,10 @@
-import { apiFetch, showLoading, hideLoading } from "../shared/utils.js";
+import {
+  apiFetch,
+  showLoading,
+  hideLoading,
+  getCurrentProject,
+  dashboardPathFor,
+} from "../shared/utils.js";
 
 const params = new URLSearchParams(window.location.search);
 const PROJECT_ID =
@@ -673,6 +679,13 @@ async function loadWeeklyReport() {
 }
 
 if (typeof document !== "undefined") {
+  const project = getCurrentProject();
+  const dashboardUrl = dashboardPathFor(project?.workflow);
+  const dashboardLink = document.getElementById("nav-dashboard");
+  const teamLink = document.getElementById("nav-team");
+  if (dashboardLink) dashboardLink.href = dashboardUrl;
+  if (teamLink) teamLink.href = `${dashboardUrl}#team`;
+
   elements.refreshButton?.addEventListener("click", loadWeeklyReport);
   elements.querySubmit?.addEventListener("click", handleQuery);
 

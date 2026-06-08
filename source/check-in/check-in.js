@@ -612,10 +612,16 @@ async function init() {
   const user = getCurrentUser();
   const userId = user?.user_id ?? 1;
 
-  // Point the sidebar "Dashboard" link at the board matching the selected
-  // project workflow (Scrum / Kanban / XP) instead of always Scrum.
+  // Point the sidebar "Dashboard" and "Team" links at the board matching
+  // the selected project workflow (Scrum / Kanban / XP) instead of always
+  // defaulting to Scrum.
   const dashboardLink = document.getElementById("nav-dashboard");
-  if (dashboardLink) dashboardLink.href = resolveDashboardUrl();
+  const teamLink = document.getElementById("nav-team");
+  const weeklyReportLink = document.getElementById("nav-weekly-report");
+  const dashboardUrl = resolveDashboardUrl();
+  if (dashboardLink) dashboardLink.href = dashboardUrl;
+  if (teamLink) teamLink.href = `${dashboardUrl}#team`;
+  if (weeklyReportLink) weeklyReportLink.href = "../weekly-report/index.html";
 
   await populateBlockerOptions(userId);
   blockerToggle.addEventListener("click", () => setBlockerOpen(!isBlockerOpen()));

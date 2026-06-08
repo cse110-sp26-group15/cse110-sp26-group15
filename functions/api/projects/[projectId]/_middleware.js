@@ -11,6 +11,11 @@ import { requireProjectMember } from "../../_auth.js";
  * call the guard, and a newly added route under this path is protected by
  * default rather than by convention.
  *
+ * The members POST route is special: it is used both by current project
+ * members to invite teammates and by pending invited users to accept their
+ * invitation. The user may not yet be a member when they call it, so we skip
+ * the membership guard for that one case.
+ *
  * Runs after the global middleware (functions/_middleware.js), so
  * `context.data.userId` is already resolved by the time this executes.
  * `context.params.projectId` is the :projectId segment this middleware sits on.
@@ -19,6 +24,11 @@ import { requireProjectMember } from "../../_auth.js";
  * @returns {Promise<Response>}
  */
 export async function onRequest(context) {
+  const url = new URL(context.request.url);
+  if (context.request.method === "POST" && url.pathname.endsWith("/members")) {
+    return context.next();
+  }
+
   const denied = await requireProjectMember(context, context.params.projectId);
   if (denied) return denied;
   return context.next();

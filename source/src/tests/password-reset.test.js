@@ -311,7 +311,9 @@ describe("forgot-password — client requestPasswordReset", () => {
 
 describe("reset-password — client submitPasswordReset", () => {
   it("POSTs token + new password", async () => {
-    const fakeFetch = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const fakeFetch = vi.fn(
+      async () => new Response(JSON.stringify({ ok: true }), { status: 200 })
+    );
     const body = await submitPasswordReset("tok", "newpassword123", fakeFetch);
     expect(body.ok).toBe(true);
     const sent = JSON.parse(fakeFetch.mock.calls[0][1].body);

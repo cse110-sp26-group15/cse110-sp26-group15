@@ -62,9 +62,7 @@ export async function onRequestPost(context) {
 
   let user;
   try {
-    user = await env.DB.prepare(
-      "SELECT user_id, is_active FROM users WHERE email = ?"
-    )
+    user = await env.DB.prepare("SELECT user_id, is_active FROM users WHERE email = ?")
       .bind(normalized)
       .first();
   } catch (err) {

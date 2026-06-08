@@ -112,9 +112,10 @@ describe("db/RENUMBER.sql — old→new name mapping", () => {
     const setMatches = [...sql.matchAll(/SET\s+name\s*=\s*'([^']+)'/g)].map((m) => m[1]);
     expect(setMatches.length).toBeGreaterThan(0);
     for (const name of setMatches) {
-      expect(liveFiles.has(name), `RENUMBER.sql targets ${name} but the file no longer exists`).toBe(
-        true
-      );
+      expect(
+        liveFiles.has(name),
+        `RENUMBER.sql targets ${name} but the file no longer exists`
+      ).toBe(true);
     }
   });
 });
