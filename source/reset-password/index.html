@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reset Password — SitRep</title>
+    <link rel="stylesheet" href="../shared/theme.css" />
+    <link rel="stylesheet" href="../forgot-password/style.css" />
+  </head>
+  <body>
+    <div class="fp-shell">
+      <div class="bg-blob bg-blob--1" aria-hidden="true"></div>
+      <div class="bg-blob bg-blob--2" aria-hidden="true"></div>
+
+      <main class="fp-center">
+        <div class="auth-wrapper">
+          <div class="auth-logo-row">
+            <div class="logo-mark">S</div>
+            <span class="logo-name">SitRep</span>
+          </div>
+
+          <div class="auth-card">
+            <h2 class="auth-card-title">Reset your password</h2>
+            <p class="auth-card-subtitle">Enter a new password for your account.</p>
+
+            <div id="success-state" class="fp-success" hidden>
+              <p class="fp-success-msg">Password updated. You can now sign in.</p>
+              <a href="../login/" class="btn btn-primary fp-back-btn">Back to sign in</a>
+            </div>
+
+            <div id="missing-token-state" class="fp-success" hidden>
+              <p class="fp-success-msg">
+                Missing reset token. Use the link from your reset email.
+              </p>
+              <a href="../forgot-password/" class="btn btn-primary fp-back-btn">
+                Request a new link
+              </a>
+            </div>
+
+            <div id="form-state">
+              <form id="reset-form" novalidate>
+                <div class="field">
+                  <label for="password">New password</label>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="At least 8 characters"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                  />
+                  <p class="field-error" id="password-error">
+                    Password must be at least 8 characters.
+                  </p>
+                </div>
+
+                <div class="field">
+                  <label for="confirm">Confirm new password</label>
+                  <input
+                    type="password"
+                    id="confirm"
+                    name="confirm"
+                    placeholder="Re-enter your new password"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                  />
+                  <p class="field-error" id="confirm-error">Passwords don't match.</p>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="submit-btn">
+                  Update password
+                </button>
+              </form>
+
+              <p class="auth-footer">
+                <a href="../login/" class="link-back">← Back to sign in</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
