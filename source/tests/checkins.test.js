@@ -1,8 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import {
-  onRequestGet,
-  onRequestPost,
-} from "../../functions/api/projects/[projectId]/checkins.js";
+import { onRequestGet, onRequestPost } from "../../functions/api/projects/[projectId]/checkins.js";
 
 function createMockDb({ allResult, firstResult, runResult, existingCheckin = null } = {}) {
   // onRequestPost calls .first() twice: once for the one-per-day guard lookup
