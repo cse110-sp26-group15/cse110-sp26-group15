@@ -753,3 +753,30 @@
   display: block;
   flex: 0 0 var(--space-md);
 }
+
+/* ── AI digest panel ──────────────────────────────── */
+.ai-summary {
+  padding: var(--space-md, 16px) 0 0;
+}
+.ai-summary__body {
+  margin: 0 0 var(--space-sm, 8px);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-text, #1a1a1a);
+}
+.ai-summary__meta {
+  display: flex;
+  gap: var(--space-sm, 8px);
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #666);
+}
+.ai-summary__source {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--color-surface-muted, #f0f0f0);
+}
+.ai-summary__source--ai {
+  background: var(--color-accent-soft, #e6f0ff);
+  color: var(--color-accent, #2563eb);
+}

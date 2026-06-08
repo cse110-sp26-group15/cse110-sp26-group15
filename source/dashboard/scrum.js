@@ -493,6 +493,59 @@ async function fetchAgents() {
   return data.agents ?? [];
 }
 
+/**
+ * Build the AI digest panel body for a /summary response. Pure so the
+ * unit suite can pin the markup without a DOM.
+ *
+ * @param {{summary: string, source?: string, source_counts?: object,
+ *          generated_at?: string, degraded_reason?: string}} payload
+ * @returns {string}
+ */
+export function renderSummaryHtml(payload) {
+  const tag =
+    payload.source === "anthropic"
+      ? `<span class="ai-summary__source ai-summary__source--ai">AI-generated digest</span>`
+      : `<span class="ai-summary__source ai-summary__source--fallback">Auto-generated digest</span>`;
+  const counts = payload.source_counts
+    ? `<span class="ai-summary__counts">${payload.source_counts.checkins} check-ins · ${payload.source_counts.blockers} blockers</span>`
+    : "";
+  return `
+    <p class="ai-summary__body">${escapeHtml(payload.summary)}</p>
+    <div class="ai-summary__meta">${tag}${counts}</div>
+  `;
+}
+
+/**
+ * POST to the summary endpoint and paint the result into #ai-summary.
+ * Disables the button while in flight; restores it on settle.
+ * @returns {Promise<void>}
+ */
+async function generateSummary() {
+  const target = document.getElementById("ai-summary");
+  const btn = document.getElementById("generate-summary-btn");
+  if (!target) return;
+
+  const prev = btn?.textContent;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Generating…";
+  }
+  target.innerHTML = `<p class="muted-small">Generating digest…</p>`;
+
+  try {
+    const payload = await apiFetch(`/api/projects/${PROJECT_ID}/summary`, { method: "POST" });
+    target.innerHTML = renderSummaryHtml(payload);
+  } catch (err) {
+    console.error("[scrum] generateSummary failed", err);
+    target.innerHTML = `<p class="task-empty task-error">⚠ Couldn't generate a summary: ${escapeHtml(err.message)}</p>`;
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = prev ?? "Generate";
+    }
+  }
+}
+
 // ── Sprint header + progress ─────────────────────────
 function renderSprintHeader(checkins) {
   const metaEl = document.getElementById("sprint-meta");
@@ -1438,6 +1491,9 @@ function init() {
   document.getElementById("checkin-today-btn")?.addEventListener("click", () => {
     window.location.href = "../check-in/check-in.html";
   });
+
+  // ── AI digest generate button ─────────────────────
+  document.getElementById("generate-summary-btn")?.addEventListener("click", generateSummary);
 
   // Apply the saved view mode and kick off the first load (with a spinner).
   setViewMode(viewMode);
