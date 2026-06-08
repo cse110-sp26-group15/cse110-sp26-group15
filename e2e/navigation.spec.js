@@ -86,14 +86,20 @@ test.describe("Navigation", () => {
     await expect(page).toHaveURL(/login/);
   });
 
-  test("check-in Team sidebar shows in-page placeholder", async ({ page }) => {
+  test("check-in Team sidebar link points at the workflow dashboard's team view", async ({
+    page,
+  }) => {
     await seedProject(page);
     await mockCheckinLoad(page);
     await page.goto("/check-in/check-in.html");
 
-    await page.getByRole("link", { name: "Team" }).click();
-    await expect(page.locator("#team-view")).toBeVisible();
-    await expect(page.locator("#team-view")).toContainText("Team roster and roles");
+    // After b787cfe the Team nav is no longer rendered in-page on check-in —
+    // it navigates to the team section of the project's dashboard. With
+    // workflow="kanban" seeded that resolves to kanban.html#team.
+    await expect(page.locator("#nav-team")).toHaveAttribute(
+      "href",
+      "../dashboard/kanban.html#team"
+    );
   });
 
   test("profile sidebar links preserve workflow and destinations", async ({ page }) => {
@@ -108,9 +114,11 @@ test.describe("Navigation", () => {
       "href",
       "../dashboard/kanban.html#team"
     );
+    // Weekly Report is its own page now (per b787cfe — accessible from any
+    // nav, not buried inside a dashboard hash).
     await expect(page.locator("#nav-weekly-report")).toHaveAttribute(
       "href",
-      "../dashboard/kanban.html#weekly-report"
+      "../weekly-report/index.html"
     );
   });
 

@@ -1223,14 +1223,11 @@ async function saveSprintPicker() {
   let sprint;
   try {
     if (pickerMode === "edit" && currentSprintId != null) {
-      ({ sprint } = await apiFetch(
-        `/api/projects/${PROJECT_ID}/sprints/${currentSprintId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ start_date: start, end_date: end }),
-        }
-      ));
+      ({ sprint } = await apiFetch(`/api/projects/${PROJECT_ID}/sprints/${currentSprintId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ start_date: start, end_date: end }),
+      }));
     } else {
       ({ sprint } = await apiFetch(`/api/projects/${PROJECT_ID}/sprints`, {
         method: "POST",

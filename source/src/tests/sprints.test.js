@@ -41,8 +41,20 @@ describe("GET /api/projects/:id/sprints", () => {
       allResults: [
         {
           results: [
-            { sprint_id: 1, number: 1, start_date: "2026-01-01", end_date: "2026-01-14", goal: null },
-            { sprint_id: 2, number: 2, start_date: "2026-01-15", end_date: "2026-01-28", goal: "Ship" },
+            {
+              sprint_id: 1,
+              number: 1,
+              start_date: "2026-01-01",
+              end_date: "2026-01-14",
+              goal: null,
+            },
+            {
+              sprint_id: 2,
+              number: 2,
+              start_date: "2026-01-15",
+              end_date: "2026-01-28",
+              goal: "Ship",
+            },
           ],
         },
       ],
@@ -116,9 +128,7 @@ describe("PATCH /api/projects/:id/sprints/:sprintId", () => {
         { sprint_id: 5, number: 1, start_date: "2026-03-01", end_date: "2026-03-21", goal: null },
       ],
     });
-    const res = await patchSprint(
-      ctx({ db, sprintId: "5", body: { end_date: "2026-03-21" } })
-    );
+    const res = await patchSprint(ctx({ db, sprintId: "5", body: { end_date: "2026-03-21" } }));
     const data = await res.json();
     expect(res.status).toBe(200);
     expect(data.sprint.end_date).toBe("2026-03-21");
@@ -128,9 +138,7 @@ describe("PATCH /api/projects/:id/sprints/:sprintId", () => {
     const db = createMockDb({
       firstResults: [{ sprint_id: 5, project_id: 99, start_date: "x", end_date: "y" }],
     });
-    const res = await patchSprint(
-      ctx({ db, sprintId: "5", body: { end_date: "2026-03-21" } })
-    );
+    const res = await patchSprint(ctx({ db, sprintId: "5", body: { end_date: "2026-03-21" } }));
     expect(res.status).toBe(404);
   });
 
@@ -140,9 +148,7 @@ describe("PATCH /api/projects/:id/sprints/:sprintId", () => {
         { sprint_id: 5, project_id: 1, start_date: "2026-03-10", end_date: "2026-03-14" },
       ],
     });
-    const res = await patchSprint(
-      ctx({ db, sprintId: "5", body: { end_date: "2026-03-05" } })
-    );
+    const res = await patchSprint(ctx({ db, sprintId: "5", body: { end_date: "2026-03-05" } }));
     expect(res.status).toBe(400);
   });
 });
