@@ -98,6 +98,7 @@ describe("db/RENUMBER.sql — old→new name mapping", () => {
       ["0008_add_task_priority_created_at.sql", "0010_add_task_priority_created_at.sql"],
       ["0008_add_project_invites.sql", "0011_add_project_invites.sql"],
       ["0009_add_task_pair_assignee.sql", "0012_add_task_pair_assignee.sql"],
+      ["0010_add_password_resets.sql", "0013_add_password_resets.sql"],
     ];
     for (const [oldName, newName] of expectedMappings) {
       expect(sql, `RENUMBER.sql is missing mapping ${oldName} → ${newName}`).toContain(oldName);

@@ -9,10 +9,17 @@
  * differs (DB lookup + insert vs. lookup only), which is acceptable for
  * this product.
  *
- * In local dev / CI we return the token in the response body under
- * `dev_token` so the user can copy it directly into the reset form.
- * Production should omit this by setting `env.HIDE_DEV_TOKEN = "1"` (or
- * similar) so the token is never visible client-side.
+ * Token delivery is opt-in: by default the token is never returned to the
+ * caller — it's logged server-side and (when an email integration is wired
+ * up) emailed to the user. Local dev / CI can set
+ * `env.ALLOW_DEV_RESET_TOKEN = "1"` to expose `dev_token` in the response
+ * for hands-on testing. The previous behavior (opt-out via HIDE_DEV_TOKEN)
+ * leaked tokens to anyone hitting the endpoint with a known email, so the
+ * default is now secure and prod has to do nothing.
+ *
+ * TODO(forgot-password): wire a real email provider (Resend / SES / etc.)
+ * here. Until that lands, prod users have no way to actually receive the
+ * token — the reset flow is effectively staff-only via server logs.
  *
  * Request body: { email: string }
  * Response 200: { ok: true, dev_token?: string }
@@ -88,12 +95,15 @@ export async function onRequestPost(context) {
     return okResponse();
   }
 
-  // In production we'd email a link like:
-  //   https://sitrep.app/reset-password?token=<token>
-  // Here we expose it directly so local dev can complete the flow without
-  // an email provider. Production deployments should set HIDE_DEV_TOKEN.
-  if (env.HIDE_DEV_TOKEN) {
-    return okResponse();
+  // Server log gives staff a way to recover an account in environments
+  // without email wired up. Token is sensitive; never log it on prod stdout
+  // once a real email provider is in place.
+  console.log(`[forgot-password] issued reset token for user_id=${user.user_id}`);
+
+  // Default response shape contains no token. Local dev / CI can flip
+  // ALLOW_DEV_RESET_TOKEN=1 to expose `dev_token` for hands-on flows.
+  if (env.ALLOW_DEV_RESET_TOKEN === "1" || env.ALLOW_DEV_RESET_TOKEN === true) {
+    return okResponse({ dev_token: token, expires_in_seconds: TOKEN_TTL_SECONDS });
   }
-  return okResponse({ dev_token: token, expires_in_seconds: TOKEN_TTL_SECONDS });
+  return okResponse();
 }

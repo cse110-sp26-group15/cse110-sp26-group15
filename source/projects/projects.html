@@ -37,6 +37,14 @@
         <p class="projects-page__subtitle">Pick a project to open its dashboard.</p>
       </header>
 
+      <!-- Pending invitations for the signed-in user; populated by projects.js.
+           Mirrors the one on /project-setup/ so a teammate already in 1+
+           project doesn't miss new invites. -->
+      <section class="projects-invites" id="invites-section" hidden>
+        <h2 class="projects-invites__title">You've been invited</h2>
+        <ul class="projects-invites__list" id="invites-list" aria-label="Pending invitations"></ul>
+      </section>
+
       <!-- projects.js fills this list with one card per project the user
            belongs to; each card links through to that project's dashboard
            and (for projects the user created) offers a delete control. -->

@@ -53,7 +53,7 @@ export async function onRequestPatch(context) {
   }
 
   const { status, assigned_to, reviewer_id, review_status, description, title, priority } = body;
-  const { pair_assignee } = body;
+  const { pair_assignee, sprint_id } = body;
 
   if (title !== undefined && (typeof title !== "string" || title.trim() === "")) {
     return Response.json({ error: "title must be a non-empty string" }, { status: 400 });
@@ -180,6 +180,21 @@ export async function onRequestPatch(context) {
       fields.push("pair_assignee = ?");
       values.push(pair_assignee);
     }
+    if (sprint_id !== undefined) {
+      // Drop sprint_ids that aren't part of this task's project — mirrors
+      // the POST handler's silent-drop behavior for stale client state.
+      let resolvedSprintId = null;
+      if (sprint_id != null) {
+        const sprint = await env.DB.prepare(
+          "SELECT sprint_id FROM sprints WHERE sprint_id = ? AND project_id = ?"
+        )
+          .bind(sprint_id, existing.project_id)
+          .first();
+        resolvedSprintId = sprint ? sprint.sprint_id : null;
+      }
+      fields.push("sprint_id = ?");
+      values.push(resolvedSprintId);
+    }
     // Always write the resolved reviewer/review_status so defaults stick.
     if (nextReviewer !== existing.reviewer_id) {
       fields.push("reviewer_id = ?");
@@ -203,6 +218,7 @@ export async function onRequestPatch(context) {
     const task = await env.DB.prepare(
       `SELECT t.task_id, t.title, t.description, t.status, t.github_issue_url,
               t.reviewer_id, t.review_status, t.priority, t.created_at, t.pair_assignee,
+              t.sprint_id,
               u.user_id, u.full_name,
               CASE WHEN a.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_agent,
               r.full_name AS reviewer_name

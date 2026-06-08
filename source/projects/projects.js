@@ -1,4 +1,12 @@
-import { apiFetch, apiCreateProject, apiDeleteProject, validateEmail } from "../shared/utils.js";
+import {
+  apiFetch,
+  apiCreateProject,
+  apiDeleteProject,
+  apiGetInvites,
+  apiAddMember,
+  validateEmail,
+  getCurrentUser,
+} from "../shared/utils.js";
 import { initUserMenu } from "../shared/user-menu.js";
 
 // Wire up the shared sidebar account menu (avatar/name/email, Profile,
@@ -224,4 +232,70 @@ createForm.addEventListener("submit", async (e) => {
   }
 });
 
+// ── Pending invites ──────────────────────────────────────
+const invitesSection = document.getElementById("invites-section");
+const invitesList = document.getElementById("invites-list");
+
+/**
+ * Accept a pending invite by adding the current user to that project's
+ * members, then refresh both lists so the invite disappears and the new
+ * project shows up.
+ *
+ * @param {{ project_id: number, project_name: string, workflow: string }} invite
+ * @param {string} email
+ */
+async function joinInvite(invite, email) {
+  errorEl.hidden = true;
+  try {
+    await apiAddMember(invite.project_id, email);
+    await loadInvites();
+    await loadProjects();
+  } catch (err) {
+    errorEl.textContent = `Couldn't join "${invite.project_name}": ${err.message}`;
+    errorEl.hidden = false;
+  }
+}
+
+async function loadInvites() {
+  if (!invitesSection || !invitesList) return;
+  const user = getCurrentUser();
+  if (!user?.email) {
+    invitesSection.hidden = true;
+    return;
+  }
+  let invites = [];
+  try {
+    ({ invites = [] } = await apiGetInvites());
+  } catch (err) {
+    console.warn("[projects] invite lookup failed", err);
+    invitesSection.hidden = true;
+    return;
+  }
+  if (invites.length === 0) {
+    invitesSection.hidden = true;
+    return;
+  }
+
+  invitesList.innerHTML = "";
+  for (const invite of invites) {
+    const li = document.createElement("li");
+    li.className = "projects-invites__item";
+
+    const span = document.createElement("span");
+    span.className = "projects-invites__name";
+    span.textContent = invite.project_name;
+
+    const joinBtn = document.createElement("button");
+    joinBtn.type = "button";
+    joinBtn.className = "btn btn--secondary";
+    joinBtn.textContent = "Join";
+    joinBtn.addEventListener("click", () => joinInvite(invite, user.email));
+
+    li.append(span, joinBtn);
+    invitesList.append(li);
+  }
+  invitesSection.hidden = false;
+}
+
 loadProjects();
+loadInvites();

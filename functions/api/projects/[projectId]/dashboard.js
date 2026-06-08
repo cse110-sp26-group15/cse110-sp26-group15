@@ -205,7 +205,7 @@ export async function onRequestGet(context) {
           .all(),
         env.DB.prepare(
           `SELECT t.task_id, t.title, t.status, t.github_issue_url,
-                  t.assigned_to, t.reviewer_id, t.review_status,
+                  t.assigned_to, t.reviewer_id, t.review_status, t.sprint_id,
                   u.full_name,
                   CASE WHEN a.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_agent,
                   r.full_name AS reviewer_name

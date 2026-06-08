@@ -97,7 +97,7 @@ describe("forgot-password — handler", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns ok and a dev_token when the user exists", async () => {
+  it("issues a token server-side without echoing it by default", async () => {
     const db = makeDb({
       users: [{ user_id: 1, email: "alex@example.com", is_active: 1 }],
     });
@@ -108,7 +108,8 @@ describe("forgot-password — handler", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
-    expect(body.dev_token).toMatch(/^[0-9a-f]{64}$/);
+    // Default response carries no token — production must not leak it.
+    expect(body.dev_token).toBeUndefined();
     expect(db.state.resets).toHaveLength(1);
     expect(db.state.resets[0].user_id).toBe(1);
   });
@@ -140,18 +141,17 @@ describe("forgot-password — handler", () => {
     expect(db.state.resets).toHaveLength(0);
   });
 
-  it("hides the dev_token when HIDE_DEV_TOKEN is set", async () => {
+  it("exposes the dev_token when ALLOW_DEV_RESET_TOKEN=1 (local dev opt-in)", async () => {
     const db = makeDb({
       users: [{ user_id: 1, email: "alex@example.com", is_active: 1 }],
     });
     const res = await forgotHandler({
-      env: { DB: db.DB, HIDE_DEV_TOKEN: "1" },
+      env: { DB: db.DB, ALLOW_DEV_RESET_TOKEN: "1" },
       request: makeRequest({ email: "alex@example.com" }),
     });
     const body = await res.json();
     expect(body.ok).toBe(true);
-    expect(body.dev_token).toBeUndefined();
-    // Token still issued server-side.
+    expect(body.dev_token).toMatch(/^[0-9a-f]{64}$/);
     expect(db.state.resets).toHaveLength(1);
   });
 

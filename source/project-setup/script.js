@@ -187,7 +187,7 @@ async function loadInvites() {
   if (!user?.email || !invitesSection || !invitesList) return;
   let invites = [];
   try {
-    ({ invites = [] } = await apiGetInvites(user.email));
+    ({ invites = [] } = await apiGetInvites());
   } catch (err) {
     console.warn("[project-setup] invite lookup failed", err);
     return;

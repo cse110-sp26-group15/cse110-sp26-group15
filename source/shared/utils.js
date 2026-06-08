@@ -376,12 +376,13 @@ export async function apiGetProjects(userId) {
 }
 
 /**
- * GET /api/invites?email=… — a user's pending project invites.
- * @param {string} email
+ * GET /api/invites — the *authenticated caller's* pending project invites.
+ * The endpoint resolves the email from the session, so no argument is
+ * needed (and trusting a client-supplied email would leak invite info).
  * @returns {Promise<{ invites: object[] }>}
  */
-export async function apiGetInvites(email) {
-  return apiFetch(`/api/invites?email=${encodeURIComponent(email)}`);
+export async function apiGetInvites() {
+  return apiFetch("/api/invites");
 }
 
 /**
