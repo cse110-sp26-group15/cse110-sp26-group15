@@ -8,7 +8,7 @@
 
 ### Peer Review EC
 
-3 people will work on the peer review for an extra team to get the EC. 
+3 people will work on the peer review for an extra team to get the EC.
 
 ### Functional App
 

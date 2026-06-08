@@ -12,7 +12,7 @@ Two people will add the feature so that our app allows for multiple projects.
 
 ### User Logo and Setting
 
-1 person will add so our logo leads to the right page and the setting tab is implemented. 
+1 person will add so our logo leads to the right page and the setting tab is implemented.
 
 ### Weekly Report
 

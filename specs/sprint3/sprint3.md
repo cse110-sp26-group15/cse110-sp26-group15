@@ -4,11 +4,11 @@
 
 ### Meeting
 
-Get feedback on current application from Jared and the Professor. 
+Get feedback on current application from Jared and the Professor.
 
 ### Clean up the app
 
-Clean up the application based on the feedback we get. 
+Clean up the application based on the feedback we get.
 
 ## Timeline
 
