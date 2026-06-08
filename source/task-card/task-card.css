@@ -440,20 +440,20 @@
 }
 
 .task-card__review-pill--not-required {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--color-secondary-muted, #f3f4f6);
+  color: var(--color-text-on-secondary-muted, #6b7280);
 }
 .task-card__review-pill--pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-warning-muted, #fef3c7);
+  color: var(--color-text-on-warning-muted, #92400e);
 }
 .task-card__review-pill--approved {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--color-success-muted, #d1fae5);
+  color: var(--color-text-on-success-muted, #065f46);
 }
 .task-card__review-pill--needs-revision {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--color-error-muted, #fee2e2);
+  color: var(--color-text-on-error-muted, #991b1b);
 }
 
 /* ── Editable selects (interactive cards) ─────────── */
