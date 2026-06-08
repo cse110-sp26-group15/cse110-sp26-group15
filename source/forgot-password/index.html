@@ -63,6 +63,13 @@
                 If that email is registered, you'll receive a reset link shortly. Check your inbox
                 (and spam folder).
               </p>
+              <!-- Dev-mode reset shortcut: when the API returns a dev_token
+                   (no email provider configured), surface a direct link to
+                   the reset page so the local flow is testable end-to-end. -->
+              <p id="dev-token-row" class="fp-success-msg" hidden>
+                <strong>Dev mode:</strong>
+                <a id="dev-reset-link" href="#">Reset your password now →</a>
+              </p>
               <a href="../login/" class="btn btn-primary fp-back-btn">Back to sign in</a>
             </div>
 

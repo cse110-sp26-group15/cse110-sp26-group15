@@ -1,40 +1,76 @@
 import { validateEmail, setFieldError, clearFieldError } from "../shared/utils.js";
 
-const fpForm = document.getElementById("fp-form");
-const emailInput = document.getElementById("email");
-const emailError = document.getElementById("email-error");
-const submitBtn = document.getElementById("submit-btn");
-const formState = document.getElementById("form-state");
-const successState = document.getElementById("success-state");
-
-emailInput.addEventListener("blur", () => {
-  if (emailInput.value && !validateEmail(emailInput.value)) {
-    setFieldError(emailInput, emailError, "Please enter a valid email address.");
-  } else {
-    clearFieldError(emailInput, emailError);
+/**
+ * POST the email to /api/auth/forgot-password. Resolved to the parsed
+ * body so callers can pick up the dev_token in local mode. Throws on
+ * non-2xx (e.g. invalid-email 400).
+ *
+ * @param {string} email
+ * @param {typeof fetch} [fetchImpl]
+ * @returns {Promise<object>}
+ */
+export async function requestPasswordReset(email, fetchImpl = fetch) {
+  const res = await fetchImpl("/api/auth/forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || "Could not send reset link.");
   }
-});
+  return res.json();
+}
 
-emailInput.addEventListener("input", () => clearFieldError(emailInput, emailError));
+// DOM wiring — skipped under node so the export above is testable.
+if (typeof document !== "undefined") {
+  const fpForm = document.getElementById("fp-form");
+  const emailInput = document.getElementById("email");
+  const emailError = document.getElementById("email-error");
+  const submitBtn = document.getElementById("submit-btn");
+  const formState = document.getElementById("form-state");
+  const successState = document.getElementById("success-state");
+  const devTokenRow = document.getElementById("dev-token-row");
+  const devResetLink = document.getElementById("dev-reset-link");
 
-fpForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
+  emailInput.addEventListener("blur", () => {
+    if (emailInput.value && !validateEmail(emailInput.value)) {
+      setFieldError(emailInput, emailError, "Please enter a valid email address.");
+    } else {
+      clearFieldError(emailInput, emailError);
+    }
+  });
 
-  const email = emailInput.value.trim();
+  emailInput.addEventListener("input", () => clearFieldError(emailInput, emailError));
 
-  if (!validateEmail(email)) {
-    setFieldError(emailInput, emailError, "Please enter a valid email address.");
-    emailInput.focus();
-    return;
-  }
+  fpForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Sending…";
+    const email = emailInput.value.trim();
 
-  // Simulate network delay for UX feedback, then show success state.
-  // No actual API call — placeholder until reset endpoint is implemented.
-  await new Promise((resolve) => setTimeout(resolve, 800));
+    if (!validateEmail(email)) {
+      setFieldError(emailInput, emailError, "Please enter a valid email address.");
+      emailInput.focus();
+      return;
+    }
 
-  formState.hidden = true;
-  successState.hidden = false;
-});
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Sending…";
+
+    try {
+      const body = await requestPasswordReset(email);
+      formState.hidden = true;
+      successState.hidden = false;
+      // Dev mode: the API surfaces the freshly minted token so the local
+      // tester can complete the reset flow without an email provider.
+      if (body.dev_token && devTokenRow && devResetLink) {
+        devResetLink.href = `../reset-password/?token=${encodeURIComponent(body.dev_token)}`;
+        devTokenRow.hidden = false;
+      }
+    } catch (err) {
+      setFieldError(emailInput, emailError, err.message);
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Send reset link";
+    }
+  });
+}
