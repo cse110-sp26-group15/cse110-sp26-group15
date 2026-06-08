@@ -1,5 +1,7 @@
 DELETE FROM sessions;
 
+DELETE FROM password_resets;
+
 DELETE FROM blockers;
 
 DELETE FROM checkins;

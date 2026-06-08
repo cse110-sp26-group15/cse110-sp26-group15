@@ -435,8 +435,6 @@ async function createTask(data, { forceStatus } = {}) {
     // either way; we just avoid sending null spam for human tasks.
     ...(data.reviewer_id != null ? { reviewer_id: data.reviewer_id } : {}),
     ...(data.review_status != null ? { review_status: data.review_status } : {}),
-    // TODO(sprint-persistence): tasks have no sprint_id column yet, so the API
-    // currently drops this.
     sprint_id: currentSprintId,
   };
 
@@ -502,10 +500,19 @@ async function fetchAgents() {
  * @returns {string}
  */
 export function renderSummaryHtml(payload) {
-  const tag =
-    payload.source === "anthropic"
-      ? `<span class="ai-summary__source ai-summary__source--ai">AI-generated digest</span>`
-      : `<span class="ai-summary__source ai-summary__source--fallback">Auto-generated digest</span>`;
+  // Three states the meta line surfaces:
+  //  - "AI-generated digest"    : LLM produced this — the green-path label.
+  //  - "AI unavailable — …"     : LLM call attempted and failed; degraded_reason carries the API error.
+  //  - "Template digest"        : no ANTHROPIC_API_KEY configured. Common in dev.
+  let tag;
+  if (payload.source === "anthropic") {
+    tag = `<span class="ai-summary__source ai-summary__source--ai">AI-generated digest</span>`;
+  } else if (payload.degraded_reason) {
+    const reason = escapeHtml(payload.degraded_reason);
+    tag = `<span class="ai-summary__source ai-summary__source--fallback" title="${reason}">AI unavailable — using template fallback</span>`;
+  } else {
+    tag = `<span class="ai-summary__source ai-summary__source--fallback" title="ANTHROPIC_API_KEY not configured">Template digest (AI off)</span>`;
+  }
   const counts = payload.source_counts
     ? `<span class="ai-summary__counts">${payload.source_counts.checkins} check-ins · ${payload.source_counts.blockers} blockers</span>`
     : "";
@@ -1109,6 +1116,10 @@ async function openCreateTaskModal({ lockedStatus, defaultStatus = "todo" } = {}
 // keeps); the open picker stashes the value it will save here.
 let pickerSprintNumber = null;
 
+// Which API call saveSprintPicker should make: "new" → POST a fresh sprint,
+// "edit" → PATCH the row identified by currentSprintId.
+let pickerMode = "edit";
+
 // One sprint at a time: hide "New sprint" while a sprint is in progress.
 function updateSprintButtons() {
   const newBtn = document.getElementById("new-sprint-btn");
@@ -1132,6 +1143,8 @@ function openSprintPicker(mode = "edit") {
 
   // Guard: can't start a new sprint while one is in progress.
   if (mode === "new" && isSprintInProgress(sprintState)) return;
+
+  pickerMode = mode;
 
   if (mode === "new") {
     // Auto-increment from the current sprint (1 for the very first sprint), and
@@ -1169,10 +1182,11 @@ function closeSprintPicker() {
   }
 }
 
-function saveSprintPicker() {
+async function saveSprintPicker() {
   const startInput = document.getElementById("sprint-start-input");
   const endInput = document.getElementById("sprint-end-input");
   const err = document.getElementById("sprint-picker-error");
+  const saveBtn = document.getElementById("save-sprint-btn");
   if (!startInput || !endInput || !err) return;
 
   // Number is auto-assigned by openSprintPicker (new = +1, edit = unchanged),
@@ -1181,22 +1195,65 @@ function saveSprintPicker() {
   const start = startInput.value || null;
   const end = endInput.value || null;
 
+  // The API rejects null dates; both are required to save.
+  if (!start || !end) {
+    err.hidden = false;
+    err.textContent = "Pick both a start and end date.";
+    return;
+  }
+
   // Validate: a sprint can't start before today. Checked here (not just via the
   // input's `min`) because a user can still type a past date into the field.
-  if (start && parseISODate(start) < parseISODate(todayISODate())) {
+  if (parseISODate(start) < parseISODate(todayISODate())) {
     err.hidden = false;
     err.textContent = "Sprint can't start before today.";
     return;
   }
 
-  // Validate: when both dates are set, end ≥ start.
-  if (start && end && parseISODate(start) > parseISODate(end)) {
+  // Validate: end ≥ start.
+  if (parseISODate(start) > parseISODate(end)) {
     err.hidden = false;
     err.textContent = "End date must be on or after start date.";
     return;
   }
 
-  sprintState = { number, start_date: start, end_date: end };
+  err.hidden = true;
+  if (saveBtn) saveBtn.disabled = true;
+
+  let sprint;
+  try {
+    if (pickerMode === "edit" && currentSprintId != null) {
+      ({ sprint } = await apiFetch(
+        `/api/projects/${PROJECT_ID}/sprints/${currentSprintId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ start_date: start, end_date: end }),
+        }
+      ));
+    } else {
+      ({ sprint } = await apiFetch(`/api/projects/${PROJECT_ID}/sprints`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ number, start_date: start, end_date: end }),
+      }));
+    }
+  } catch (apiErr) {
+    err.hidden = false;
+    err.textContent = `Couldn't save sprint: ${apiErr.message}`;
+    if (saveBtn) saveBtn.disabled = false;
+    return;
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+  }
+
+  // Adopt whatever the server returned — the source of truth for sprint_id.
+  currentSprintId = sprint?.sprint_id ?? currentSprintId;
+  sprintState = {
+    number: sprint?.number ?? number,
+    start_date: sprint?.start_date ?? start,
+    end_date: sprint?.end_date ?? end,
+  };
   writeSprintToStorage(sprintState);
   closeSprintPicker();
 

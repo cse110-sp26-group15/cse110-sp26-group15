@@ -52,6 +52,7 @@ export async function onRequestGet(context) {
     const { results } = await env.DB.prepare(
       `SELECT t.task_id, t.title, t.description, t.status, t.github_issue_url,
               t.reviewer_id, t.review_status, t.priority, t.created_at, t.pair_assignee,
+              t.sprint_id,
               u.user_id, u.full_name,
               CASE WHEN a.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_agent,
               r.full_name AS reviewer_name
@@ -108,6 +109,7 @@ export async function onRequestPost(context) {
     status = "todo",
     priority = "medium",
     pair_assignee = null,
+    sprint_id = null,
   } = body;
   let { reviewer_id = null, review_status = null } = body;
 
@@ -192,11 +194,23 @@ export async function onRequestPost(context) {
       }
     }
 
+    // sprint_id is silently dropped if it doesn't belong to this project —
+    // safer than 400ing for a stale id sent by an open kanban tab.
+    let resolvedSprintId = null;
+    if (sprint_id != null) {
+      const sprint = await env.DB.prepare(
+        "SELECT sprint_id FROM sprints WHERE sprint_id = ? AND project_id = ?"
+      )
+        .bind(sprint_id, projectId)
+        .first();
+      resolvedSprintId = sprint ? sprint.sprint_id : null;
+    }
+
     const result = await env.DB.prepare(
       `INSERT INTO tasks (project_id, assigned_to, title, description, status,
                           github_issue_url, reviewer_id, review_status, priority,
-                          pair_assignee, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
+                          pair_assignee, sprint_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
     )
       .bind(
         projectId,
@@ -208,13 +222,15 @@ export async function onRequestPost(context) {
         reviewer_id,
         review_status,
         priority,
-        pair_assignee
+        pair_assignee,
+        resolvedSprintId
       )
       .run();
 
     const task = await env.DB.prepare(
       `SELECT t.task_id, t.title, t.description, t.status, t.github_issue_url,
               t.reviewer_id, t.review_status, t.priority, t.created_at, t.pair_assignee,
+              t.sprint_id,
               u.user_id, u.full_name,
               CASE WHEN a.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_agent,
               r.full_name AS reviewer_name

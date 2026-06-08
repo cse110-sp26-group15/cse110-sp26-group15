@@ -27,7 +27,7 @@ function createMockDb({ firstResults = [], allResults = [], runResults = [] } = 
  * @returns {object}
  */
 function ctx({ projectId = "1", body, db }) {
-  const c = { env: { DB: db }, params: { projectId } };
+  const c = { env: { DB: db }, params: { projectId }, data: { userId: 1 } };
   if (body !== undefined) {
     c.request = new Request("http://localhost/", {
       method: "POST",

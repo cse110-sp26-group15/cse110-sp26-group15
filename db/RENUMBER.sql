@@ -28,3 +28,5 @@ UPDATE d1_migrations SET name = '0011_add_project_invites.sql'
   WHERE name = '0008_add_project_invites.sql';
 UPDATE d1_migrations SET name = '0012_add_task_pair_assignee.sql'
   WHERE name = '0009_add_task_pair_assignee.sql';
+UPDATE d1_migrations SET name = '0013_add_password_resets.sql'
+  WHERE name = '0010_add_password_resets.sql';

@@ -202,13 +202,25 @@ describe("AI summarizer — renderSummaryHtml (UI)", () => {
     expect(html).toContain("4 check-ins · 1 blockers");
   });
 
-  it("badges fallback responses distinctly so users know it's not the model", () => {
+  it("badges fallback responses distinctly when no API key is configured", () => {
     const html = renderSummaryHtml({
       summary: "No check-ins.",
       source: "fallback",
       source_counts: { checkins: 0, blockers: 0 },
     });
-    expect(html).toContain("Auto-generated digest");
+    expect(html).toContain("Template digest (AI off)");
+    expect(html).not.toContain("AI-generated digest");
+  });
+
+  it("surfaces the degraded reason when the LLM call failed", () => {
+    const html = renderSummaryHtml({
+      summary: "Quiet day.",
+      source: "fallback",
+      source_counts: { checkins: 1, blockers: 0 },
+      degraded_reason: "Anthropic API 503: overloaded",
+    });
+    expect(html).toContain("AI unavailable");
+    expect(html).toContain("Anthropic API 503: overloaded");
     expect(html).not.toContain("AI-generated digest");
   });
 
