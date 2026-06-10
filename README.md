@@ -24,4 +24,3 @@ Deployed Project url: [https://cse110-sp26-group15.pages.dev/](https://cse110-sp
 ### Start Server
 
 `npm run dev:pages` and hit `b` to open up the window automatically
-
