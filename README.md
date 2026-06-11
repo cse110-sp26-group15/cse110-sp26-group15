@@ -9,6 +9,8 @@ Deployed Project url: [https://cse110-sp26-group15.pages.dev/](https://cse110-sp
 
 Developer onboarding and handoff guide: [docs/onboard.md](docs/onboard.md)
 
+Final Project Video: [public video](https://youtu.be/ckD-YzR-Mno) and [private video](https://youtu.be/6UlZmQ1AGFc)
+
 ## Instructions for Running Locally
 
 ### Install Dependencies
