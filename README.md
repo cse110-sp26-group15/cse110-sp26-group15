@@ -7,6 +7,8 @@ Status Video Link: [Video](https://youtu.be/kwu5zS6MOk0)
 
 Deployed Project url: [https://cse110-sp26-group15.pages.dev/](https://cse110-sp26-group15.pages.dev/)
 
+Developer onboarding and handoff guide: [docs/onboard.md](docs/onboard.md)
+
 ## Instructions for Running Locally
 
 ### Install Dependencies
