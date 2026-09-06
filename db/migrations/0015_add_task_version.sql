@@ -1,0 +1,16 @@
+-- Optimistic concurrency control for tasks.
+--
+-- The board's edit dialog PATCHes the whole form, not just the field the user
+-- changed (source/dashboard/main.js buildEditPayload). Two teammates who open
+-- the same card and each edit a different field therefore overwrite each other:
+-- whoever saves second writes their stale copy of every other field, and the
+-- first person's edit disappears with no error.
+--
+-- `version` is bumped on every accepted write. A client that sends the version
+-- it read gets a 409 instead of silently clobbering a newer row; a client that
+-- sends no version keeps the old last-write-wins behaviour, so the
+-- single-field controls (the kanban status dropdown, inline card edits) are
+-- unaffected.
+--
+-- Existing rows start at 1, which is also the value a fresh INSERT gets.
+ALTER TABLE tasks ADD COLUMN version INTEGER NOT NULL DEFAULT 1;

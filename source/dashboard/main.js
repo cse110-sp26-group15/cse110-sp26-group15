@@ -221,7 +221,7 @@ async function persistCardChange(taskId, fields) {
   if ("pair_assignee" in fields) payload.pair_assignee = fields.pair_assignee;
   if (Object.keys(payload).length === 0) return;
 
-  // Direction 1 — pull from existing sessions: picking an assignee who is
+  // Direction 1 - pull from existing sessions: picking an assignee who is
   // already in a Pair Programming session auto-fills the task's pair partner
   // from that session (unless the same change already set one explicitly).
   if ("assigned_to" in fields && fields.assigned_to != null && !("pair_assignee" in fields)) {
@@ -236,7 +236,7 @@ async function persistCardChange(taskId, fields) {
   try {
     await updateTask(taskId, payload);
 
-    // Direction 2 — push to sessions: manually pairing two people on a task
+    // Direction 2 - push to sessions: manually pairing two people on a task
     // creates a matching Pair Programming session if one doesn't exist yet.
     if ("pair_assignee" in fields && fields.pair_assignee) {
       const task = currentTasks.find((t) => String(t.task_id) === String(taskId)) ?? {};
@@ -313,15 +313,20 @@ function loadTaskFormModule() {
  * pill; when there is one (agent task) we omit review_status so the API
  * preserves/promotes whatever it already had.
  * @param {object} data - Modal submission object.
+ * @param {number} [version] - Version of the task the form was opened on.
  * @returns {object} PATCH body.
  */
-function buildEditPayload(data) {
+function buildEditPayload(data, version) {
   const payload = {
     title: data.title,
     description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
     status: data.status,
   };
+  // Send the version this form was built from so the API can refuse the save
+  // if a teammate changed the task in the meantime. Without it, saving the
+  // whole form would silently overwrite their edit.
+  if (Number.isInteger(version)) payload.version = version;
   if (data.priority) payload.priority = data.priority;
   if (data.pair_assignee !== undefined) payload.pair_assignee = data.pair_assignee;
   if (data.reviewer_id != null) {
@@ -344,7 +349,7 @@ async function openEditTaskModal(task) {
   openTaskModal(
     async (data) => {
       try {
-        await updateTask(task.task_id, buildEditPayload(data));
+        await updateTask(task.task_id, buildEditPayload(data, task.version));
         // XP: keep pair sessions in sync when the edit sets a pair partner.
         if (data.pair_assignee) {
           await createPairSessionFromTask(
@@ -355,6 +360,13 @@ async function openEditTaskModal(task) {
         await loadTasks();
       } catch (err) {
         console.error("[main] editTask failed", err);
+        // 409 = someone else saved this task first. Reload so the board shows
+        // their version instead of leaving a stale card on screen.
+        if (err?.status === 409) {
+          alert(err.message);
+          await loadTasks();
+          return;
+        }
         alert(`Couldn't update task: ${err.message}`);
       }
     },
@@ -413,7 +425,7 @@ let currentTasks = [];
 
 // Maps a task title → the description of an open blocker filed against it (via
 // the daily check-in). Rebuilt each loadTasks; used to show a blocker chip on
-// the matching task card. Cards display blockers read-only — they're raised
+// the matching task card. Cards display blockers read-only - they're raised
 // and resolved through the check-in flow, not here.
 let blockerByTask = new Map();
 
@@ -648,8 +660,8 @@ function renderPairs(pairs) {
       const isAI = p.is_ai_pair || p.partner?.is_agent;
       const driver = p.driver ?? {};
       const partner = p.partner ?? {};
-      const driverName = driver.full_name ?? "—";
-      const partnerName = partner.full_name ?? "—";
+      const driverName = driver.full_name ?? "-";
+      const partnerName = partner.full_name ?? "-";
       const driverRole = driver.role ?? "driving";
       const partnerRole = partner.role ?? (isAI ? "co-pilot" : "navigating");
       const baseTitle = p.title ?? "Pair Session";
@@ -763,7 +775,7 @@ function renderCheckins(entries) {
   list.innerHTML = entries
     .map((c) => {
       const isAI = c.source === "agent" || c.user?.is_agent;
-      const name = c.user?.full_name ?? "—";
+      const name = c.user?.full_name ?? "-";
       const headline = c.work_done ?? c.work_planned ?? "(no update)";
       const body = c.work_done && c.work_planned ? c.work_planned : "";
       const status = c.status_mood ?? "";
@@ -859,7 +871,7 @@ async function loadBlockers() {
     renderBlockerSummary(blockers);
   } catch (err) {
     console.error("[main] loadBlockers failed", err);
-    // Don't show a banner error — the banner is hidden by default, and
+    // Don't show a banner error - the banner is hidden by default, and
     // surfacing a blocker-load failure in a banner that says "Blockers"
     // would be confusing. Silent log is the right call here.
     renderBlockerSummary([]);
@@ -960,7 +972,7 @@ async function initImpl() {
   // "+ Add Agent" button in the AI Agents rail header (xp dashboard).
   // On other pages without the button this is a no-op. Bound here in
   // init() so projectMembers is already cached. The onSubmit refreshes
-  // members + agents but does NOT re-call init() — that would re-bind
+  // members + agents but does NOT re-call init() - that would re-bind
   // this same listener and stack duplicates.
   document.getElementById("add-agent-btn")?.addEventListener("click", () => {
     openAgentModal({
@@ -981,7 +993,7 @@ async function initImpl() {
   applyViewFromQuery();
 }
 
-// Public entry point — shows a loading overlay over the content area
+// Public entry point - shows a loading overlay over the content area
 // while the initial data (members, tasks, board) loads, then removes it.
 async function init() {
   showLoading();
