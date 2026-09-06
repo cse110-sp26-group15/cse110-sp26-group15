@@ -182,7 +182,7 @@ fun BoardScreen(state: UiState, vm: AppViewModel) {
 }
 
 @Composable
-private fun TaskRow(task: CachedTaskEntity, onEdit: () -> Unit, onResolve: () -> Unit) {
+internal fun TaskRow(task: CachedTaskEntity, onEdit: () -> Unit, onResolve: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
         Column(Modifier.padding(12.dp)) {
             Text(task.title, style = MaterialTheme.typography.titleMedium)
@@ -206,7 +206,7 @@ private fun TaskRow(task: CachedTaskEntity, onEdit: () -> Unit, onResolve: () ->
 }
 
 @Composable
-private fun TaskDialog(
+internal fun TaskDialog(
     title: String,
     initialTitle: String,
     initialDescription: String,
@@ -250,7 +250,7 @@ private fun TaskDialog(
 }
 
 @Composable
-private fun ConflictDialog(
+internal fun ConflictDialog(
     task: CachedTaskEntity,
     onDismiss: () -> Unit,
     onKeepMine: () -> Unit,
