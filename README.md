@@ -21,10 +21,21 @@ Final Project Video: [public video](https://youtu.be/ckD-YzR-Mno) and [private v
 
 `npm run build`
 
-### Update and Clear Local DB
+### Set Up the Local DB
 
-`npm run db:migrate:local` then `npm run db:reset:local`
+`npm run db:migrate:local` then `npm run db:seed:local`
+
+Seeding is what makes a fresh clone worth opening. `db/seed.sql` builds one
+example of every surface in the app: three projects (scrum, kanban and XP), five
+people, two AI agents, tasks in every status, sprints, check-ins and blockers.
+Every seeded account uses the password `TestPassword123`, so signing in as
+`arivera@ucsd.edu` lands on a populated dashboard instead of an empty one.
+
+To start from an empty database instead, `npm run db:reset:local` deletes the
+rows and leaves the schema in place; `npm run db:seed:local` puts the sample
+data back.
 
 ### Start Server
 
-`npm run dev:pages` and hit `b` to open up the window automatically
+`npm run dev:pages` and hit `b` to open up the window automatically. Wrangler
+serves it on http://localhost:8788.
