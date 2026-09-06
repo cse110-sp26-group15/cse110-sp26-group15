@@ -6,15 +6,19 @@ import { requireProjectMember } from "../../_auth.js";
  * Each of these routes (tasks, members, agents, blockers, checkins,
  * checkins/recent, dashboard, sprints/current, and the project record itself)
  * exposes data for a single project, so they all share one access rule: the
- * caller must be a member of that project. Enforcing it here — once, for the
- * whole subtree — means the individual handlers don't each have to remember to
+ * caller must be a member of that project. Enforcing it here - once, for the
+ * whole subtree - means the individual handlers don't each have to remember to
  * call the guard, and a newly added route under this path is protected by
  * default rather than by convention.
  *
  * The members POST route is special: it is used both by current project
  * members to invite teammates and by pending invited users to accept their
  * invitation. The user may not yet be a member when they call it, so we skip
- * the membership guard for that one case.
+ * the membership guard for that one case. Skipping the guard is NOT skipping
+ * authorization - that handler calls `requireMemberOrInvitee` itself, right
+ * before the INSERT. Do not add another entry to this skip list without
+ * giving the target handler its own guard; a route that is waved through here
+ * and forgets to check is open to every authenticated user on the internet.
  *
  * Runs after the global middleware (functions/_middleware.js), so
  * `context.data.userId` is already resolved by the time this executes.

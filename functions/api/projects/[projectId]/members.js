@@ -1,4 +1,4 @@
-import { requireUser } from "../../_auth.js";
+import { requireMemberOrInvitee, requireUser } from "../../_auth.js";
 
 /**
  * Returns true when `email` matches the basic local@domain.tld shape.
@@ -54,9 +54,15 @@ export async function onRequestGet(context) {
  * `project_invites` and linked when they sign up and join. Duplicate
  * members/invites are prevented by INSERT OR IGNORE + table constraints.
  *
+ * Authorization: the caller must already be a member of the project, or be
+ * redeeming a pending invite addressed to their own account
+ * (requireMemberOrInvitee). Without that, any authenticated user could add
+ * themselves to any project id.
+ *
  * Request body: { email: string }
  * Response 201: { status: "added", member } | { status: "already_member" }
  *               | { status: "pending" }
+ * Response 403: the caller is neither a member nor an invitee
  *
  * @param {{ env: { DB: object }, params: { projectId: string }, request: Request, data?: { userId?: number|null } }} context
  * @returns {Promise<Response>}
@@ -80,6 +86,13 @@ export async function onRequestPost(context) {
     return Response.json({ error: "A valid email is required." }, { status: 400 });
   }
   const email = rawEmail.trim().toLowerCase();
+
+  // The scoped middleware skips this route (an invited user is not a member
+  // yet), so the membership decision is made here, immediately before the
+  // write: either the caller already belongs to the project, or they are
+  // redeeming an invite addressed to their own account.
+  const unauthorized = await requireMemberOrInvitee(context, projectId, email);
+  if (unauthorized) return unauthorized;
 
   try {
     const user = await env.DB.prepare(
