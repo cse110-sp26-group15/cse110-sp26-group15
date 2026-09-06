@@ -78,6 +78,8 @@ class RoomLocalStore(db: SitRepDatabase) : LocalStore {
         outbox.deleteProject(projectId)
     }
 
+    override suspend fun parkedCount(): Int = outbox.conflictCount()
+
     override suspend fun replaceProjectTasks(projectId: Long, remote: List<RemoteTask>) {
         // A row carrying an unsent local edit is left exactly as it is: taking
         // the server's copy would wipe the user's own change off the screen

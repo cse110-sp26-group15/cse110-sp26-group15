@@ -204,6 +204,8 @@ class InMemoryStore : LocalStore {
         gone.forEach { cached.remove(it) }
     }
 
+    override suspend fun parkedCount(): Int = ops.count { it.state == OpState.CONFLICT }
+
     override suspend fun replaceProjectTasks(projectId: Long, tasks: List<RemoteTask>) {
         tasks.forEach { cached["server-${it.taskId}"] = it }
     }

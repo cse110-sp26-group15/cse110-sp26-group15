@@ -33,7 +33,6 @@ class SyncEngine(
     }
 
     suspend fun drain(): Outcome {
-        var parked = 0
         var handled = 0
 
         while (handled < maxOpsPerRun) {
@@ -69,10 +68,7 @@ class SyncEngine(
                         // server's row (and its new version) and drop the op:
                         // re-sending is what would produce a duplicate write.
                         ConflictVerdict.ALREADY_APPLIED -> store.onApplied(op, result.current)
-                        ConflictVerdict.NEEDS_DECISION -> {
-                            store.onConflict(op, result.current)
-                            parked += 1
-                        }
+                        ConflictVerdict.NEEDS_DECISION -> store.onConflict(op, result.current)
                     }
 
                 // Membership was revoked while the phone was offline. The server
@@ -97,6 +93,11 @@ class SyncEngine(
             }
         }
 
+        // Asked of the store rather than counted on this pass: a drain that
+        // parks nothing because the queue holds only conflicts is still not
+        // "up to date", and reporting Drained there let the screen say so while
+        // an edit waited for a decision.
+        val parked = store.parkedCount()
         return if (parked > 0) Outcome.NeedsUser(parked) else Outcome.Drained
     }
 

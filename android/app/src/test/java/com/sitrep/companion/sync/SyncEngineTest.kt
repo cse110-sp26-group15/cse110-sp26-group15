@@ -177,6 +177,26 @@ class SyncEngineTest {
     }
 
     @Test
+    fun `a drain that finds an already-parked conflict still reports it`() = runTest {
+        val taskId = server.seed(projectId, "Original")
+        val op = queueUpdate(taskId, TaskPayload("Phone title", null, "done", me), baseVersion = 1)
+        server.browserEdit(taskId, title = "Browser title")
+
+        assertEquals(SyncEngine.Outcome.NeedsUser(1), engine.drain())
+
+        // Found on an emulator: WorkManager drains on reconnect and parks the
+        // conflict, then the user taps "Sync". That second drain sees no
+        // PENDING op, so it used to report Drained and the screen said "Up to
+        // date." while the edit sat waiting for a decision. A user who does not
+        // scroll to the card never learns their change has not landed.
+        val second = engine.drain()
+
+        assertEquals(SyncEngine.Outcome.NeedsUser(1), second)
+        assertEquals(OpState.CONFLICT, store.op(op.opId)!!.state)
+        assertEquals("the second drain must not re-send anything", 0, server.updateCount)
+    }
+
+    @Test
     fun `keep mine rebases onto the server version and lands on the next drain`() = runTest {
         val taskId = server.seed(projectId, "Original")
         val op = queueUpdate(taskId, TaskPayload("Phone title", null, "done", me), baseVersion = 1)
