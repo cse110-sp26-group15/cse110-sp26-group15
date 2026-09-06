@@ -38,6 +38,13 @@ function ctx({ projectId = "1", body, db }) {
   return c;
 }
 
+// The handler now authorizes via requireMemberOrInvitee before it writes, and
+// that guard's membership lookup is the first `.first()` the mock serves - so
+// every happy-path case has to lead with a row saying "the caller is a member".
+// (Cross-tenant behaviour itself is covered end-to-end against a real database
+// in authz-tenant.test.js; these stay unit tests of the handler's shapes.)
+const CALLER_IS_MEMBER = { ok: 1 };
+
 describe("POST /api/projects/:projectId/members", () => {
   it("400s on an invalid email", async () => {
     const res = await addMember(ctx({ body: { email: "nope" }, db: createMockDb() }));
@@ -46,7 +53,7 @@ describe("POST /api/projects/:projectId/members", () => {
 
   it("adds an existing user as a member and returns status added", async () => {
     const db = createMockDb({
-      firstResults: [{ user_id: 5, email: "real@x.com", full_name: "Real User" }],
+      firstResults: [CALLER_IS_MEMBER, { user_id: 5, email: "real@x.com", full_name: "Real User" }],
     });
     const res = await addMember(ctx({ body: { email: "real@x.com" }, db }));
     const data = await res.json();
@@ -56,11 +63,26 @@ describe("POST /api/projects/:projectId/members", () => {
   });
 
   it("records a pending invite when the email has no account", async () => {
-    const db = createMockDb({ firstResults: [null] });
+    const db = createMockDb({ firstResults: [CALLER_IS_MEMBER, null] });
     const res = await addMember(ctx({ body: { email: "ghost@x.com" }, db }));
     const data = await res.json();
     expect(res.status).toBe(201);
     expect(data.status).toBe("pending");
+  });
+
+  it("403s when the caller is neither a member nor the named invitee", async () => {
+    // Not a member, and the caller's own address doesn't match the one being
+    // added - so there is no invite to redeem.
+    const db = createMockDb({ firstResults: [null, { email: "someone@else.com" }] });
+    const res = await addMember(ctx({ body: { email: "victim@x.com" }, db }));
+    expect(res.status).toBe(403);
+  });
+
+  it("401s when there is no session", async () => {
+    const c = ctx({ body: { email: "real@x.com" }, db: createMockDb() });
+    c.data = { userId: null };
+    const res = await addMember(c);
+    expect(res.status).toBe(401);
   });
 });
 
