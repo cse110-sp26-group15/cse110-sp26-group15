@@ -9,7 +9,7 @@
 //     + buttons that pre-fill (and lock) the new-task status.
 //
 // All data loads go through {@link apiFetch} (10s timeout, throws on
-// non-2xx) — when a call fails the matching renderer paints a visible
+// non-2xx) - when a call fails the matching renderer paints a visible
 // error state instead of an empty panel. Pure helper functions
 // (computeDayOfSprint, computeSprintProgress, etc.) are exported so
 // tests can exercise them without a DOM.
@@ -144,7 +144,7 @@ export function workloadFromStatusMood(statusMood) {
 
 /**
  * Strip the "workload:<value>" token (and any leftover separators) out of a
- * status_mood string, leaving just the real mood text — "" when the field was
+ * status_mood string, leaving just the real mood text - "" when the field was
  * nothing but the encoded workload. Lets classifyMood read the actual mood
  * instead of misclassifying "workload:moderate" as a mood.
  */
@@ -157,7 +157,7 @@ export function moodFromStatusMood(statusMood) {
 
 /**
  * Parse a YYYY-MM-DD string into a Date at local midnight. Returns null
- * if the input is empty/invalid — callers should treat this as "unknown".
+ * if the input is empty/invalid - callers should treat this as "unknown".
  */
 export function parseISODate(s) {
   if (!s) return null;
@@ -196,7 +196,7 @@ export function addDaysISO(iso, days) {
  * so a fresh sprint can't be started mid-sprint (one sprint at a time).
  *
  * A sprint counts as "in progress" when it's configured (has a start date or a
- * number) and hasn't ended yet — i.e. it has no end date (open-ended sprint) or
+ * number) and hasn't ended yet - i.e. it has no end date (open-ended sprint) or
  * its end date is today or later. Returns false when there's no sprint at all
  * or the sprint's end date has already passed, so a new sprint can be started.
  */
@@ -222,7 +222,7 @@ export function isSprintInProgress(sprint) {
  * - If the dates are invalid or end < start → null.
  * - `day` is clamped to [1, total]; before the sprint starts it is 1,
  *   after it ends it equals `total`. This matches the mockup style of
- *   "Day 3 of 7" — we never show "Day 0" or "Day 8 of 7".
+ *   "Day 3 of 7" - we never show "Day 0" or "Day 8 of 7".
  */
 export function computeDayOfSprint(startDate, endDate, today = new Date()) {
   const start = startDate instanceof Date ? startDate : parseISODate(startDate);
@@ -386,7 +386,7 @@ function buildBlockerIndex(blockers) {
   return map;
 }
 
-// "list" or "kanban" — which Sprint Tasks view is visible.
+// "list" or "kanban" - which Sprint Tasks view is visible.
 let viewMode = "list";
 
 // Last-fetched tasks, so the kanban view can re-render without a round trip.
@@ -501,15 +501,15 @@ async function fetchAgents() {
  */
 export function renderSummaryHtml(payload) {
   // Three states the meta line surfaces:
-  //  - "AI-generated digest"    : LLM produced this — the green-path label.
-  //  - "AI unavailable — …"     : LLM call attempted and failed; degraded_reason carries the API error.
+  //  - "AI-generated digest"    : LLM produced this - the green-path label.
+  //  - "AI unavailable - …"     : LLM call attempted and failed; degraded_reason carries the API error.
   //  - "Template digest"        : no ANTHROPIC_API_KEY configured. Common in dev.
   let tag;
   if (payload.source === "anthropic") {
     tag = `<span class="ai-summary__source ai-summary__source--ai">AI-generated digest</span>`;
   } else if (payload.degraded_reason) {
     const reason = escapeHtml(payload.degraded_reason);
-    tag = `<span class="ai-summary__source ai-summary__source--fallback" title="${reason}">AI unavailable — using template fallback</span>`;
+    tag = `<span class="ai-summary__source ai-summary__source--fallback" title="${reason}">AI unavailable - using template fallback</span>`;
   } else {
     tag = `<span class="ai-summary__source ai-summary__source--fallback" title="ANTHROPIC_API_KEY not configured">Template digest (AI off)</span>`;
   }
@@ -563,7 +563,7 @@ function renderSprintHeader(checkins) {
   const parts = [];
   if (sprintState.number) parts.push(`Sprint ${sprintState.number}`);
   if (range) parts.push(range);
-  // Count distinct people who checked in TODAY — not raw rows. The checkins
+  // Count distinct people who checked in TODAY - not raw rows. The checkins
   // list spans multiple days and could hold more than one row per user, so
   // counting length over-reports participation.
   const checkedInToday = new Set(checkins.filter((c) => isCheckinToday(c)).map((c) => c.user_id));
@@ -593,7 +593,7 @@ function renderSprintProgress(tasks) {
   const dayInfo = computeDayOfSprint(sprintState.start_date, sprintState.end_date);
 
   // Once the sprint's end date is before the current day, the running
-  // "Day X of Y" count no longer makes sense — show "Sprint N has ended"
+  // "Day X of Y" count no longer makes sense - show "Sprint N has ended"
   // instead. Otherwise show "Day X of Y" while a valid range is configured,
   // and hide the badge when no range is set so it doesn't show a stale value.
   const endDate = parseISODate(sprintState.end_date);
@@ -625,7 +625,7 @@ function renderSprintProgress(tasks) {
   const pctInProgress = total === 0 ? 0 : (inProgress / total) * 100;
   const health = computeSprintHealth(pct, pctInProgress, dayInfo);
   if (pct >= 100) {
-    // Sprint is complete — show no status at all.
+    // Sprint is complete - show no status at all.
     statusEl.textContent = "";
   } else if (health) {
     statusEl.textContent = health.label;
@@ -654,7 +654,7 @@ function isCheckinToday(checkin, now = new Date()) {
 
 // Open blockers raised from a given check-in (matched by checkin_id). Single
 // source of truth so the card's "view blocker" button and the modal's blocker
-// section always agree — driving them off different signals (mood vs. blocker
+// section always agree - driving them off different signals (mood vs. blocker
 // data) is what let a "view update" card still show a blocker in the modal.
 function blockersForCheckin(checkinId) {
   return blockersCache.filter(
@@ -672,12 +672,12 @@ function buildCheckinCardHtml(c) {
   const mood = classifyMood(moodText);
   const workload = workloadFromStatusMood(c.status_mood);
   const time = c.checkin_date ? formatDate(c.checkin_date) || "today" : "today";
-  const work = c.work_done || c.work_planned || "—";
+  const work = c.work_done || c.work_planned || "-";
   // Treat empty/whitespace names as Unknown (??-coalesce only catches null).
   const name = c.full_name && c.full_name.trim() ? c.full_name : "Unknown";
   const detail = workload ? `Workload: ${workload}` : moodText;
   // Label the footer button by whether this check-in actually has an open
-  // blocker, not by mood — so it matches what the modal will show.
+  // blocker, not by mood - so it matches what the modal will show.
   const hasBlocker = blockersForCheckin(c.checkin_id).length > 0;
   return `
         <div class="checkin-card" data-checkin-id="${escapeHtml(c.checkin_id)}">
@@ -730,7 +730,7 @@ function openCheckinModal(checkin) {
           .map(
             (b) => `
           <div class="checkin-modal-blocker">
-            <p class="checkin-modal-text">${escapeHtml(b.description || "—")}</p>
+            <p class="checkin-modal-text">${escapeHtml(b.description || "-")}</p>
             ${b.task ? `<span class="checkin-modal-meta">Task: ${escapeHtml(b.task)}</span>` : ""}
             ${b.tag ? `<span class="checkin-modal-meta">Helper: ${escapeHtml(b.tag)}</span>` : ""}
           </div>`
@@ -758,11 +758,11 @@ function openCheckinModal(checkin) {
       ${blockerSection}
       <div class="checkin-modal-section">
         <span class="checkin-modal-label">Work done</span>
-        <p class="checkin-modal-text">${escapeHtml(checkin.work_done || "—")}</p>
+        <p class="checkin-modal-text">${escapeHtml(checkin.work_done || "-")}</p>
       </div>
       <div class="checkin-modal-section">
         <span class="checkin-modal-label">Work planned</span>
-        <p class="checkin-modal-text">${escapeHtml(checkin.work_planned || "—")}</p>
+        <p class="checkin-modal-text">${escapeHtml(checkin.work_planned || "-")}</p>
       </div>
     </div>`;
 
@@ -844,7 +844,7 @@ function updateHistoryLinkState() {
 }
 
 // Toggle the Daily Standup grid between today's check-ins and the history of
-// past days. When there are no past days to show, clicking is a no-op — the
+// past days. When there are no past days to show, clicking is a no-op - the
 // "View history" link instead reveals a hover tooltip (see updateHistoryLinkState).
 function toggleCheckinHistory() {
   const grid = document.getElementById("checkin-grid");
@@ -853,7 +853,7 @@ function toggleCheckinHistory() {
 
   if (!showingCheckinHistory) {
     const past = checkinsCache.filter((c) => !isCheckinToday(c));
-    // Nothing to show — do nothing; the hover tooltip explains why.
+    // Nothing to show - do nothing; the hover tooltip explains why.
     if (past.length === 0) return;
     showingCheckinHistory = true;
     if (link) link.textContent = "View today";
@@ -869,7 +869,7 @@ function toggleCheckinHistory() {
 // ── Task rendering helpers (shared by list + kanban) ──
 // onChange handler for the shared task-card's interactive controls. The card
 // can edit priority, story points, tags, blocker, assignee and status inline,
-// but only assigned_to, status + priority have backend persistence right now —
+// but only assigned_to, status + priority have backend persistence right now -
 // the rest update locally and are intentionally not PATCHed. Blocker persistence is
 // owned by another branch, so we leave is_blocked/blocker_reason untouched too.
 async function persistTaskChange(taskId, fields) {
@@ -895,15 +895,18 @@ async function persistTaskChange(taskId, fields) {
  * set (human/unassigned), and omits review_status otherwise so the API
  * preserves/promotes whatever the agent task already had.
  * @param {object} data - Modal submission object.
+ * @param {number} [version] - Version of the task the form was opened on.
  * @returns {object} PATCH body.
  */
-function buildEditPayload(data) {
+function buildEditPayload(data, version) {
   const payload = {
     title: data.title,
     description: data.description ?? null,
     assigned_to: data.assigned_to ?? null,
     status: data.status,
   };
+  // See main.js: the version pins this save to the row the form was opened on.
+  if (Number.isInteger(version)) payload.version = version;
   if (data.priority) payload.priority = data.priority;
   if (data.reviewer_id != null) {
     payload.reviewer_id = data.reviewer_id;
@@ -921,10 +924,16 @@ async function openEditTaskModal(task) {
   openTaskModal(
     async (data) => {
       try {
-        await updateTask(task.task_id, buildEditPayload(data));
+        await updateTask(task.task_id, buildEditPayload(data, task.version));
         await loadAll();
       } catch (err) {
         console.error("[scrum] editTask failed", err);
+        // 409 = a teammate saved this task first; reload to show their version.
+        if (err?.status === 409) {
+          alert(err.message);
+          await loadAll();
+          return;
+        }
         alert(`Couldn't update task: ${err.message}`);
       }
     },
@@ -1244,7 +1253,7 @@ async function saveSprintPicker() {
     if (saveBtn) saveBtn.disabled = false;
   }
 
-  // Adopt whatever the server returned — the source of truth for sprint_id.
+  // Adopt whatever the server returned - the source of truth for sprint_id.
   currentSprintId = sprint?.sprint_id ?? currentSprintId;
   sprintState = {
     number: sprint?.number ?? number,
@@ -1382,7 +1391,7 @@ function renderAgentContributionsMeta(agents, tasks) {
   meta.textContent = parts.join(" · ");
 }
 
-// Derive team members from any rows that include user info — keeps the
+// Derive team members from any rows that include user info - keeps the
 // dashboard usable even without a dedicated /members endpoint.
 function deriveMembers(tasks, checkins) {
   const map = new Map();
@@ -1457,7 +1466,7 @@ function applyViewFromQuery() {
 }
 
 // ── Init (DOM-only) ──────────────────────────────────
-// Skip everything below when there's no document — lets the test suite
+// Skip everything below when there's no document - lets the test suite
 // import this module purely for the helpers above.
 function init() {
   if (!requireStoredProject("/projects/projects.html")) return;

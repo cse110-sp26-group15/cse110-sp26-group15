@@ -35,11 +35,16 @@ async function classifyUser(db, userId) {
  * Updates mutable task fields. Accepts any subset of:
  *   status, assigned_to, reviewer_id, review_status, description.
  *
+ * Concurrency: pass `version` (the value the client read) to get a
+ * compare-and-swap write. The update only lands while the row is still on that
+ * version; otherwise the handler returns 409 with `conflict: true` and the
+ * current row, and writes nothing. Omitting `version` keeps last-write-wins.
+ *
  * Two invariants the API enforces (mirrors POST in tasks.js):
  *   1. If the new assignee is an AI agent and no reviewer is set
  *      (existing or incoming), the request is rejected.
  *   2. reviewer_id must point at a non-agent user. Agents cannot review
- *      other agents — that would defeat human accountability.
+ *      other agents - that would defeat human accountability.
  */
 export async function onRequestPatch(context) {
   const { env, params, request } = context;
@@ -53,7 +58,16 @@ export async function onRequestPatch(context) {
   }
 
   const { status, assigned_to, reviewer_id, review_status, description, title, priority } = body;
-  const { pair_assignee, sprint_id } = body;
+  const { pair_assignee, sprint_id, version } = body;
+
+  // Optimistic concurrency: when the caller tells us which version of the row
+  // its form was built from, the write only lands if the row is still on that
+  // version. Callers that send no version keep the old last-write-wins
+  // behaviour (the kanban status dropdown and the inline card edits each touch
+  // a single field, so there is nothing of anyone else's for them to clobber).
+  if (version !== undefined && !Number.isInteger(version)) {
+    return Response.json({ error: "version must be an integer" }, { status: 400 });
+  }
 
   if (title !== undefined && (typeof title !== "string" || title.trim() === "")) {
     return Response.json({ error: "title must be a non-empty string" }, { status: 400 });
@@ -86,7 +100,7 @@ export async function onRequestPatch(context) {
 
   try {
     const existing = await env.DB.prepare(
-      `SELECT task_id, project_id, assigned_to, reviewer_id, review_status FROM tasks WHERE task_id = ?`
+      `SELECT task_id, project_id, assigned_to, reviewer_id, review_status, version FROM tasks WHERE task_id = ?`
     )
       .bind(taskId)
       .first();
@@ -181,7 +195,7 @@ export async function onRequestPatch(context) {
       values.push(pair_assignee);
     }
     if (sprint_id !== undefined) {
-      // Drop sprint_ids that aren't part of this task's project — mirrors
+      // Drop sprint_ids that aren't part of this task's project - mirrors
       // the POST handler's silent-drop behavior for stale client state.
       let resolvedSprintId = null;
       if (sprint_id != null) {
@@ -209,16 +223,64 @@ export async function onRequestPatch(context) {
       return Response.json({ error: "No valid fields to update" }, { status: 400 });
     }
 
+    // Every accepted write advances the version, so a snapshot taken before it
+    // is detectably stale even if the other writer sent no version themselves.
+    fields.push("version = version + 1");
+
     values.push(taskId);
 
-    await env.DB.prepare(`UPDATE tasks SET ${fields.join(", ")} WHERE task_id = ?`)
+    // The guard is part of the UPDATE, not a separate read: checking `existing`
+    // and then writing would leave a window where another request lands in
+    // between. `WHERE ... AND version = ?` makes the check and the write one
+    // statement, so exactly one of two concurrent saves can win.
+    const sql =
+      version === undefined
+        ? `UPDATE tasks SET ${fields.join(", ")} WHERE task_id = ?`
+        : `UPDATE tasks SET ${fields.join(", ")} WHERE task_id = ? AND version = ?`;
+    if (version !== undefined) values.push(version);
+
+    const write = await env.DB.prepare(sql)
       .bind(...values)
       .run();
+
+    if (version !== undefined && (write.meta?.changes ?? 0) === 0) {
+      // Either the row is gone, or somebody saved before us. Hand the caller
+      // the row as it stands now so the UI can re-render the card and let the
+      // user re-apply their change rather than losing it.
+      const current = await env.DB.prepare(
+        `SELECT t.task_id, t.title, t.description, t.status, t.github_issue_url,
+                t.reviewer_id, t.review_status, t.priority, t.created_at, t.pair_assignee,
+                t.sprint_id, t.version,
+                u.user_id, u.full_name,
+                CASE WHEN a.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_agent,
+                r.full_name AS reviewer_name
+           FROM tasks t
+           LEFT JOIN users u  ON t.assigned_to = u.user_id
+           LEFT JOIN agents a ON a.user_id = u.user_id
+           LEFT JOIN users r  ON t.reviewer_id = r.user_id
+          WHERE t.task_id = ?`
+      )
+        .bind(taskId)
+        .first();
+
+      if (!current) {
+        return Response.json({ error: "Task not found" }, { status: 404 });
+      }
+      return Response.json(
+        {
+          error:
+            "This task changed while you were editing it. Review the latest version and try again.",
+          conflict: true,
+          task: current,
+        },
+        { status: 409 }
+      );
+    }
 
     const task = await env.DB.prepare(
       `SELECT t.task_id, t.title, t.description, t.status, t.github_issue_url,
               t.reviewer_id, t.review_status, t.priority, t.created_at, t.pair_assignee,
-              t.sprint_id,
+              t.sprint_id, t.version,
               u.user_id, u.full_name,
               CASE WHEN a.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_agent,
               r.full_name AS reviewer_name
