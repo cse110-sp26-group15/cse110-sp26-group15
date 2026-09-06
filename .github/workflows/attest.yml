@@ -12,7 +12,7 @@ name: attest
 # what gets signed.
 on:
   push:
-    branches: ['**']
+    branches: ["**"]
   workflow_dispatch:
 
 permissions:
