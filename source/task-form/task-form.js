@@ -3,7 +3,7 @@
 // Modal also enforces the "agent-assigned tasks need a human reviewer"
 // rule on the client side: when the assignee picker lands on an AI
 // agent, the reviewer select becomes required and is auto-defaulted to
-// that agent's owning human. The API also enforces this — the client
+// that agent's owning human. The API also enforces this - the client
 // rule is a UX nicety, not a security boundary.
 
 import { getCurrentUser, defaultAssigneeId } from "../shared/utils.js";
@@ -38,7 +38,7 @@ function getPairs() {
 
 /**
  * Whether the pair-assignee UI should render. Set true only by the XP
- * dashboard — this keeps pairing strictly out of the scrum/kanban forms.
+ * dashboard - this keeps pairing strictly out of the scrum/kanban forms.
  * @returns {boolean}
  */
 function pairUiEnabled() {
@@ -56,12 +56,21 @@ export function openTaskModal(onSubmit, options = {}) {
   modal.className = "tf-modal";
   modal.setAttribute("role", "dialog");
   modal.setAttribute("aria-modal", "true");
+  // A role="dialog" with no accessible name is announced as just "dialog".
+  // The heading below already says which one this is, so point at it.
+  modal.setAttribute("aria-labelledby", "tf-title");
+
+  // Remember who opened the dialog so focus can go back there on close -
+  // otherwise removing the backdrop drops keyboard focus onto <body> and the
+  // user restarts from the top of the page.
+  const opener = document.activeElement;
 
   // ── Header ─────────────────────────────────────────
   const header = document.createElement("div");
   header.className = "tf-header";
 
   const heading = document.createElement("h2");
+  heading.id = "tf-title";
   heading.className = "tf-title";
   heading.textContent = isEdit ? "Edit task" : "New task";
 
@@ -94,8 +103,19 @@ export function openTaskModal(onSubmit, options = {}) {
   titleInput.placeholder = "What needs to be done?";
   titleInput.required = true;
 
+  // Submitting with an empty title used to just move focus back to the field
+  // with no explanation, which tells a screen-reader user nothing. role="alert"
+  // makes the message announce when it is revealed.
+  const titleError = document.createElement("p");
+  titleError.className = "tf-error";
+  titleError.id = "tf-error-title";
+  titleError.setAttribute("role", "alert");
+  titleError.hidden = true;
+  titleError.textContent = "Please enter a title.";
+
   titleField.appendChild(titleLabel);
   titleField.appendChild(titleInput);
+  titleField.appendChild(titleError);
 
   // Description
   const descField = document.createElement("div");
@@ -132,7 +152,7 @@ export function openTaskModal(onSubmit, options = {}) {
   assigneeSelect.className = "tf-select";
 
   // Populate from cached project members. Agents are tagged inline so
-  // the picker reads "Name · AI" — a visual cue that picking this option
+  // the picker reads "Name · AI" - a visual cue that picking this option
   // will surface the reviewer field below.
   const members = getMembers();
   const agents = getAgents();
@@ -155,6 +175,8 @@ export function openTaskModal(onSubmit, options = {}) {
 
   const assigneeError = document.createElement("p");
   assigneeError.className = "tf-error";
+  assigneeError.id = "tf-error-assignee";
+  assigneeError.setAttribute("role", "alert");
   assigneeError.hidden = true;
   assigneeError.textContent = "Please select an assignee.";
   assigneeField.appendChild(assigneeError);
@@ -227,9 +249,9 @@ export function openTaskModal(onSubmit, options = {}) {
 
   // ── Pair selection (XP dashboard only) ─────────────────────
   // Two ways to pair, in one row:
-  //   • "Existing pair" — pick a current Pair Programming session; it fills
+  //   • "Existing pair" - pick a current Pair Programming session; it fills
   //     the assignee + pair partner from that session.
-  //   • "Pair partner" — pick a second person directly; on submit, if they
+  //   • "Pair partner" - pick a second person directly; on submit, if they
   //     and the assignee aren't already a session, one is created (handled by
   //     the XP dashboard's createTask/edit handler).
   // pairPartnerSelect is referenced by submit()/prefill below, so it's declared
@@ -257,7 +279,7 @@ export function openTaskModal(onSubmit, options = {}) {
     existingPairSelect.className = "tf-select";
     const noPairOpt = document.createElement("option");
     noPairOpt.value = "";
-    noPairOpt.textContent = pairs.length ? "— Select an existing pair —" : "No pairs yet";
+    noPairOpt.textContent = pairs.length ? "- Select an existing pair -" : "No pairs yet";
     existingPairSelect.appendChild(noPairOpt);
     for (const p of pairs) {
       const o = document.createElement("option");
@@ -386,7 +408,7 @@ export function openTaskModal(onSubmit, options = {}) {
   placeholderOpt.textContent = "Select a reviewer";
   reviewerSelect.appendChild(placeholderOpt);
   for (const m of members) {
-    if (agentOwnerByUserId.has(Number(m.user_id))) continue; // skip agents — they can't review
+    if (agentOwnerByUserId.has(Number(m.user_id))) continue; // skip agents - they can't review
     const o = document.createElement("option");
     o.value = m.user_id;
     o.textContent = m.full_name;
@@ -395,6 +417,8 @@ export function openTaskModal(onSubmit, options = {}) {
 
   const reviewerError = document.createElement("p");
   reviewerError.className = "tf-error";
+  reviewerError.id = "tf-error-reviewer";
+  reviewerError.setAttribute("role", "alert");
   reviewerError.hidden = true;
   reviewerError.textContent = "Pick a human reviewer for this AI-assigned task.";
 
@@ -420,7 +444,7 @@ export function openTaskModal(onSubmit, options = {}) {
         reviewerSelect.value = String(ownerId);
       }
     } else {
-      // Hide the field and clear it — a non-agent assignee doesn't need
+      // Hide the field and clear it - a non-agent assignee doesn't need
       // a reviewer, and leaving a stale value would post bad data.
       reviewerField.hidden = true;
       reviewerSelect.value = "";
@@ -431,7 +455,7 @@ export function openTaskModal(onSubmit, options = {}) {
   // ── Prefill (edit mode) ────────────────────────────
   // Populate the form from an existing task so the same modal doubles as
   // an editor. GET /tasks returns the assignee id as `user_id`; POST/PATCH
-  // echo `assigned_to` — accept either. Pre-pick the existing reviewer
+  // echo `assigned_to` - accept either. Pre-pick the existing reviewer
   // before the initial syncReviewerField() so it isn't overwritten.
   if (isEdit) {
     titleInput.value = task.title ?? "";
@@ -482,28 +506,70 @@ export function openTaskModal(onSubmit, options = {}) {
   document.body.appendChild(backdrop);
 
   // ── Behavior ───────────────────────────────────────
+  /** Focusable controls inside the dialog, in document order. */
+  function focusables() {
+    return [
+      ...modal.querySelectorAll("input, textarea, select, button, [href], [tabindex]"),
+    ].filter((el) => !el.disabled && el.tabIndex !== -1 && el.offsetParent !== null);
+  }
+
   function close() {
     document.removeEventListener("keydown", onKeyDown);
     backdrop.remove();
+    // Send focus back where it came from. Without this, removing the backdrop
+    // leaves document.activeElement on <body> and a keyboard user has to tab
+    // from the top of the page again.
+    if (opener instanceof HTMLElement && document.contains(opener)) opener.focus();
   }
 
   function onKeyDown(e) {
-    if (e.key === "Escape") close();
+    if (e.key === "Escape") {
+      close();
+      return;
+    }
+    // The dialog declares aria-modal="true", which tells assistive tech the
+    // rest of the page is inert - so Tab must not walk out of it either.
+    if (e.key !== "Tab") return;
+    const items = focusables();
+    if (items.length === 0) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    const active = document.activeElement;
+    if (!modal.contains(active)) {
+      e.preventDefault();
+      (e.shiftKey ? last : first).focus();
+    } else if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
   }
 
   function submit() {
     const title = titleInput.value.trim();
     if (!title) {
+      titleError.hidden = false;
+      titleInput.setAttribute("aria-invalid", "true");
+      titleInput.setAttribute("aria-describedby", "tf-error-title");
       titleInput.focus();
       return;
     }
+    titleError.hidden = true;
+    titleInput.removeAttribute("aria-invalid");
+    titleInput.removeAttribute("aria-describedby");
 
     if (!assigneeSelect.value) {
       assigneeError.hidden = false;
+      assigneeSelect.setAttribute("aria-invalid", "true");
+      assigneeSelect.setAttribute("aria-describedby", "tf-error-assignee");
       assigneeSelect.focus();
       return;
     }
     assigneeError.hidden = true;
+    assigneeSelect.removeAttribute("aria-invalid");
+    assigneeSelect.removeAttribute("aria-describedby");
 
     const assigneeId = assigneeSelect.value ? Number(assigneeSelect.value) : null;
     const isAgent = assigneeId != null && agentOwnerByUserId.has(assigneeId);
@@ -511,10 +577,14 @@ export function openTaskModal(onSubmit, options = {}) {
 
     if (isAgent && reviewerId == null) {
       reviewerError.hidden = false;
+      reviewerSelect.setAttribute("aria-invalid", "true");
+      reviewerSelect.setAttribute("aria-describedby", "tf-error-reviewer");
       reviewerSelect.focus();
       return;
     }
     reviewerError.hidden = true;
+    reviewerSelect.removeAttribute("aria-invalid");
+    reviewerSelect.removeAttribute("aria-describedby");
 
     onSubmit({
       title,

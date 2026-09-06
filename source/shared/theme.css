@@ -1,5 +1,5 @@
 /* ============================================================
-   theme.css — Centralized Design System 
+   theme.css - Centralized Design System 
    ============================================================
    Single source of truth for color, typography, spacing,
    radius, elevation, motion, focus, layout, and z-index
@@ -45,11 +45,11 @@
      what guarantees WCAG AA contrast across both themes.
 
 /* ============================================================
-   :root  —  LIGHT MODE (default)
+   :root  -  LIGHT MODE (default)
    ============================================================ */
 :root {
   /* ==========================================================
-     COLOR — BRAND
+     COLOR - BRAND
      ---------------------------------------------------------- */
   --color-primary: hsl(221, 83%, 53%);
   --color-primary-hover: hsl(221, 83%, 45%);
@@ -68,7 +68,7 @@
   --color-accent-muted: hsl(184, 78%, 92%);
 
   /* ==========================================================
-     COLOR — STATUS
+     COLOR - STATUS
      ----------------------------------------------------------
      WARNING is split because the bright orange fails AA as a
      text color on light backgrounds. Use --color-warning-bg
@@ -86,7 +86,7 @@
   --color-error-muted: hsl(0, 72%, 94%);
 
   /* ==========================================================
-     COLOR — BACKGROUNDS
+     COLOR - BACKGROUNDS
      ---------------------------------------------------------- */
   --color-bg: hsl(0, 0%, 100%);
   --color-bg-subtle: hsl(210, 20%, 98%);
@@ -94,7 +94,7 @@
   --color-bg-inverse: hsl(222, 47%, 11%);
 
   /* ==========================================================
-     COLOR — TEXT
+     COLOR - TEXT
      ----------------------------------------------------------
      Default --color-text-* tokens assume a --color-bg /
      --color-bg-surface canvas. For any non-default surface,
@@ -102,7 +102,7 @@
      ========================================================== */
   --color-text: hsl(222, 47%, 11%);
   --color-text-muted: hsl(215, 16%, 38%); /* AA live-text tier (~6:1 on white) */
-  /* --color-text-subtle is DECORATIVE ONLY — placeholders,
+  /* --color-text-subtle is DECORATIVE ONLY - placeholders,
      disabled controls, decorative dividers/dots. Sub-AA by
      design (~3.6:1). NEVER use it for live text content. */
   --color-text-subtle: hsl(215, 14%, 56%);
@@ -130,7 +130,7 @@
   --color-text-on-error-muted: hsl(0, 72%, 30%);
 
   /* ==========================================================
-     COLOR — BORDERS
+     COLOR - BORDERS
      ---------------------------------------------------------- */
   --color-border: hsl(214, 20%, 88%);
   --color-border-strong: hsl(214, 16%, 72%);
@@ -177,7 +177,7 @@
   --line-height-relaxed: 1.75;
 
   /* ==========================================================
-     SPACING  —  single source (8pt grid, 4px base step)
+     SPACING  -  single source (8pt grid, 4px base step)
      ----------------------------------------------------------
      --space-* is the canonical scale. Prefer it in new code.
      The --margin-* / --padding-* aliases below are restored in
@@ -218,10 +218,10 @@
      RADIUS
      ========================================================== */
   --radius-none: 0;
-  --radius-sm: 0.25rem; /*  4px — chips, small inputs */
-  --radius-md: 0.5rem; /*  8px — buttons, cards */
-  --radius-lg: 0.75rem; /* 12px — modals, panels */
-  --radius-xl: 1rem; /* 16px — hero surfaces */
+  --radius-sm: 0.25rem; /*  4px - chips, small inputs */
+  --radius-md: 0.5rem; /*  8px - buttons, cards */
+  --radius-lg: 0.75rem; /* 12px - modals, panels */
+  --radius-xl: 1rem; /* 16px - hero surfaces */
   --radius-full: 9999px; /* pills, avatars */
 
   /* ==========================================================
@@ -311,7 +311,7 @@
 }
 
 /* ============================================================
-   [data-theme="dark"]  —  DARK MODE
+   [data-theme="dark"]  -  DARK MODE
    ------------------------------------------------------------
    Activate by setting data-theme="dark" on <html> or <body>:
        <html data-theme="dark">
@@ -319,7 +319,7 @@
    redeclared. Typography, spacing, radius, motion, focus,
    container, and z-index tokens all inherit from :root.
    ============================================================ */
-[data-theme="dark"] {
+:root[data-theme="dark"] {
   /* --- Brand: primary (lifted for contrast on dark bg) --- */
   --color-primary: hsl(217, 91%, 65%);
   --color-primary-hover: hsl(217, 91%, 72%);
@@ -330,7 +330,7 @@
   --color-secondary-hover: hsl(220, 16%, 75%);
   --color-secondary-muted: hsl(220, 12%, 22%);
 
-  /* --- Brand: accent — shifted toward teal-green to visually
+  /* --- Brand: accent - shifted toward teal-green to visually
          separate from the dark primary blue (217°) --- */
   --color-accent: hsl(165, 68%, 55%);
   --color-accent-hover: hsl(165, 68%, 62%);
@@ -356,11 +356,11 @@
   /* --- Text --- */
   --color-text: hsl(210, 20%, 96%);
   --color-text-muted: hsl(215, 16%, 70%); /* AA live-text tier */
-  /* DECORATIVE ONLY in dark mode too — sub-AA by design. */
+  /* DECORATIVE ONLY in dark mode too - sub-AA by design. */
   --color-text-subtle: hsl(215, 14%, 55%);
   --color-text-inverse: hsl(222, 47%, 11%);
 
-  /* --- On-fill text — re-tuned for dark theme --- */
+  /* --- On-fill text - re-tuned for dark theme --- */
   /* In dark mode, brand fills are lighter so dark copy reads better */
   --color-text-on-primary: hsl(222, 47%, 11%);
   --color-text-on-secondary: hsl(222, 47%, 11%);
@@ -369,7 +369,7 @@
   --color-text-on-error: hsl(222, 47%, 11%); /* matches the other on-fills */
   --color-text-on-inverse: hsl(222, 47%, 11%);
 
-  /* Muted fills are deep tints — use a light tint of the hue */
+  /* Muted fills are deep tints - use a light tint of the hue */
   --color-text-on-primary-muted: hsl(217, 91%, 85%);
   --color-text-on-secondary-muted: hsl(220, 14%, 85%);
   --color-text-on-accent-muted: hsl(165, 65%, 85%);

@@ -11,14 +11,14 @@
 :root {
   --sidebar-width: 220px;
 
-  /* Legacy aliases — points to theme.css tokens so older class names still resolve */
+  /* Legacy aliases - points to theme.css tokens so older class names still resolve */
   --color-surface: var(--color-bg-subtle);
   --color-text-primary: var(--color-text);
   --color-text-secondary: var(--color-text-muted);
   --color-accent: var(--color-primary);
   --color-accent-bg: var(--color-primary-muted);
 
-  /* Violet accent for AI pair sessions — consumed by xp.css */
+  /* Violet accent for AI pair sessions - consumed by xp.css */
   --color-ai: hsl(263, 70%, 50%);
   --color-ai-hover: hsl(263, 70%, 42%);
   --color-ai-muted: hsl(263, 70%, 90%);
@@ -27,11 +27,11 @@
   --color-ai-text-on-solid: hsl(0, 0%, 100%);
 }
 
-/* Dark-mode variants for the AI accent — mirrors theme.css's dark tokens:
+/* Dark-mode variants for the AI accent - mirrors theme.css's dark tokens:
    the solid hue is lifted for contrast on dark surfaces, the muted/subtle
    tints become deep, and on-solid text flips to dark so it reads on the
    now-lighter fill. */
-[data-theme="dark"] {
+:root[data-theme="dark"] {
   --color-ai: hsl(263, 75%, 72%);
   --color-ai-hover: hsl(263, 75%, 79%);
   --color-ai-muted: hsl(263, 45%, 24%);
@@ -373,7 +373,7 @@ body {
   gap: var(--space-xs);
 }
 
-/* Baseline row — overridden by task-card.css for the rich shared component */
+/* Baseline row - overridden by task-card.css for the rich shared component */
 .task-card {
   display: flex;
   align-items: center;
@@ -567,7 +567,11 @@ body {
 }
 
 #col-in-progress .kanban-col__title {
-  color: var(--color-accent);
+  /* The header behind this text is --color-accent-bg (an alias of
+     --color-primary-muted). Per theme.css, text on a *-muted fill takes the
+     matching --color-text-on-*-muted token; --color-accent on that tint is
+     only 4.06:1, below the 4.5:1 AA floor for normal-size text. */
+  color: var(--color-text-on-primary-muted);
 }
 
 #col-in-progress .kanban-col__count {
@@ -644,7 +648,7 @@ body {
 
 /* Keep cards at their natural height inside the scrolling lists/columns and
    at a consistent width. Without flex-shrink: 0, a full column's flex layout
-   shrinks the cards to fit — "smooshing" them into unreadable slivers instead
+   shrinks the cards to fit - "smooshing" them into unreadable slivers instead
    of scrolling. width + box-sizing keep every card the same size regardless of
    how many share a column. */
 .task-list > .task-card,

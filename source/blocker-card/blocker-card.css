@@ -20,10 +20,10 @@
   --blocker-card-footer-bg: #fde2e2;
 }
 
-[data-theme="dark"] .blocker-rail,
-[data-theme="dark"] .blocker-card,
-[data-theme="dark"] .blocker-rail-placeholder,
-[data-theme="dark"] .task-card--blocker-highlight {
+:root[data-theme="dark"] .blocker-rail,
+:root[data-theme="dark"] .blocker-card,
+:root[data-theme="dark"] .blocker-rail-placeholder,
+:root[data-theme="dark"] .task-card--blocker-highlight {
   --blocker-card-border: hsl(0, 38%, 38%);
   --blocker-card-fg-muted: hsl(0, 70%, 80%);
   --blocker-card-footer-bg: hsl(0, 45%, 28%);
@@ -113,7 +113,7 @@
   transform: rotate(-90deg);
 }
 
-/* When collapsed, the placeholder is short — flow the toggle inline so it
+/* When collapsed, the placeholder is short - flow the toggle inline so it
    sits next to the label instead of floating above it. */
 .blocker-rail-placeholder[data-collapsed="true"] .blocker-rail-placeholder__toggle {
   position: static;
@@ -371,7 +371,7 @@
   font-size: 13px;
   line-height: 1.4;
   color: var(--blocker-card-fg-muted);
-  max-height: 2.8em; /* exactly 2 lines at line-height 1.4 — same height as the old clamp */
+  max-height: 2.8em; /* exactly 2 lines at line-height 1.4 - same height as the old clamp */
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
