@@ -1,0 +1,95 @@
+name: attest
+
+# Build provenance and SBOM attestation for the built site.
+#
+# Push-triggered on purpose: the attestation is a statement about a build that
+# actually happened, signed with an identity only GitHub's OIDC issuer can mint
+# for this repository. There is no way to produce one out of band, which is what
+# makes `gh attestation verify` mean anything.
+#
+# The subject is dist/, which is exactly what wrangler pages publishes.
+# A directory has no digest, so it is packed into one tar first and the tar is
+# what gets signed.
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write # mint the OIDC token Sigstore binds the signature to
+      attestations: write # write the signed bundle to this repository's attestation store
+    steps:
+      # Every action is pinned to a commit SHA rather than a tag: a tag is a
+      # mutable pointer its owner can move to different code at any time, so a
+      # tag pin does not fix what actually runs here.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: install
+        run: npm ci
+
+      # After install, so the scan sees the resolved node_modules tree and not
+      # just the ranges in package.json.
+      - name: sbom
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        with:
+          path: .
+          format: spdx-json
+          output-file: sitrep.spdx.json
+          syft-version: v1.51.1
+          upload-artifact: false
+          upload-release-assets: false
+          dependency-snapshot: false
+
+      - name: build
+        run: npm run build
+
+      # Sorted names, zeroed timestamps and zeroed ownership: without them the
+      # tar digest would change on every run for reasons that have nothing to do
+      # with the code, and a digest that moves on its own cannot be compared.
+      - name: pack the build output
+        run: |
+          tar --sort=name --format=posix \
+              --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+              -cf sitrep-build.tar -C dist .
+
+      # The digest the attestation will carry. Printed so the value a verifier
+      # computes locally can be compared against the run that produced it.
+      - name: artifact digest
+        run: sha256sum sitrep-build.tar | tee artifact-digests.txt
+
+      - name: attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: sitrep-build.tar
+
+      - name: attest sbom
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: sitrep-build.tar
+          sbom-path: sitrep.spdx.json
+
+      # The attested bytes themselves, so verification can be run against the
+      # exact artifact the attestation names rather than a local rebuild.
+      - name: upload attested artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sitrep-attested
+          path: |
+            sitrep-build.tar
+            sitrep.spdx.json
+            artifact-digests.txt
+          if-no-files-found: error
