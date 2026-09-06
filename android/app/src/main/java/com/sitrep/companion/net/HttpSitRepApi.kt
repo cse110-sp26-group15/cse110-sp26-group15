@@ -23,6 +23,37 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
+ * The PATCH body for one queued edit, as a pure function so what goes on the
+ * wire can be pinned by a plain JVM test.
+ *
+ * `assigned_to` is omitted when the phone has no assignee for the row.
+ * [com.sitrep.companion.data.CachedTaskEntity.assignedTo] is a non-null Long,
+ * so a task the server reports with `assigned_to: null` is cached as the
+ * sentinel 0 (RoomLocalStore.replaceProjectTasks). Sending that 0 made the
+ * server answer 400 "assigned_to must be a member of this project", which the
+ * sync engine correctly treats as permanent and never retries - so editing any
+ * unassigned task from the phone silently threw the edit away. The phone's edit
+ * dialog cannot change the assignee at all, and PATCH treats a missing
+ * `assigned_to` as "leave it alone", so omitting it is both the smaller message
+ * and the accurate one.
+ *
+ * @param payload the values the user wants written
+ * @param baseVersion the version the edit was built from, for the server's
+ *   compare-and-swap
+ */
+internal fun updateBody(payload: TaskPayload, baseVersion: Int): String =
+    buildJsonObject {
+            put("title", JsonPrimitive(payload.title))
+            put("description", payload.description?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("status", JsonPrimitive(payload.status))
+            if (payload.assignedTo > 0L) put("assigned_to", JsonPrimitive(payload.assignedTo))
+            // Compare-and-swap: the server refuses the write unless the row is
+            // still on this version.
+            put("version", JsonPrimitive(baseVersion))
+        }
+        .toString()
+
+/**
  * The SitRep API over OkHttp.
  *
  * SitRep authenticates with an httpOnly `sitrep_token` cookie, and its login
@@ -128,23 +159,9 @@ class HttpSitRepApi(
         baseVersion: Int,
     ): ApiResult =
         withContext(Dispatchers.IO) {
-            val body =
-                buildJsonObject {
-                        put("title", JsonPrimitive(payload.title))
-                        put(
-                            "description",
-                            payload.description?.let { JsonPrimitive(it) } ?: JsonNull,
-                        )
-                        put("status", JsonPrimitive(payload.status))
-                        put("assigned_to", JsonPrimitive(payload.assignedTo))
-                        // Compare-and-swap: the server refuses the write unless
-                        // the row is still on this version.
-                        put("version", JsonPrimitive(baseVersion))
-                    }
-                    .toString()
             call(
                 authed("$baseUrl/api/tasks/$taskId")
-                    .patch(body.toRequestBody(jsonMedia))
+                    .patch(updateBody(payload, baseVersion).toRequestBody(jsonMedia))
                     .build()
             )
         }
