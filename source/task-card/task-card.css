@@ -1,6 +1,6 @@
 /* ── Task card tokens ─────────────────────────────── */
 :root {
-  /* Priority heat-scale — a dedicated 4-level palette (red → amber →
+  /* Priority heat-scale - a dedicated 4-level palette (red → amber →
      yellow → neutral). theme.css only ships one warm status color
      (warning), so this scale stays local to preserve all four levels;
      its dark-mode variants live in the [data-theme="dark"] block below. */
@@ -36,7 +36,7 @@
 /* Dark-mode variants for the local priority scale + banner pill. The
    four heat levels stay visually distinct (red → amber → yellow →
    neutral) using deep tints with light foregrounds. */
-[data-theme="dark"] {
+:root[data-theme="dark"] {
   --priority-urgent-bg: hsl(0, 50%, 24%);
   --priority-urgent-fg: hsl(0, 78%, 88%);
   --priority-high-bg: hsl(28, 55%, 24%);
@@ -642,7 +642,7 @@
 
 /* Temporarily hidden: blockers are raised and resolved through the daily
    check-in flow, not from task cards, so the chip is display-only. The button
-   is left in the DOM (JS still builds it) — re-enable by deleting this rule. */
+   is left in the DOM (JS still builds it) - re-enable by deleting this rule. */
 .task-card__blocker-remove {
   display: none;
 }

@@ -1,6 +1,6 @@
 /* ── Scrum dashboard styles (layered on main.css + kanban.css) ─── */
 
-/* Shared utility — hides any element regardless of its display value. */
+/* Shared utility - hides any element regardless of its display value. */
 .hidden {
   display: none !important;
 }
@@ -78,7 +78,7 @@
 }
 
 /* `.btn` sets display:inline-flex, which overrides the browser default for the
-   `hidden` attribute — so a hidden .btn would still show. Re-assert none here so
+   `hidden` attribute - so a hidden .btn would still show. Re-assert none here so
    scrum.js can fully remove the "New sprint" button while a sprint is running. */
 .btn[hidden] {
   display: none;
@@ -137,7 +137,7 @@
 }
 
 /* "View history" with no past check-ins: the link is inert (clicking does
-   nothing — see toggleCheckinHistory) and instead shows a small tooltip bubble
+   nothing - see toggleCheckinHistory) and instead shows a small tooltip bubble
    on hover/focus explaining why. */
 .panel-link--no-history {
   position: relative;
@@ -260,7 +260,7 @@
 
 .progress-bar {
   /* Column layout: the row stretches the bar to full width, so it must NOT flex
-     on the (now vertical) main axis — flex:1 there would zero out its height. */
+     on the (now vertical) main axis - flex:1 there would zero out its height. */
   flex: none;
   width: 100%;
   height: var(--space-sm);
@@ -278,7 +278,7 @@
     background-color var(--duration-slow) var(--ease-default);
 }
 
-/* All tasks done — turn the bar green to signal sprint completion. */
+/* All tasks done - turn the bar green to signal sprint completion. */
 .progress-bar-fill--complete {
   background: var(--color-success);
 }
@@ -295,7 +295,13 @@
 }
 
 .progress-status {
-  color: var(--color-success);
+  /* Status text sits on --color-bg-surface, not on a status fill, so the solid
+     --color-success (4.5:1 only against a mid tone; 2.9:1 on white) fails AA
+     here. The --color-text-on-*-muted tokens are the theme's dark-on-light /
+     light-on-dark copy tier for each status hue, and the plain surface is
+     further from them than the muted fill they were tuned against - so they
+     clear AA on it in both themes. */
+  color: var(--color-text-on-success-muted);
   font-weight: var(--font-weight-medium);
 }
 
@@ -304,15 +310,15 @@
    glance: ahead → blue (primary), on track → green (success), behind → red
    (error). The doubled class keeps these above the base .progress-status rule. */
 .progress-status.progress-status--ahead {
-  color: var(--color-primary);
+  color: var(--color-text-on-primary-muted);
 }
 
 .progress-status.progress-status--on-track {
-  color: var(--color-success);
+  color: var(--color-text-on-success-muted);
 }
 
 .progress-status.progress-status--behind {
-  color: var(--color-error);
+  color: var(--color-text-on-error-muted);
 }
 
 /* "Day N of M" pill rendered next to the progress meta. Hidden until a
@@ -411,7 +417,7 @@
   border: 1px solid var(--color-border);
 }
 
-/* Compact summary header (Status / When) — tighter than the tf-body gap, with
+/* Compact summary header (Status / When) - tighter than the tf-body gap, with
    labels aligned in a fixed column so the values line up. */
 .checkin-modal-summary {
   display: flex;
@@ -478,7 +484,7 @@
 }
 
 /* ── Status badge ──────────────────────────────────── */
-/* Plain colored status text — no pill (no background, padding, or border) so it
+/* Plain colored status text - no pill (no background, padding, or border) so it
    reads as a label, not a clickable control. The status color is carried by the
    text alone. */
 .status-badge {
@@ -533,7 +539,7 @@
 }
 
 /* main.css defines the three baseline status-select colors but not the
-   blocked one — supply it here so per-task status dropdowns light up red
+   blocked one - supply it here so per-task status dropdowns light up red
    when the column is "blocked". */
 .status-select.status-blocked {
   background: var(--color-error-muted);
@@ -571,7 +577,7 @@
   box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
-/* ── Sprint task list — wraps shared task cards ────── */
+/* ── Sprint task list - wraps shared task cards ────── */
 /* When the rich task-card component is rendered, the items are <article>
    elements rather than the old single-row .task-card divs; the list just
    stacks them with consistent spacing. */
@@ -601,7 +607,7 @@
 
 /* Round the per-card status dropdown into a pill so it matches the status
    badges/day-pill used elsewhere on the page. Only the radius is overridden
-   here — the per-status color classes (.status-todo/.in-progress/.done/
+   here - the per-status color classes (.status-todo/.in-progress/.done/
    .blocked) keep supplying the on-scheme background and text colors. */
 .task-card-row-delete .status-select {
   border-radius: var(--radius-full);
@@ -618,7 +624,7 @@
 
 /* Shrink the shared .btn so the Delete action fits the compact controls
    row, and round it into a pill to sit alongside the status dropdown.
-   Uses the muted error palette — light red fill, darker red border — to
+   Uses the muted error palette - light red fill, darker red border - to
    match the .status-blocked badge / blocker chips rather than a loud solid
    fill on every card. */
 .task-card-delete {
@@ -691,7 +697,7 @@
   font-weight: var(--font-weight-medium);
 }
 
-/* Per-column add button — clicking pre-fills the inline form with the
+/* Per-column add button - clicking pre-fills the inline form with the
    column's status so the new task lands in the right column. Visual
    treatment comes from the shared .btn .btn--primary classes added in
    scrum.js; the rules here only override sizing so the button fits

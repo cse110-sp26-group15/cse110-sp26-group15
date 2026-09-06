@@ -254,6 +254,13 @@ body {
   font-size: 12px;
   color: var(--color-muted);
   padding: 4px;
+  /* WCAG 2.2 AA 2.5.8 (Target Size, Minimum): the 12px label plus 4px padding
+     came to 36x22, one pixel class short on the vertical axis. Floor the box at
+     24x24 rather than growing the padding, so the control keeps its position
+     inside the input. */
+  min-width: 24px;
+  min-height: 24px;
+  justify-content: center;
   display: flex;
   align-items: center;
   gap: 4px;
