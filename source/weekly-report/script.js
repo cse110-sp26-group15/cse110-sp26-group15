@@ -232,6 +232,10 @@ function renderWorkload(container, workload) {
 
     const barWrap = document.createElement("div");
     barWrap.className = "workload-bar";
+    // The bar is a drawing of the number already printed beside it, so it is
+    // decorative: hiding it keeps an empty, unlabelled stop out of the
+    // accessibility tree without removing any information.
+    barWrap.setAttribute("aria-hidden", "true");
     const fill = document.createElement("span");
     fill.style.width = `${Math.min(100, Number(item.task_count || 0) * 10)}%`;
     barWrap.appendChild(fill);
