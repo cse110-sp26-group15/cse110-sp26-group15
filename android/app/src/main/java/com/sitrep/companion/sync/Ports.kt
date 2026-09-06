@@ -60,4 +60,13 @@ interface LocalStore {
 
     /** Replace the cached rows for a project with what the server just returned. */
     suspend fun replaceProjectTasks(projectId: Long, tasks: List<RemoteTask>)
+
+    /**
+     * How many ops are parked in [OpState.CONFLICT] waiting for a person.
+     *
+     * The engine cannot count these itself: a drain only knows what it parked
+     * on this pass, and by the time the user taps "Sync" a background pass has
+     * usually parked them already.
+     */
+    suspend fun parkedCount(): Int
 }
