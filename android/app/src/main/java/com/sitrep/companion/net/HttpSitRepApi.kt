@@ -56,10 +56,10 @@ internal fun updateBody(payload: TaskPayload, baseVersion: Int): String =
 /**
  * The SitRep API over OkHttp.
  *
- * SitRep authenticates with an httpOnly `sitrep_token` cookie, and its login
- * handler also returns the same token in the JSON body. A native client is not
- * a browser, so it reads the token from the body, keeps it in the Keystore-backed
- * [SessionStore], and sets the cookie header itself.
+ * SitRep authenticates with an httpOnly `sitrep_token` cookie. A native client
+ * owns its HTTP stack, so it reads that cookie from the response headers, keeps
+ * the value in the Keystore-backed [SessionStore], and sets the cookie header
+ * itself. Browser JavaScript still cannot read the credential.
  *
  * Every HTTP status the sync engine cares about is mapped to an [ApiResult]
  * here, so the engine never sees a status code and can be tested without a
@@ -104,7 +104,10 @@ class HttpSitRepApi(
                         val user = obj["user"]!!.jsonObject
                         LoginResult(
                             userId = user["user_id"]!!.jsonPrimitive.content.toLong(),
-                            token = obj["token"]!!.jsonPrimitive.content,
+                            token =
+                                sessionTokenFromSetCookie(response.headers("Set-Cookie"))
+                                    ?: obj["token"]?.stringOrNull()
+                                    ?: error("Login response did not set a session cookie"),
                             fullName = user["full_name"]?.stringOrNull(),
                         )
                     }
@@ -225,6 +228,14 @@ class HttpSitRepApi(
         runCatching { json.parseToJsonElement(text).jsonObject["error"]!!.jsonPrimitive.content }
             .getOrElse { "HTTP $code" }
 }
+
+internal fun sessionTokenFromSetCookie(headers: List<String>): String? =
+    headers
+        .asSequence()
+        .map { it.substringBefore(';').trim() }
+        .firstOrNull { it.startsWith("sitrep_token=") }
+        ?.substringAfter('=')
+        ?.takeIf { it.isNotEmpty() }
 
 private fun JsonElement.stringOrNull(): String? =
     if (this is JsonNull) null else runCatching { jsonPrimitive.content }.getOrNull()
