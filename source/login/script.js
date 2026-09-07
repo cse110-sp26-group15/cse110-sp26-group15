@@ -91,8 +91,8 @@ form.addEventListener("submit", async (e) => {
   submitBtn.textContent = "Signing in…";
 
   try {
-    const { token, user } = await apiLogin({ email, password });
-    saveToken(token);
+    const { user } = await apiLogin({ email, password });
+    saveToken();
     saveCurrentUser(user);
 
     // Persist or clear remembered email based on checkbox

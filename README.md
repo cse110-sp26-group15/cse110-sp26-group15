@@ -39,3 +39,13 @@ data back.
 
 `npm run dev:pages` and hit `b` to open up the window automatically. Wrangler
 serves it on http://localhost:8788.
+
+### Browser session diagnostics
+
+`npm run test:e2e -- e2e/session-observability.spec.js` drives the login page in Chromium,
+records browser console errors and request URL/status metadata, and checks that the submitted
+password and issued session token do not appear in those diagnostics or browser-readable
+storage. The token is returned only as an httpOnly cookie. The test deliberately avoids
+recording request bodies and cookie headers because those are the transport locations for the
+password and session token. A negative control seeds a secret into a console record and proves
+the same scanner fails.

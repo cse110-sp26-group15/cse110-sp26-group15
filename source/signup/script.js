@@ -118,8 +118,8 @@ form.addEventListener("submit", async (e) => {
   submitBtn.textContent = "Creating account…";
 
   try {
-    const { token, user } = await apiSignup({ email, password, full_name: fullName });
-    saveToken(token);
+    const { user } = await apiSignup({ email, password, full_name: fullName });
+    saveToken();
 
     // Persist full name to localStorage for display in sidebar/profile/settings.
     // This supplements whatever the server returns in the user object.

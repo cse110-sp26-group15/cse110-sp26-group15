@@ -293,16 +293,18 @@ describe("C06 - password reset tokens expire and are single-use", () => {
 });
 
 describe("C06 - credentials never appear in a response body", () => {
-  it("signup, login and the session-backed routes omit the password and its hash", async () => {
-    const { res: signupRes } = await signup();
-    const { res: loginRes } = await login();
+  it("signup and login omit passwords, hashes and the issued session token", async () => {
+    const { res: signupRes, token: signupToken } = await signup();
+    const { res: loginRes, token: loginToken } = await login();
 
-    for (const [label, res] of [
-      ["signup", signupRes],
-      ["login", loginRes],
+    for (const [label, res, issuedToken] of [
+      ["signup", signupRes, signupToken],
+      ["login", loginRes, loginToken],
     ]) {
       const text = await res.clone().text();
       expect(text, label).not.toContain(PASSWORD);
+      expect(text, label).not.toContain(issuedToken);
+      expect(JSON.parse(text).token, label).toBeUndefined();
       expect(text, label).not.toContain("password_hash");
       expect(text, label).not.toContain("$2b$");
       expect(text, label).not.toContain("$2a$");

@@ -38,7 +38,7 @@ function generateSessionToken() {
  * with 409. The email is normalized (trimmed + lowercased) before storage.
  *
  * Request body: { email: string, password: string, full_name?: string }
- * Response 201: { user: { user_id, email, full_name }, token: string }
+ * Response 201: { user: { user_id, email, full_name } }
  *
  * @param {{ env: { DB: object }, request: Request }} context
  * @returns {Promise<Response>}
@@ -113,8 +113,9 @@ export async function onRequestPost(context) {
       .bind(userId)
       .first();
 
-    // Set httpOnly cookie
-    const response = Response.json({ user, token: sessionToken }, { status: 201 });
+    // Keep the session token exclusively in the httpOnly cookie so browser
+    // JavaScript and response-body logging cannot expose it.
+    const response = Response.json({ user }, { status: 201 });
 
     response.headers.set(
       "Set-Cookie",

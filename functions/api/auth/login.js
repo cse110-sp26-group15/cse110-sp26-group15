@@ -37,7 +37,7 @@ function generateSessionToken() {
  * cannot distinguish "no such user" from "wrong password".
  *
  * Request body: { email: string, password: string }
- * Response 200: { user: { user_id, email, full_name }, token: string }
+ * Response 200: { user: { user_id, email, full_name } }
  *
  * @param {{ env: { DB: object }, request: Request }} context
  * @returns {Promise<Response>}
@@ -95,11 +95,12 @@ export async function onRequestPost(context) {
       .bind(sessionToken, user.user_id)
       .run();
 
-    // Return user data (without password_hash)
+    // Return user data only. The session token belongs exclusively in the
+    // httpOnly cookie so browser JavaScript and response-body logging cannot
+    // expose it.
     const response = Response.json(
       {
         user: { user_id: user.user_id, email: user.email, full_name: user.full_name },
-        token: sessionToken,
       },
       { status: 200 }
     );
