@@ -84,7 +84,6 @@ describe("Auth API Tests", () => {
             email: "arivera@ucsd.edu",
             full_name: "Alex Rivera",
           },
-          token: "mock-token",
         }),
         { status: 200 }
       );
@@ -107,7 +106,6 @@ describe("Auth API Tests", () => {
             email: "arivera@ucsd.edu",
             full_name: "Alex Rivera",
           },
-          token: "mock-token",
         }),
         { status: 200 }
       );
@@ -115,7 +113,7 @@ describe("Auth API Tests", () => {
       const body = await mockResponse.json();
       expect(body.user.email).toBe("arivera@ucsd.edu");
       expect(body.user.user_id).toBe(1);
-      expect(body.token).toBeDefined();
+      expect(body.token).toBeUndefined();
       // Password hash should NOT be in response
       expect(body.user.password_hash).toBeUndefined();
     });
@@ -155,7 +153,6 @@ describe("Auth API Tests", () => {
             email: "newuser@test.com",
             full_name: "",
           },
-          token: "mock-token",
         }),
         { status: 201 }
       );
@@ -176,7 +173,6 @@ describe("Auth API Tests", () => {
             email: "newuser@test.com",
             full_name: "",
           },
-          token: "mock-token",
         }),
         { status: 201 }
       );
@@ -184,7 +180,7 @@ describe("Auth API Tests", () => {
       const body = await mockResponse.json();
       expect(body.user.email).toBe("newuser@test.com");
       expect(body.user.user_id).toBeDefined();
-      expect(body.token).toBeDefined();
+      expect(body.token).toBeUndefined();
       expect(body.user.password_hash).toBeUndefined();
     });
 
