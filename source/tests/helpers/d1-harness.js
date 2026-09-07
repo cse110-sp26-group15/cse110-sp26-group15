@@ -110,14 +110,28 @@ export function d1(db) {
  *
  * @returns {{ DB: object, raw: DatabaseSync }} An env-shaped object.
  */
-export function freshDb() {
+export function freshDb({ through = Number.POSITIVE_INFINITY } = {}) {
   const db = new DatabaseSync(":memory:");
+  applyMigrations(db, { through });
+  return { DB: d1(db), raw: db };
+}
+
+/**
+ * Apply a bounded part of the shipped migration sequence to an existing
+ * database. Migration rollout tests use this to keep a real pre-change schema
+ * alive while both the previous and current service fixtures exercise it.
+ *
+ * @param {DatabaseSync} db
+ * @param {{ after?: number, through?: number }} bounds
+ */
+export function applyMigrations(db, { after = 0, through = Number.POSITIVE_INFINITY } = {}) {
   for (const file of readdirSync(MIGRATIONS_DIR)
     .filter((f) => f.endsWith(".sql"))
     .sort()) {
+    const version = Number(file.slice(0, 4));
+    if (version <= after || version > through) continue;
     db.exec(readFileSync(join(MIGRATIONS_DIR, file), "utf8"));
   }
-  return { DB: d1(db), raw: db };
 }
 
 /**
@@ -326,7 +340,12 @@ export async function callApi(
     return Response.json({ error: "Method not allowed (no handler exported)" }, { status: 405 });
   }
 
-  const context = { request, env: { DB: env.DB, ...envVars }, params, data: {} };
+  const context = {
+    request,
+    env: { DB: env.DB, ...envVars },
+    params,
+    data: {},
+  };
 
   // Layer 2: the project-scoped middleware. Pages applies a directory's
   // _middleware.js to that directory's own index route as well as everything
