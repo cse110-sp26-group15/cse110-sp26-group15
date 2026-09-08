@@ -193,3 +193,31 @@ adb shell cmd connectivity airplane-mode disable   # reopen the app and sync
 | `app/src/test/.../data/OfflineJourneyTest.kt`             | the full flow against a real on-disk Room database, with process death simulated by closing and reopening it | JVM (Robolectric)             |
 | `app/src/androidTest/.../SessionStoreInstrumentedTest.kt` | the token is not plaintext on disk; logout clears it                                                         | device or emulator (Keystore) |
 | `app/src/androidTest/.../SyncWorkerInstrumentedTest.kt`   | the real WorkManager worker returns retry and keeps the queue when the server is unreachable                 | device or emulator            |
+| `app/src/androidTest/.../journey/JourneyPhasesTest.kt`    | the whole lifecycle through the real Compose screens, run phase by phase by `run-journey.sh`                 | emulator + local backend      |
+
+## The full journey, end to end
+
+`android/run-journey.sh` is one command that runs the entire local-first
+lifecycle against real parts: it builds and serves the web app with
+`wrangler pages dev` on a throwaway database, boots the `sitrep` emulator,
+installs a freshly built APK, creates ephemeral accounts (nothing is committed),
+and then drives the actual Compose UI through every phase:
+
+sign in, airplane mode, an edit marked pending, process death, the pending edit
+surviving relaunch, reconnect and server delivery, a version conflict made by a
+second client, both "Keep mine" and "Keep theirs" through the real dialog, a
+server-side session revocation (401 destroys the credential, queue and cache),
+and a membership revocation while an edit is queued (403 quarantines the write
+and never retries it).
+
+```bash
+cd android
+./run-journey.sh                  # the positive journey
+./run-journey.sh control-outbox   # prove the suite fails if the store is not durable
+./run-journey.sh control-version  # prove it fails if PATCH stops sending `version`
+./run-journey.sh control-403      # prove it fails if 403 is treated as retryable
+```
+
+The control runs each break one line of the app, show the matching journey
+phase failing, then restore the file and rebuild. Evidence (server log, one log
+per phase, server-state JSON checks) lands under `app/build/journey/`.
