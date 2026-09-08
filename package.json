@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "CSE 110 Spring 2026 Group 15 project",
+  "description": "Cross-platform project management for human and AI teams with conflict-safe offline task sync",
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

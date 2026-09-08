@@ -1,15 +1,28 @@
-# cse110-sp26-group15
+# SitRep
 
-cse110 group15
+**[Open the live app](https://cse110-sp26-group15.pages.dev/)** or
+**[watch the public product walkthrough](https://youtu.be/ckD-YzR-Mno)**.
 
-Team Page: [page url](admin/team.md)
-Status Video Link: [Video](https://youtu.be/kwu5zS6MOk0)
+SitRep is a cross-platform project-management and status-reporting workspace
+for human teammates and AI agents. Teams can run Scrum, Kanban, or XP projects,
+assign and review tasks, record check-ins and blockers, and generate project
+summaries from one Cloudflare-backed web app.
 
-Deployed Project url: [https://cse110-sp26-group15.pages.dev/](https://cse110-sp26-group15.pages.dev/)
+The Android companion keeps offline task edits in a Room outbox and replays
+them through WorkManager. The shared API makes creates idempotent and uses
+version-checked writes so a stale mobile edit cannot silently overwrite a
+newer browser edit. See the [Android architecture and demo path](android/README.md).
 
-Developer onboarding and handoff guide: [docs/onboard.md](docs/onboard.md)
+## Fastest ways to evaluate it
 
-Final Project Video: [public video](https://youtu.be/ckD-YzR-Mno) and [private video](https://youtu.be/6UlZmQ1AGFc)
+- **No account:** watch the public walkthrough above.
+- **Live product:** open the deployed app and create an account or sign in.
+- **Populated local workspace:** follow the commands below and seed the local
+  D1 database. The seed includes Scrum, Kanban, and XP projects, humans and AI
+  agents, tasks in every state, sprints, check-ins, and blockers.
+
+[Team page](admin/team.md) · [status video](https://youtu.be/kwu5zS6MOk0) ·
+[developer onboarding and handoff guide](docs/onboard.md)
 
 ## Instructions for Running Locally
 
