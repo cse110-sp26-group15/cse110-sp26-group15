@@ -786,3 +786,144 @@
   background: var(--color-accent-soft, #e6f0ff);
   color: var(--color-accent, #2563eb);
 }
+
+/* ── Offline sync: status strip, card badges, conflict dialog ─────────
+   The strip (#sync-status) sits under the sprint header and only appears
+   when there is sync state worth reporting; renderSyncStatus() in scrum.js
+   owns its contents. Colors ride the theme's warning/error tokens so the
+   queued vs conflict distinction survives both schemes. */
+
+.sync-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+}
+
+.sync-status-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-border);
+}
+
+.sync-status-line--pending {
+  background: var(--color-warning-muted);
+  color: var(--color-warning-text);
+}
+
+.sync-status-line--conflict,
+.sync-status-line--notice {
+  background: var(--color-error-muted);
+  color: var(--color-error);
+}
+
+/* Chip on a task card whose edit the server has not confirmed yet. */
+.sync-badge {
+  font-size: var(--text-xs);
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  margin-right: auto; /* keep the chip left of the Edit/Delete cluster */
+}
+
+.sync-badge--queued {
+  background: var(--color-warning-muted);
+  color: var(--color-warning-text);
+}
+
+.sync-badge--conflict {
+  background: var(--color-error-muted);
+  color: var(--color-error);
+}
+
+/* Match the pill sizing of the sibling Edit button. */
+.task-card-resolve {
+  font-size: var(--text-xs);
+  padding: var(--space-2xs) var(--space-md);
+  border-radius: var(--radius-full);
+  background: var(--color-error);
+  color: var(--color-text-on-primary, #fff);
+}
+
+/* The keep-mine / keep-theirs decision dialog. */
+.sync-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: hsla(222, 47%, 11%, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--space-md);
+}
+
+.sync-modal {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-lg);
+  max-width: 40rem;
+  width: 100%;
+}
+
+.sync-modal h2 {
+  font-size: var(--text-h4);
+  margin-bottom: var(--space-2xs);
+}
+
+.sync-modal-sub {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-md);
+}
+
+.sync-modal-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+@media (max-width: 640px) {
+  .sync-modal-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sync-modal-column {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-subtle);
+}
+
+.sync-modal-column h3 {
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.sync-modal-column dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2xs) var(--space-sm);
+  font-size: var(--text-sm);
+}
+
+.sync-modal-column dt {
+  color: var(--color-text-muted);
+}
+
+.sync-modal-column dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.sync-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}

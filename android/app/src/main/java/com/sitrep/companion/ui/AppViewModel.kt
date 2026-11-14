@@ -25,6 +25,7 @@ data class UiState(
     val projects: List<Pair<Long, String>> = emptyList(),
     val tasks: List<CachedTaskEntity> = emptyList(),
     val pending: Int = 0,
+    val conflicts: Int = 0,
     val notices: List<NoticeEntity> = emptyList(),
     val busy: Boolean = false,
     val message: String? = null,
@@ -58,6 +59,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             repo.observePendingCount().collect { _state.value = _state.value.copy(pending = it) }
+        }
+        viewModelScope.launch {
+            repo.observeConflictCount().collect { _state.value = _state.value.copy(conflicts = it) }
         }
         viewModelScope.launch {
             repo.observeNotices().collect { _state.value = _state.value.copy(notices = it) }

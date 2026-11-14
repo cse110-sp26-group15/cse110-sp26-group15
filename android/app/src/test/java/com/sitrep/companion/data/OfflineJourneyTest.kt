@@ -183,6 +183,44 @@ class OfflineJourneyTest {
     }
 
     @Test
+    fun `editing a task parked in conflict folds into the parked op instead of double-queueing`() =
+        runBlocking {
+            // Park a conflict: my offline edit loses to a browser edit.
+            val serverTaskId = server.seed(projectId, "Original")
+            engine().refresh(projectId)
+            val localId = db!!.tasks().listProject(projectId).single().localId
+
+            server.offline = true
+            repo().editTask(localId, "Mine v1", null, "done")
+            engine().drain()
+            server.browserEdit(serverTaskId, title = "Theirs")
+            server.offline = false
+            assertEquals(SyncEngine.Outcome.NeedsUser(1), engine().drain())
+
+            // The user reopens the card and edits again while the decision is
+            // still pending. This used to insert a second op with a base
+            // version already known stale - one that could only bounce - and
+            // orphan it behind the eventual resolution.
+            repo().editTask(localId, "Mine v2", null, "done")
+
+            assertEquals("still one op, not two", 1, db!!.outbox().count())
+            val op = db!!.outbox().all().single()
+            assertEquals("the op stays parked for the same decision", OpState.CONFLICT.name, op.state)
+            assertEquals("the decision's 'mine' side is the newest edit", "Mine v2", op.title)
+            val row = db!!.tasks().byLocalId(localId)!!
+            assertTrue("the card still shows the conflict", row.conflict)
+            assertEquals("Mine v2", row.title)
+            assertEquals("the server snapshot is untouched", "Theirs", row.remoteTitle)
+
+            // Keep mine resolves the whole thing: one rebased write, no orphans.
+            repo().keepMine(localId)
+            assertEquals(SyncEngine.Outcome.Drained, engine().drain())
+            assertEquals(1, server.updateCount)
+            assertEquals("Mine v2", server.rows.getValue(serverTaskId).title)
+            assertEquals(0, db!!.outbox().count())
+        }
+
+    @Test
     fun `a second edit before the first has synced replaces it rather than queuing twice`() =
         runBlocking {
             server.offline = true
@@ -298,4 +336,33 @@ class OfflineJourneyTest {
         assertEquals(OpState.CONFLICT.name, db!!.outbox().all().single().state)
         assertNull("a parked conflict is not resent on its own", db!!.outbox().nextPending())
     }
+
+    @Test
+    fun `editing a conflicted task updates the parked choice without creating another op`() =
+        runBlocking {
+            val serverTaskId = server.seed(projectId, "Original")
+            engine().refresh(projectId)
+            val localId = db!!.tasks().listProject(projectId).single().localId
+
+            server.offline = true
+            repo().editTask(localId, "First local edit", null, "todo")
+            engine().drain()
+            server.browserEdit(serverTaskId, title = "Server edit")
+            server.offline = false
+            assertEquals(SyncEngine.Outcome.NeedsUser(1), engine().drain())
+
+            repo().editTask(localId, "Final local edit", "More detail", "done")
+
+            val parked = db!!.outbox().all().single()
+            assertEquals(OpState.CONFLICT.name, parked.state)
+            assertEquals("Final local edit", parked.title)
+            assertEquals("More detail", parked.description)
+            assertEquals("one parked op", 1, db!!.outbox().count())
+
+            repo().keepMine(localId)
+            assertEquals(SyncEngine.Outcome.Drained, engine().drain())
+            assertEquals("Final local edit", server.rows.getValue(serverTaskId).title)
+            assertEquals("done", server.rows.getValue(serverTaskId).status)
+            assertEquals("exactly one resolved update", 1, server.updateCount)
+        }
 }

@@ -24,6 +24,8 @@ class TaskRepository(private val db: SitRepDatabase) {
 
     fun observePendingCount(): Flow<Int> = outbox.observePendingCount()
 
+    fun observeConflictCount(): Flow<Int> = outbox.observeConflictCount()
+
     fun observeNotices(): Flow<List<NoticeEntity>> = notices.observe()
 
     /** Queue a new task. Returns the local id the UI can keep showing immediately. */
@@ -76,12 +78,19 @@ class TaskRepository(private val db: SitRepDatabase) {
      * op rather than appended behind it. Two reasons: an UPDATE queued behind an
      * unsent CREATE has no task id to address, and sending "A then B" when the
      * user only ever wanted B is two writes where one will do.
+     *
+     * An op parked in CONFLICT coalesces the same way and stays parked: the new
+     * values become the "mine" side of the decision the user still owes.
+     * Appending a fresh op instead would queue a write against a base version
+     * that is already known stale - it can only bounce off the server's
+     * compare-and-swap - and would orphan whichever op the eventual keep-mine /
+     * keep-theirs did not touch.
      */
     suspend fun editTask(localId: String, title: String, description: String?, status: String) {
         val row = tasks.byLocalId(localId) ?: return
         tasks.upsert(row.copy(title = title, description = description, status = status, pending = true))
 
-        val existing = outbox.pendingFor(localId).firstOrNull()
+        val existing = outbox.pendingOrConflictedFor(localId)
         if (existing != null) {
             outbox.update(existing.copy(title = title, description = description, status = status))
             return
