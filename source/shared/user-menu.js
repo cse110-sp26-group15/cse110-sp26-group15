@@ -20,6 +20,7 @@
  */
 
 import { getCurrentUser, saveCurrentUser, navigateTo } from "./utils.js";
+import { clearAllSyncStorage } from "./task-sync.js";
 
 // ── Mobile sidebar drawer ─────────────────────────────────
 // Injects a hamburger top bar + overlay so the fixed sidebar can
@@ -151,6 +152,9 @@ export function initUserMenu() {
       // Keep sitrep_display_name so the login page can show "Welcome back, X"
       // if the team adds that feature later. Clear sensitive session data only.
       sessionStorage.clear();
+      // Queued edits and cached tasks must not outlive the session that
+      // authorized them (the next person on this browser is not this user).
+      clearAllSyncStorage();
       navigateTo("../login/index.html");
     });
   }

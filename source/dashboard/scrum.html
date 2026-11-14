@@ -157,6 +157,13 @@
               </div>
             </div>
 
+            <!-- ── Sync status strip ─────────────────────────── -->
+            <!-- Populated by renderSyncStatus() in scrum.js: edits waiting
+                 to sync while offline, conflicts needing a decision, and
+                 writes the server refused. Hidden when there is nothing to
+                 say. role="status" so assistive tech hears state changes. -->
+            <section class="sync-status" id="sync-status" role="status" hidden></section>
+
             <!-- ── Sprint picker (sprint # + date range) ─────── -->
             <!-- Collapsed by default; opened via "Edit sprint". Lets the
                  user override sprint metadata without an API. Selection is
