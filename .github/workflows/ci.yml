@@ -44,7 +44,7 @@ jobs:
 
   e2e: # End-to-end tests with Playwright (chromium only)
     name: E2E Tests (Playwright)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - uses: actions/checkout@v4
