@@ -64,6 +64,9 @@ interface OutboxDao {
     @Query("SELECT COUNT(*) FROM outbox WHERE state = 'CONFLICT'")
     suspend fun conflictCount(): Int
 
+    @Query("SELECT COUNT(*) FROM outbox WHERE state = 'CONFLICT'")
+    fun observeConflictCount(): Flow<Int>
+
     @Insert
     suspend fun insert(op: OutboxEntity): Long
 

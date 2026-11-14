@@ -20,7 +20,8 @@
     "test": "vitest",
     "test:ci": "vitest run",
     "test:e2e": "playwright test",
-    "test:e2e:ci": "playwright test --reporter=list"
+    "test:e2e:ci": "playwright test --reporter=list",
+    "demo:offline": "node demo/offline-conflict-demo.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

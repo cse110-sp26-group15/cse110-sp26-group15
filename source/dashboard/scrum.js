@@ -28,6 +28,14 @@ import {
 import { initUserMenu } from "../shared/user-menu.js";
 import { readResolvedBlockerIds } from "../blocker-card/blocker-card.js";
 import { renderTeamPanel } from "../shared/team-panel.js";
+import {
+  TaskOutbox,
+  TaskCache,
+  drainOutbox,
+  overlayQueuedEdits,
+  DrainOutcome,
+  OpState,
+} from "../shared/task-sync.js";
 
 initUserMenu();
 
@@ -51,6 +59,13 @@ export const PROJECT_ID = getCurrentProjectId();
 // localStorage key for the picked sprint, namespaced per project so the
 // last-picked sprint survives reloads.
 const SPRINT_STORAGE_KEY = `sitrep.scrum.sprint.project-${PROJECT_ID}`;
+
+// Durable outbox + last-synced task cache for this project: the local-first
+// half of the edit workflow. An edit is written here and to the screen first,
+// then replayed against the API whenever the network allows - see
+// source/shared/task-sync.js for the contract and the drain semantics.
+const outbox = new TaskOutbox(PROJECT_ID);
+const taskCache = new TaskCache(PROJECT_ID);
 
 // Column definitions for the kanban view. Order is left → right.
 // Each column tracks every task whose `status` matches `key`.
@@ -446,16 +461,234 @@ async function createTask(data, { forceStatus } = {}) {
   return { task: task ?? null };
 }
 
-async function updateTask(taskId, fields) {
-  return apiFetch(`/api/tasks/${taskId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(fields),
-  });
-}
-
 async function deleteTask(taskId) {
   return apiFetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+}
+
+// ── Offline sync (outbox drain + conflict resolution UI) ─────────────
+// The engine lives in shared/task-sync.js; this section owns what the user
+// sees: the status strip under the sprint header, the queued/conflict badges
+// on cards (appendTaskControls), and the keep-mine/keep-theirs dialog.
+
+// Outcome of the most recent drain; distinguishes "waiting to sync" from
+// "offline" in the status strip.
+let lastSyncOutcome = null;
+let syncRetryTimer = null;
+
+/**
+ * Drain the outbox and refresh what the user sees. When `reload` is true and
+ * something was delivered (or parked), the board reloads so server-confirmed
+ * rows replace the optimistic overlay.
+ */
+async function syncNow({ reload = true } = {}) {
+  const hadPending = outbox.pendingCount() > 0;
+  const result = await drainOutbox(outbox, { cache: taskCache });
+  lastSyncOutcome = result;
+  renderSyncStatus();
+  if (result.outcome === DrainOutcome.RETRY) scheduleSyncRetry();
+  if (
+    reload &&
+    hadPending &&
+    (result.outcome === DrainOutcome.DRAINED || result.outcome === DrainOutcome.NEEDS_USER)
+  ) {
+    await loadAll();
+  }
+  return result;
+}
+
+// The `online` event is the primary reconnect signal; this timer is the
+// fallback for the cases it misses (server down while the OS says online).
+function scheduleSyncRetry() {
+  if (syncRetryTimer) return;
+  syncRetryTimer = setTimeout(() => {
+    syncRetryTimer = null;
+    if (outbox.pendingCount() > 0) syncNow();
+  }, 30_000);
+}
+
+/**
+ * Paint the sync strip (`#sync-status` in scrum.html). Hidden when there is
+ * nothing to say; otherwise one line per concern: conflicts needing a
+ * decision, changes waiting to sync, and writes the server refused.
+ */
+function renderSyncStatus() {
+  const el = document.getElementById("sync-status");
+  if (!el) return;
+  const pending = outbox.pendingCount();
+  const parked = outbox.parkedCount();
+  const notices = outbox.notices();
+  el.textContent = "";
+  if (pending === 0 && parked === 0 && notices.length === 0) {
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+
+  const addLine = (variant, message, buttonLabel, onClick) => {
+    const row = document.createElement("div");
+    row.className = `sync-status-line sync-status-line--${variant}`;
+    const msg = document.createElement("span");
+    msg.textContent = message;
+    row.appendChild(msg);
+    if (buttonLabel) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn--secondary";
+      btn.textContent = buttonLabel;
+      btn.addEventListener("click", onClick);
+      row.appendChild(btn);
+    }
+    el.appendChild(row);
+  };
+
+  if (parked > 0) {
+    addLine(
+      "conflict",
+      parked === 1 ? "1 edit needs your decision." : `${parked} edits need your decision.`,
+      "Resolve",
+      () => {
+        const first = outbox.ops().find((o) => o.state === OpState.CONFLICT);
+        if (first) openConflictDialog(first.opId);
+      }
+    );
+  }
+  if (pending > 0) {
+    const offline =
+      (typeof navigator !== "undefined" && navigator.onLine === false) ||
+      lastSyncOutcome?.outcome === DrainOutcome.RETRY;
+    addLine(
+      "pending",
+      offline
+        ? `You're offline. ${pending} change${pending === 1 ? "" : "s"} will sync when the connection returns.`
+        : `${pending} change${pending === 1 ? "" : "s"} waiting to sync…`,
+      "Sync now",
+      () => syncNow()
+    );
+  }
+  if (notices.length > 0) {
+    addLine("notice", notices.map((n) => n.message).join(" "), "Dismiss", () => {
+      outbox.dismissNotices();
+      renderSyncStatus();
+    });
+  }
+}
+
+/** Resolve an assignee id to a display name via the members cache. */
+function memberName(userId) {
+  if (userId == null) return "Unassigned";
+  const m = projectMembers.find((x) => Number(x.user_id) === Number(userId));
+  return m?.full_name ?? `User ${userId}`;
+}
+
+// One side of the conflict dialog: a labeled list of the fields in play.
+function conflictColumn(heading, { title, description, status, assignee }) {
+  const col = document.createElement("section");
+  col.className = "sync-modal-column";
+  const h = document.createElement("h3");
+  h.textContent = heading;
+  col.appendChild(h);
+  const dl = document.createElement("dl");
+  for (const [label, value] of [
+    ["Title", title],
+    ["Status", status],
+    ["Assignee", assignee],
+    ["Description", description === undefined ? "(unchanged)" : description || "None"],
+  ]) {
+    const dt = document.createElement("dt");
+    dt.textContent = label;
+    const dd = document.createElement("dd");
+    dd.textContent = value ?? "(unchanged)";
+    dl.append(dt, dd);
+  }
+  col.appendChild(dl);
+  return col;
+}
+
+function closeConflictDialog() {
+  document.getElementById("sync-conflict-overlay")?.remove();
+}
+
+/**
+ * The decision the drain cannot make: the task moved somewhere the queued
+ * edit did not intend, so show both versions side by side and let the user
+ * pick. "Keep mine" rebases the edit onto the server's version and resubmits;
+ * "Keep theirs" adopts the server row and drops the edit. Closing the dialog
+ * decides nothing - the op stays parked and the strip keeps offering Resolve.
+ */
+function openConflictDialog(opId) {
+  const op = outbox.op(opId);
+  if (!op || op.state !== OpState.CONFLICT || !op.remote) return;
+  closeConflictDialog();
+
+  const overlay = document.createElement("div");
+  overlay.className = "sync-modal-overlay";
+  overlay.id = "sync-conflict-overlay";
+
+  const modal = document.createElement("div");
+  modal.className = "sync-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "sync-modal-title");
+
+  const h = document.createElement("h2");
+  h.id = "sync-modal-title";
+  h.textContent = "This task changed while you were offline";
+  const sub = document.createElement("p");
+  sub.className = "sync-modal-sub";
+  sub.textContent =
+    "Someone saved this task before your edit reached the server. Pick which version should win.";
+
+  const cols = document.createElement("div");
+  cols.className = "sync-modal-columns";
+  cols.append(
+    conflictColumn("Your edit", {
+      title: op.payload.title,
+      description: op.payload.description,
+      status: op.payload.status,
+      assignee: "assigned_to" in op.payload ? memberName(op.payload.assigned_to) : "(unchanged)",
+    }),
+    conflictColumn(`On the server (v${op.remote.version})`, {
+      title: op.remote.title,
+      description: op.remote.description,
+      status: op.remote.status,
+      assignee: op.remote.full_name ?? memberName(op.remote.user_id),
+    })
+  );
+
+  const actions = document.createElement("div");
+  actions.className = "sync-modal-actions";
+  const theirsBtn = document.createElement("button");
+  theirsBtn.type = "button";
+  theirsBtn.className = "btn btn--secondary";
+  theirsBtn.textContent = "Keep theirs";
+  theirsBtn.addEventListener("click", async () => {
+    const remote = outbox.keepTheirs(opId);
+    if (remote) taskCache.upsert(remote);
+    closeConflictDialog();
+    renderSyncStatus();
+    await loadAll();
+  });
+  const mineBtn = document.createElement("button");
+  mineBtn.type = "button";
+  mineBtn.className = "btn btn--primary";
+  mineBtn.textContent = "Keep mine";
+  mineBtn.addEventListener("click", async () => {
+    outbox.keepMine(opId);
+    closeConflictDialog();
+    await syncNow();
+  });
+  actions.append(theirsBtn, mineBtn);
+
+  modal.append(h, sub, cols, actions);
+  overlay.appendChild(modal);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeConflictDialog();
+  });
+  modal.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeConflictDialog();
+  });
+  document.body.appendChild(overlay);
+  mineBtn.focus();
 }
 
 async function fetchCheckins() {
@@ -879,13 +1112,18 @@ async function persistTaskChange(taskId, fields) {
   if ("priority" in fields) payload.priority = fields.priority;
   if (Object.keys(payload).length === 0) return;
 
-  try {
-    await updateTask(taskId, payload);
-    await loadAll();
-  } catch (err) {
-    console.error("[scrum] task-card change failed", err);
-    alert(`Couldn't update task: ${err.message}`);
-    await loadAll();
+  const task = currentTasks.find((row) => Number(row.task_id) === Number(taskId));
+  if (!task) return;
+
+  outbox.enqueueEdit({ taskId, baseVersion: task.version, payload });
+  renderTasks(currentTasks);
+  renderSyncStatus();
+  const result = await syncNow();
+  if (result.outcome === DrainOutcome.NEEDS_USER) {
+    const parked = outbox
+      .ops()
+      .find((op) => Number(op.taskId) === Number(taskId) && op.state === OpState.CONFLICT);
+    if (parked) openConflictDialog(parked.opId);
   }
 }
 
@@ -894,19 +1132,22 @@ async function persistTaskChange(taskId, fields) {
  * create payload but clears the reviewer + review pill when no reviewer is
  * set (human/unassigned), and omits review_status otherwise so the API
  * preserves/promotes whatever the agent task already had.
+ *
+ * The version is not part of the payload: the outbox pins each queued edit to
+ * the version its form was opened on and sends it at delivery time.
  * @param {object} data - Modal submission object.
- * @param {number} [version] - Version of the task the form was opened on.
  * @returns {object} PATCH body.
  */
-function buildEditPayload(data, version) {
+function buildEditPayload(data) {
   const payload = {
     title: data.title,
     description: data.description ?? null,
-    assigned_to: data.assigned_to ?? null,
     status: data.status,
   };
-  // See main.js: the version pins this save to the row the form was opened on.
-  if (Number.isInteger(version)) payload.version = version;
+  // The server refuses `assigned_to: null` ("a task must be assigned to a
+  // project member"), so an empty assignee on the form means "leave it as it
+  // is" - the same rule the Android client applies.
+  if (data.assigned_to != null) payload.assigned_to = data.assigned_to;
   if (data.priority) payload.priority = data.priority;
   if (data.reviewer_id != null) {
     payload.reviewer_id = data.reviewer_id;
@@ -917,24 +1158,29 @@ function buildEditPayload(data, version) {
   return payload;
 }
 
-// Opens the shared task-form modal pre-filled with an existing task, PATCHing
-// the changes and refreshing the dashboard on save.
+// Opens the shared task-form modal pre-filled with an existing task. The save
+// is local-first: it goes to the durable outbox and the board immediately,
+// then the drain delivers it. Online, that is one PATCH and a refresh, same
+// as before; offline, the edit waits out the outage instead of erroring; on a
+// 409 the conflict dialog opens with both versions instead of an alert that
+// threw the user's edit away.
 async function openEditTaskModal(task) {
   const { openTaskModal } = await loadTaskFormModule();
   openTaskModal(
     async (data) => {
-      try {
-        await updateTask(task.task_id, buildEditPayload(data, task.version));
-        await loadAll();
-      } catch (err) {
-        console.error("[scrum] editTask failed", err);
-        // 409 = a teammate saved this task first; reload to show their version.
-        if (err?.status === 409) {
-          alert(err.message);
-          await loadAll();
-          return;
-        }
-        alert(`Couldn't update task: ${err.message}`);
+      outbox.enqueueEdit({
+        taskId: task.task_id,
+        baseVersion: task.version,
+        payload: buildEditPayload(data),
+      });
+      renderTasks(currentTasks); // optimistic: the overlay paints the edit now
+      renderSyncStatus();
+      const result = await syncNow();
+      if (result.outcome === DrainOutcome.NEEDS_USER) {
+        const parked = outbox
+          .ops()
+          .find((o) => Number(o.taskId) === Number(task.task_id) && o.state === OpState.CONFLICT);
+        if (parked) openConflictDialog(parked.opId);
       }
     },
     { task }
@@ -954,6 +1200,24 @@ function appendTaskControls(card, task) {
   editBtn.dataset.taskId = task.task_id;
   editBtn.textContent = "Edit";
   editBtn.addEventListener("click", () => openEditTaskModal(task));
+
+  // Sync state travels on the overlaid task (see overlayQueuedEdits): a chip
+  // for anything not yet server-confirmed, plus the way into the conflict
+  // dialog when the edit needs a decision.
+  if (task._sync) {
+    const badge = document.createElement("span");
+    badge.className = `sync-badge sync-badge--${task._sync}`;
+    badge.textContent = task._sync === "conflict" ? "Conflict" : "Waiting to sync";
+    row.appendChild(badge);
+    if (task._sync === "conflict") {
+      const resolveBtn = document.createElement("button");
+      resolveBtn.type = "button";
+      resolveBtn.className = "btn task-card-resolve";
+      resolveBtn.textContent = "Resolve";
+      resolveBtn.addEventListener("click", () => openConflictDialog(task._syncOpId));
+      row.appendChild(resolveBtn);
+    }
+  }
 
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
@@ -1070,10 +1334,14 @@ function renderKanban(tasks) {
 
 // Render whichever view is active. Called whenever tasks change so both
 // view containers stay in sync (the inactive one is hidden via CSS).
+// `currentTasks` keeps the server's rows; queued/conflicted edits from the
+// outbox are painted over them at render time so the board always shows
+// what the user did, flagged until the server confirms it.
 function renderTasks(tasks) {
   currentTasks = tasks;
-  renderTaskList(tasks);
-  renderKanban(tasks);
+  const shown = overlayQueuedEdits(tasks, outbox.ops());
+  renderTaskList(shown);
+  renderKanban(shown);
 }
 
 // ── View toggle ──────────────────────────────────────
@@ -1313,6 +1581,18 @@ async function loadAllImpl() {
       }),
     ]);
   } catch (err) {
+    // Offline (status 0 = network failure/timeout) with a cached board: paint
+    // the last-synced tasks with queued edits overlaid instead of a dead page,
+    // so a refresh mid-outage keeps the user's work visible. The other panels
+    // keep the error state - only tasks have an offline cache.
+    const cached = err instanceof ApiError && err.status === 0 ? taskCache.read() : null;
+    if (cached) {
+      renderLoadError("You're offline. Showing your last-synced tasks below.");
+      renderTasks(cached.tasks);
+      renderSyncStatus();
+      console.warn("[scrum] offline: rendered tasks from the local cache", err);
+      return;
+    }
     const reason =
       err instanceof ApiError && err.status > 0
         ? `Failed to load dashboard (${err.status}): ${err.message}`
@@ -1325,6 +1605,11 @@ async function loadAllImpl() {
   // Trust /members if non-empty; otherwise derive members from task/checkin rows.
   projectMembers = apiMembers.length ? apiMembers : deriveMembers(tasks, checkins);
   projectAgents = apiAgents;
+
+  // Refresh the offline cache with the server's confirmed rows, and keep the
+  // sync strip in step with whatever this load revealed.
+  taskCache.write(tasks);
+  renderSyncStatus();
 
   // If the user hasn't set a sprint yet, prefer whatever the API knows;
   // user-saved values always win once they exist.
@@ -1558,9 +1843,25 @@ function init() {
   // ── AI digest generate button ─────────────────────
   document.getElementById("generate-summary-btn")?.addEventListener("click", generateSummary);
 
-  // Apply the saved view mode and kick off the first load (with a spinner).
+  // ── Offline sync wiring ────────────────────────────
+  // Reconnecting is the moment queued edits can finally land; the strip also
+  // needs painting before the first load in case a previous session left
+  // queued or conflicted edits behind.
+  window.addEventListener("online", () => syncNow());
+  renderSyncStatus();
+
+  // Apply the saved view mode, then drain anything a previous session queued
+  // before the first load, so the board comes up showing the post-sync state.
   setViewMode(viewMode);
-  loadAll(true);
+  (async () => {
+    showLoading();
+    try {
+      await syncNow({ reload: false });
+    } finally {
+      await loadAll();
+      hideLoading();
+    }
+  })();
 }
 
 if (typeof document !== "undefined") {

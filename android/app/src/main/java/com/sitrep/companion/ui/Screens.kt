@@ -90,8 +90,7 @@ fun BoardScreen(state: UiState, vm: AppViewModel) {
                     Column {
                         Text(state.projectName.ifBlank { "My work" })
                         Text(
-                            if (state.pending > 0) "${state.pending} change(s) waiting to sync"
-                            else "Synced",
+                            syncSubtitle(state.pending, state.conflicts),
                             style = MaterialTheme.typography.labelSmall,
                         )
                     }
